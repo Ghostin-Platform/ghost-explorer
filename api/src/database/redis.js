@@ -4,6 +4,7 @@ import moment from 'moment';
 import * as R from 'ramda';
 import conf, { logger } from '../config/conf';
 import { DatabaseError } from '../config/errors';
+import { broadcast, EVENT_NEW } from '../seeMiddleware';
 
 const ONE_YEAR_SEC_RETENTION = 31556952;
 export const STREAM_BLOCK_KEY = 'stream.blocks';
@@ -113,8 +114,6 @@ export const write = async (key, data) => {
   const client = await getClient();
   const val = JSON.stringify(data);
   await client.set(key, val);
-  // TODO Notify
-
   return data;
 };
 /*
@@ -138,11 +137,11 @@ export const initTimeseries = async (name, retention = ONE_YEAR_SEC_RETENTION) =
   await client.call('TS.CREATE', name, 'RETENTION', retention);
 };
 
-export const addSeriesPoint = async (name, value, stamp) => {
+export const addSeriesPoint = async (series, name, value, stamp) => {
   const client = await getClient();
   logger.info(`[Ghost Explorer] Add series point: ${name} ${value} ${stamp}`);
   await client.call('TS.ADD', name, stamp, value);
-  // TODO Notify
+  await broadcast(`${EVENT_NEW}_point`, { date: stamp, value, series });
 };
 
 export const timeseries = async (name) => {
@@ -162,20 +161,11 @@ const storeEvent = async (streamKey, id, key, data) => {
 export const blockStreamId = (block) => `${block.time * 1000}-${block.height}`;
 
 export const storeBlock = async (block) => {
-  try {
-    await storeEvent(STREAM_BLOCK_KEY, blockStreamId(block), 'block', block);
-    // TODO Notify
-  } catch (e) {
-    logger.error(e);
-  }
+  return storeEvent(STREAM_BLOCK_KEY, blockStreamId(block), 'block', block);
 };
 
 export const storeMatureBlock = async (block) => {
-  try {
-    await storeEvent(STREAM_MATURE_BLOCK_KEY, blockStreamId(block), 'block', block);
-  } catch (e) {
-    logger.error(e);
-  }
+  return storeEvent(STREAM_MATURE_BLOCK_KEY, blockStreamId(block), 'block', block);
 };
 
 const mapStreamToJS = ([id, data]) => {

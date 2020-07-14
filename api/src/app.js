@@ -10,6 +10,7 @@ import { isEmpty } from 'ramda';
 import path from 'path';
 import nconf from 'nconf';
 import { logger } from './config/conf';
+import createSeeMiddleware from './seeMiddleware';
 
 const createApp = (apolloServer) => {
   // Init the http server
@@ -35,12 +36,13 @@ const createApp = (apolloServer) => {
 
   const serverHealthCheck = () => {
     return new Promise((resolve) => {
-      // TODO @Julien Implements a real health function
-      // Check grakn and ES connection?
       resolve();
     });
   };
   apolloServer.applyMiddleware({ app, onHealthCheck: serverHealthCheck });
+
+  const seeMiddleware = createSeeMiddleware();
+  seeMiddleware.applyMiddleware({ app });
 
   // Other routes
   app.get('*', (req, res) => {

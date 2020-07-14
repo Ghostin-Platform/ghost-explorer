@@ -2,13 +2,14 @@
 import { logger } from './config/conf';
 import { write, fetch, clear, redisIsAlive, storeBlock, storeMatureBlock } from './database/redis';
 import { getChainHeight } from './config/utils';
-import { BLOCK_MATURITY, CURRENT_BLOCK, enrichBlock, getBlockByHeight } from './database/ghost';
+import { BLOCK_MATURITY, CURRENT_BLOCK, enrichBlock, getBlockByHeight, getNetworkInfo } from './database/ghost';
 import initBlockListener from './database/zeromq';
 import {
   statsDifficultyProcessor,
   statsStakeWeightProcessor,
   statsTxActivityProcessor,
 } from './processor/statisticProcessor';
+import { broadcast, EVENT_NEW, EVENT_UPDATE } from './seeMiddleware';
 
 // Check every dependencies
 const checkSystemDependencies = async () => {
@@ -29,8 +30,7 @@ const processBlockData = async (block) => {
   } else {
     matureBlockPromise = Promise.resolve();
   }
-  const newBlockPromise = enrichBlock(block) //
-    .then((newBlock) => storeBlock(newBlock));
+  const newBlockPromise = storeBlock(block);
   await Promise.all([matureBlockPromise, newBlockPromise]);
   await write(CURRENT_BLOCK, height);
 };
@@ -62,10 +62,10 @@ const initializePlatform = async (newPlatform) => {
   }
 };
 
-const initStreamProcessors = () => {
-  statsDifficultyProcessor();
-  statsStakeWeightProcessor();
-  statsTxActivityProcessor();
+const initStreamProcessors = async () => {
+  await statsDifficultyProcessor();
+  await statsStakeWeightProcessor();
+  await statsTxActivityProcessor();
 };
 
 const platformInit = async (reindex = false) => {
@@ -74,7 +74,16 @@ const platformInit = async (reindex = false) => {
     const newPlatform = (await fetch(CURRENT_BLOCK)) === undefined;
     await initializePlatform(newPlatform || reindex);
     // Listen directly new block with zeroMQ
-    await initBlockListener(async (block) => processBlockData(block));
+    await initBlockListener(async (block) => {
+      const enrichedBlock = await enrichBlock(block);
+      await processBlockData(enrichedBlock);
+      // Broadcasting
+      const networkInfo = await getNetworkInfo();
+      await Promise.all([
+        broadcast(`${EVENT_NEW}_block`, enrichedBlock), //
+        broadcast(`${EVENT_UPDATE}_info`, networkInfo),
+      ]);
+    });
     await initStreamProcessors();
   } catch (e) {
     logger.error(e);

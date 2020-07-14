@@ -23,7 +23,6 @@ scalar ConstraintString
 scalar ConstraintNumber
 scalar Upload
 
-###
 type BlockChainInfo {
   version: String
   name: String
