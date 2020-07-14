@@ -4,7 +4,11 @@ import { write, fetch, clear, redisIsAlive, storeBlock, storeMatureBlock } from 
 import { getChainHeight } from './config/utils';
 import { BLOCK_MATURITY, CURRENT_BLOCK, enrichBlock, getBlockByHeight } from './database/ghost';
 import initBlockListener from './database/zeromq';
-import { statsDifficultyProcessor, statsStakeWeightProcessor } from './listener/statisticListener';
+import {
+  statsDifficultyProcessor,
+  statsStakeWeightProcessor,
+  statsTxActivityProcessor,
+} from './processor/statisticProcessor';
 
 // Check every dependencies
 const checkSystemDependencies = async () => {
@@ -20,7 +24,8 @@ const processBlockData = async (block) => {
   let matureBlockPromise;
   if (matureHeight >= 0) {
     matureBlockPromise = getBlockByHeight(matureHeight) //
-      .then((matureBlock) => storeMatureBlock(matureBlock));
+      .then((matureBlock) => enrichBlock(matureBlock)) //
+      .then((mBlock) => storeMatureBlock(mBlock));
   } else {
     matureBlockPromise = Promise.resolve();
   }
@@ -57,11 +62,10 @@ const initializePlatform = async (newPlatform) => {
   }
 };
 
-const initStreamListeners = () => {
-  // noinspection JSIgnoredPromiseFromCall
+const initStreamProcessors = () => {
   statsDifficultyProcessor();
-  // noinspection JSIgnoredPromiseFromCall
   statsStakeWeightProcessor();
+  statsTxActivityProcessor();
 };
 
 const platformInit = async (reindex = false) => {
@@ -71,7 +75,7 @@ const platformInit = async (reindex = false) => {
     await initializePlatform(newPlatform || reindex);
     // Listen directly new block with zeroMQ
     await initBlockListener(async (block) => processBlockData(block));
-    await initStreamListeners();
+    await initStreamProcessors();
   } catch (e) {
     logger.error(e);
     throw e;

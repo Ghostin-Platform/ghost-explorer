@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 import Redis from 'ioredis';
 import moment from 'moment';
 import * as R from 'ramda';
@@ -6,7 +7,7 @@ import { DatabaseError } from '../config/errors';
 
 const ONE_YEAR_SEC_RETENTION = 31556952;
 export const STREAM_BLOCK_KEY = 'stream.blocks';
-const STREAM_MATURE_BLOCK_KEY = 'stream.mature.blocks';
+export const STREAM_MATURE_BLOCK_KEY = 'stream.mature.blocks';
 const redisOptions = {
   lazyConnect: true,
   port: conf.get('redis:port'),
@@ -112,6 +113,8 @@ export const write = async (key, data) => {
   const client = await getClient();
   const val = JSON.stringify(data);
   await client.set(key, val);
+  // TODO Notify
+
   return data;
 };
 /*
@@ -139,6 +142,7 @@ export const addSeriesPoint = async (name, value, stamp) => {
   const client = await getClient();
   logger.info(`[Ghost Explorer] Add series point: ${name} ${value} ${stamp}`);
   await client.call('TS.ADD', name, stamp, value);
+  // TODO Notify
 };
 
 export const timeseries = async (name) => {
@@ -160,6 +164,7 @@ export const blockStreamId = (block) => `${block.time * 1000}-${block.height}`;
 export const storeBlock = async (block) => {
   try {
     await storeEvent(STREAM_BLOCK_KEY, blockStreamId(block), 'block', block);
+    // TODO Notify
   } catch (e) {
     logger.error(e);
   }
@@ -195,25 +200,28 @@ export const listenStream = async (streamKey, from, callback) => {
   const client = await getClient();
   let lastProcessedEventId = from;
   const processStep = () => {
-    return client
-      .xread('BLOCK', 5, 'COUNT', 1, 'STREAMS', streamKey, lastProcessedEventId)
-      .then(async (streamResult) => {
-        if (streamResult) {
-          const [, results] = R.head(streamResult);
-          const data = R.head(R.map((r) => mapStreamToJS(r), results));
-          const { eventId, block } = data;
-          lastProcessedEventId = eventId;
-          await callback(eventId, block);
-        }
-        return true;
-      });
+    return client.xread('COUNT', 1, 'STREAMS', streamKey, lastProcessedEventId).then(async (streamResult) => {
+      if (streamResult) {
+        const [, results] = R.head(streamResult);
+        const data = R.head(R.map((r) => mapStreamToJS(r), results));
+        const { eventId, block } = data;
+        lastProcessedEventId = eventId;
+        await callback(eventId, block);
+      }
+      return true;
+    });
+  };
+  const wait = (time) => {
+    return new Promise((resolve) => {
+      setTimeout(async () => {
+        resolve();
+      }, time);
+    });
   };
   const processingLoop = async () => {
     while (true) {
-      // eslint-disable-next-line no-await-in-loop
-      if (!(await processStep())) {
-        break;
-      }
+      await wait(2);
+      await processStep();
     }
   };
   // noinspection ES6MissingAwait

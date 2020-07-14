@@ -42,29 +42,99 @@ type SerieDataPoint {
   value: Float
 }
 
-type Difficulty {
+type StatPercentile {
+  min: Float
+  max: Float
   percentile: Float
   size: Int
-  difficulties: [Float]
-}
-
-type StakeWeight {
-  percentile: Float
-  size: Int
-  stakes: [Float]
 }
 
 type Block {
   hash: String!
   difficulty: Int
+  confirmations: Int
+}
+
+type ScriptSig {
+  asm: String
+  hex: String
+}
+type ScriptPubKey {
+  asm: String
+  hex: String
+  reqSigs: Int
+  type: String
+  addresses: [String]
+}
+
+type TxInStandard {
+  txid: String
+  scriptSig: ScriptSig
+  value: Float
+  valueSat: Float
+  address: String
+  txinwitness: [String]
+  sequence: Float
+}
+type TxInCoinbase {
+  coinbase: String
+  sequence: Float
+}
+union TxIn = TxInStandard | TxInCoinbase
+
+type TxOutStandard {
+  value: Float
+  valueSat: Float
+  scriptPubKey: ScriptPubKey
+  spentTxId: String
+  spentIndex: Int
+  spentHeight: Int
+}
+type TxOutData {
+  data_hex: String
+  dev_fund_cfwd: Float
+  smsgfeerate: Float
+  smsgdifficulty: String
+}
+union TxOut = TxOutStandard | TxOutData
+
+type Transaction {
+  hex: String
+  height: Int
+  txid: String
+  hash: String
+  confirmations: Int
+  time: DateTime
+  blocktime: DateTime
+  isReward: Boolean
+  isNewCoins: Boolean
+  variation: Float
+  inSat: Float
+  outSat: Float
+  vin: [TxIn]
+  vout: [TxOut]
+}
+type Address {
+  address: String!
+  balance: Float
+  totalReceived: Float
+  totalSent: Float
+  nbTx: Int
+  txVariations: [SerieDataPoint]
+  rewards: [SerieDataPoint]
+  fees: [SerieDataPoint]
+  transactions: [Transaction]
 }
 
 ### QUERIES
 type Query {
   info: BlockChainInfo
   block(id: String!): Block
-  difficulty: Difficulty
+  address(id: String!): Address
+  difficulty: StatPercentile
   seriesDifficulty: [SerieDataPoint]
-  stakeWeight: StakeWeight
+  stakeWeight: StatPercentile
   seriesStakeWeight: [SerieDataPoint]
+  txActivity: StatPercentile
+  seriesTxActivity: [SerieDataPoint]
 }

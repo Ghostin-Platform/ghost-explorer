@@ -1,6 +1,5 @@
 import * as R from 'ramda';
-import { getTransaction, rpcCall } from '../config/utils';
-import { logger } from '../config/conf';
+import { rpcCall } from '../config/utils';
 import { fetch } from './redis';
 
 export const ONE_DAY_OF_BLOCKS = 720;
@@ -42,22 +41,21 @@ export const getBlockByHash = async (hash) => {
   return rpcCall('getblock', [hash]);
 };
 
+export const getTransaction = (txId) =>
+  rpcCall('getrawtransaction', [txId, 1]).then((rawTransaction) => {
+    const inSat = R.sum(R.map((v) => v.valueSat || 0, rawTransaction.vin));
+    const outSat = R.sum(R.map((v) => v.valueSat || 0, rawTransaction.vout));
+    // eslint-disable-next-line no-bitwise
+    const isReward = ((rawTransaction.version >> 8) & 0xff) === 2;
+    const variation = isReward ? outSat - inSat : inSat - outSat;
+    const isNewCoins = R.find((vi) => vi.coinbase !== undefined, rawTransaction.vin) !== undefined;
+    return Object.assign(rawTransaction, { isReward, isNewCoins, variation, inSat, outSat });
+  });
+
 export const enrichBlock = async (block) => {
   const { height, tx, confirmations } = block;
   // Resolving transactions
-  const transactions = await Promise.all(
-    R.map(async (txId) => {
-      return getTransaction(txId).then((rawTransaction) => {
-        const inSat = R.sum(R.map((v) => v.valueSat || 0, rawTransaction.vin));
-        const outSat = R.sum(R.map((v) => v.valueSat || 0, rawTransaction.vout));
-        // eslint-disable-next-line no-bitwise
-        const isReward = ((rawTransaction.version >> 8) & 0xff) === 2;
-        const variation = isReward ? outSat - inSat : inSat - outSat;
-        const isNewCoins = R.find((vi) => vi.coinbase !== undefined, rawTransaction.vin) !== undefined;
-        return Object.assign(rawTransaction, { isReward, isNewCoins, variation, inSat, outSat });
-      });
-    }, tx)
-  );
+  const transactions = await Promise.all(R.map(async (txId) => getTransaction(txId), tx));
   // Process reward transaction
   const rewardTx = R.find((indexTx) => indexTx.isReward, transactions);
   const inSat = R.sum(R.map((t) => t.inSat, transactions));
@@ -70,7 +68,6 @@ export const enrichBlock = async (block) => {
     hash: block.hash,
     previousblockhash: block.previousblockhash,
     nextblockhash: block.nextblockhash,
-    confirmations,
     difficulty: block.difficulty,
     version: block.version,
     bits: block.bits,

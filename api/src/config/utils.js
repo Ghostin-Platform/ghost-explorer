@@ -29,8 +29,6 @@ export const rpcCall = async (method, params, wallet = null) => {
     });
 };
 
-export const getTransaction = (txId) => rpcCall('getrawtransaction', [txId, 1]);
-
 export const getChainHeight = async () => {
   const blockChainInfo = await rpcCall('getblockchaininfo');
   return blockChainInfo.blocks;
