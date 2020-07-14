@@ -1,0 +1,70 @@
+### Directives
+directive @constraint(
+  # String constraints
+  minLength: Int
+  maxLength: Int
+  startsWith: String
+  endsWith: String
+  notContains: String
+  pattern: String
+  format: String
+
+  # Number constraints
+  min: Int
+  max: Int
+  exclusiveMin: Int
+  exclusiveMax: Int
+  multipleOf: Int
+) on INPUT_FIELD_DEFINITION
+
+### Scalar
+scalar DateTime
+scalar ConstraintString
+scalar ConstraintNumber
+scalar Upload
+
+###
+type BlockChainInfo {
+  version: String
+  name: String
+  connections: Float
+  node_version: String
+  height: Float
+  verification_progress: Float
+  sync_height: Float
+  sync_percent: Float
+  difficulty: Float
+  stake_weight: Float
+}
+
+type SerieDataPoint {
+  date: DateTime
+  value: Float
+}
+
+type Difficulty {
+  percentile: Float
+  size: Int
+  difficulties: [Float]
+}
+
+type StakeWeight {
+  percentile: Float
+  size: Int
+  stakes: [Float]
+}
+
+type Block {
+  hash: String!
+  difficulty: Int
+}
+
+### QUERIES
+type Query {
+  info: BlockChainInfo
+  block(id: String!): Block
+  difficulty: Difficulty
+  seriesDifficulty: [SerieDataPoint]
+  stakeWeight: StakeWeight
+  seriesStakeWeight: [SerieDataPoint]
+}
