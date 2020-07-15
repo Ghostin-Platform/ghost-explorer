@@ -1,7 +1,17 @@
 <template>
-    <div id="app">
-        <img alt="Vue logo" src="./assets/logo.png" width="120">
-        <Home msg="ghostin"/>
+    <div class="page-container">
+        <md-app>
+            <md-app-content>
+                <div class="md-layout md-gutter">
+                    <div class="md-layout-item md-size-15"></div>
+                    <div class="md-layout-item">
+                        <Home msg="ghostin"/>
+                    </div>
+                    <div class="md-layout-item md-size-15"></div>
+                </div>
+
+            </md-app-content>
+        </md-app>
     </div>
 </template>
 
@@ -15,17 +25,3 @@
         }
     }
 </script>
-
-<style>
-    body {
-        background-color: #0D0D0D;
-    }
-    #app {
-        font-family: 'Sen', sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-align: center;
-        color: #ffffff;
-        margin-top: 60px;
-    }
-</style>

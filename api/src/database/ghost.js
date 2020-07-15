@@ -55,6 +55,10 @@ export const getTransaction = (txId) =>
     // compute fees
     const dataOut = R.filter((b) => b.type === 'data', rawTransaction.vout);
     const feeSat = dataOut.length === 0 ? variation : toSat(R.sum(R.map((o) => o.ct_fee || 0, dataOut)));
+    // Compute spent amount (coins changing address)
+    const inAddresses = R.map((v) => v.address, rawTransaction.vin);
+    const outDiff = R.filter((r) => !inAddresses.includes(R.head(r.scriptPubKey?.addresses ?? [])), rawTransaction.vout);
+    const transferSat = R.sum(R.map((s) => s.valueSat || 0, outDiff));
     return Object.assign(rawTransaction, {
       __typename: 'Transaction',
       isReward,
@@ -63,6 +67,7 @@ export const getTransaction = (txId) =>
       inSat,
       outSat,
       feeSat,
+      transferSat,
     });
   });
 
@@ -74,6 +79,7 @@ export const enrichBlock = async (block) => {
   const rewardTx = R.find((indexTx) => indexTx.isReward, transactions);
   const inSat = R.sum(R.map((t) => t.inSat, transactions));
   const outSat = R.sum(R.map((t) => t.outSat, transactions));
+  const transferSat = R.sum(R.map((t) => t.transferSat, transactions));
   // Compete block, push to stream
   return {
     __typename: 'Block',
@@ -98,6 +104,8 @@ export const enrichBlock = async (block) => {
     isMainChain: confirmations !== -1,
     inSat,
     outSat,
+    transferSat,
+    variation: inSat - outSat,
     txSize: block.nTx,
     transactions,
     rewardTx,

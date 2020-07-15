@@ -4,7 +4,7 @@ import moment from 'moment';
 import * as R from 'ramda';
 import conf, { logger } from '../config/conf';
 import { DatabaseError } from '../config/errors';
-import { broadcast, EVENT_NEW } from '../seeMiddleware';
+import { broadcast, EVENT_NEW_POINT } from '../seeMiddleware';
 
 const ONE_YEAR_SEC_RETENTION = 31556952;
 export const STREAM_TRANSACTION_KEY = 'stream.transactions';
@@ -45,65 +45,6 @@ export const redisIsAlive = async () => {
   return true;
 };
 
-/**
- * Fetch all users status for an edition context
- * @param instanceId
- * @returns {Promise<any>}
- */
-/*
-export const fetchEditContext = async (instanceId) => {
-  const client = await getClient();
-  return new Promise((resolve, reject) => {
-    const elementsPromise = [];
-    const stream = client.scanStream({
-      match: `edit:${instanceId}:*`,
-      count: 100,
-    });
-    stream.on('data', (resultKeys) => {
-      for (let i = 0; i < resultKeys.length; i += 1) {
-        elementsPromise.push(client.get(resultKeys[i]));
-      }
-    });
-    stream.on('error', (error) => {
-      reject(error);
-    });
-    stream.on('end', () => {
-      Promise.all(elementsPromise).then((data) => {
-        const elements = map((d) => JSON.parse(d), data);
-        resolve(elements);
-      });
-    });
-  });
-};
-export const delEditContext = async (user, instanceId) => {
-  const client = await getClient();
-  return client.del(`edit:${instanceId}:${user.id}`);
-};
-export const delUserContext = async (user) => {
-  const client = await getClient();
-  return new Promise((resolve, reject) => {
-    const stream = client.scanStream({
-      match: `*:*:${user.id}`,
-      count: 100,
-    });
-    const keys = [];
-    stream.on('data', (resultKeys) => {
-      for (let index = 0; index < resultKeys.length; index += 1) {
-        keys.push(resultKeys[index]);
-      }
-    });
-    stream.on('error', (error) => {
-      reject(error);
-    });
-    stream.on('end', () => {
-      if (!isEmpty(keys)) {
-        client.del(keys);
-      }
-      resolve();
-    });
-  });
-};
-*/
 // region cache for access token
 export const fetch = async (key) => {
   const client = await getClient();
@@ -141,7 +82,7 @@ export const addSeriesPoint = async (series, name, value, stamp) => {
   const client = await getClient();
   logger.info(`[Ghost Explorer] Add series point: ${name} ${value} ${stamp}`);
   await client.call('TS.ADD', name, stamp, value);
-  await broadcast(`${EVENT_NEW}_point`, { date: stamp, value, series });
+  await broadcast(EVENT_NEW_POINT, { date: stamp, value, series });
 };
 
 export const timeseries = async (name) => {

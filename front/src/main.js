@@ -6,11 +6,17 @@ import ApolloClient from "apollo-client";
 import VueApollo from 'vue-apollo'
 import VueSSE from 'vue-sse';
 import gql from "graphql-tag";
+import * as R from "ramda";
+import VueMaterial from 'vue-material'
+import 'vue-material/dist/vue-material.min.css'
+import './assets/ghost.css'
 
 Vue.config.productionTip = false
 Vue.use(VueApollo)
 Vue.use(VueSSE)
+Vue.use(VueMaterial)
 
+// region internal mutation
 export const ReadInfo = gql`query {
     info {
         sync_height
@@ -22,7 +28,6 @@ export const clientInfoUpdateMutation = gql`
         updateInfo(info: $info) @client
     }
 `;
-
 export const ReadBlocks = gql`query {
     blocks {
         hash
@@ -32,8 +37,7 @@ export const ReadBlocks = gql`query {
         txSize
         size
         confirmations
-        inSat
-        outSat
+        transferSat
     }
 }`
 export const clientNewBlockMutation = gql`
@@ -41,20 +45,21 @@ export const clientNewBlockMutation = gql`
         newBlock(block: $block) @client
     }
 `;
+// endregion
 
+// region apollo
 const httpLink = createHttpLink({
     uri: 'http://localhost:4000/graphql',
 })
-
-// Cache implementation
 const cache = new InMemoryCache()
-
 const resolvers = {
     Mutation: {
         newBlock: (_, { block }, { cache }) => {
-            const data = cache.readQuery({query: ReadBlocks});
-            data.blocks.unshift(block);
-            data.blocks.pop();
+            const oldData = cache.readQuery({query: ReadBlocks});
+            const blocks = R.map(b => Object.assign(b, { confirmations: b.confirmations + 1}), oldData.blocks)
+            blocks.unshift(block);
+            blocks.pop();
+            const data = { blocks };
             cache.writeQuery({query: ReadBlocks, data });
         },
         updateInfo: (_, { info }, { cache }) => {
@@ -64,18 +69,15 @@ const resolvers = {
         }
     }
 }
-
-
-// Create the apollo client
 const apolloClient = new ApolloClient({
     link: httpLink,
     cache,
     resolvers
 })
-
 const apolloProvider = new VueApollo({
     defaultClient: apolloClient,
 })
+// endregion
 
 new Vue({
     el: '#app',

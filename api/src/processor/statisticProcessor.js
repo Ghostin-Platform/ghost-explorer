@@ -2,7 +2,7 @@ import percentile from 'percentile';
 import { addSeriesPoint, STREAM_BLOCK_KEY, listenStream, write } from '../database/redis';
 import { ONE_DAY_OF_BLOCKS } from '../database/ghost';
 import seriesResolveFromFor from './processorUtils';
-import { broadcast, EVENT_UPDATE } from '../seeMiddleware';
+import { broadcast, EVENT_UPDATE_DFFICULTY, EVENT_UPDATE_STAKEWEIGHT, EVENT_UPDATE_TXACTIVITY } from '../seeMiddleware';
 
 const computePercentStat = (values) => {
   const haveValues = values.length;
@@ -28,7 +28,7 @@ const computeStakeWeightSeries = async (id, block) => {
     memoryStakes = [];
   } else {
     memoryStakes.push(rewardTx.outSat);
-    broadcast(`${EVENT_UPDATE}_stakeWeight`, computeCurrentStakeWeight());
+    broadcast(EVENT_UPDATE_STAKEWEIGHT, computeCurrentStakeWeight());
   }
 };
 export const statsStakeWeightProcessor = async () => {
@@ -52,7 +52,7 @@ const computeDifficultySeries = async (id, block) => {
     memoryDifficulties = [];
   } else {
     memoryDifficulties.push(difficulty);
-    broadcast(`${EVENT_UPDATE}_difficulty`, computeCurrentDifficulty());
+    broadcast(EVENT_UPDATE_DFFICULTY, computeCurrentDifficulty());
   }
 };
 export const statsDifficultyProcessor = async () => {
@@ -76,7 +76,7 @@ const computeTxActivitySeries = async (id, block) => {
     memoryTxActivities = [];
   } else {
     memoryTxActivities.push(txSize);
-    broadcast(`${EVENT_UPDATE}_txActivity`, computeCurrentTxActivity());
+    broadcast(EVENT_UPDATE_TXACTIVITY, computeCurrentTxActivity());
   }
 };
 export const statsTxActivityProcessor = async () => {

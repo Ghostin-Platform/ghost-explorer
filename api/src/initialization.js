@@ -9,7 +9,7 @@ import {
   statsStakeWeightProcessor,
   statsTxActivityProcessor,
 } from './processor/statisticProcessor';
-import { broadcast, EVENT_NEW, EVENT_UPDATE } from './seeMiddleware';
+import { broadcast, EVENT_NEW_BLOCK, EVENT_UPDATE_INFO } from './seeMiddleware';
 
 // Check every dependencies
 const checkSystemDependencies = async () => {
@@ -77,8 +77,8 @@ const platformInit = async (reindex = false) => {
         // Broadcasting
         const networkInfo = await getNetworkInfo();
         await Promise.all([
-          broadcast(`${EVENT_NEW}_block`, enrichedBlock), //
-          broadcast(`${EVENT_UPDATE}_info`, networkInfo),
+          broadcast(EVENT_NEW_BLOCK, enrichedBlock), //
+          broadcast(EVENT_UPDATE_INFO, networkInfo),
         ]);
       });
       await initStreamProcessors();

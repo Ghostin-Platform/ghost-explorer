@@ -24,7 +24,7 @@ scalar ConstraintNumber
 scalar Upload
 
 type BlockChainInfo {
-  version: String
+  version: ID!
   name: String
   connections: Float
   node_version: String
@@ -49,6 +49,7 @@ type StatPercentile {
 }
 
 type Block {
+  hash: ID!
   height: Float!
   feeSat: Float
   offset: String!
@@ -57,7 +58,6 @@ type Block {
   size: Float
   weight: Float
   nonce: String
-  hash: String!
   previousblockhash: String
   nextblockhash: String
   difficulty: Float
@@ -66,6 +66,8 @@ type Block {
   isMainChain: Boolean
   inSat: Float
   outSat: Float
+  transferSat: Float
+  variation: Float
   txSize: Int
   transactions: [Transaction]
   rewardTx: Transaction
@@ -128,11 +130,11 @@ type TxOutData {
 union TxOut = TxOutStandard | TxOutData | TxOutAnon
 
 type Transaction {
+  txid: ID!
+  hash: String!
   offset: String!
   hex: String
   height: Int
-  txid: String
-  hash: String
   confirmations: Int
   time: DateTime
   blocktime: DateTime
@@ -141,6 +143,7 @@ type Transaction {
   variation: Float
   inSat: Float
   outSat: Float
+  transferSat: Float
   vin: [TxIn]
   vout: [TxOut]
 }
@@ -167,7 +170,7 @@ type Reward {
 type Query {
   info: BlockChainInfo
   block(id: String!): Block
-  blocks(offset: String! = "+", limit: Int! = 15): [Block]
+  blocks(offset: String! = "+", limit: Int! = 5): [Block]
   rewards(offset: String! = "+", limit: Int! = 15): [Reward]
   transaction(id: String!): Transaction
   transactions(offset: String! = "+", limit: Int! = 15): [Transaction]
