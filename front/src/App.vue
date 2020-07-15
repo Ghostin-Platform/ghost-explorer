@@ -1,17 +1,17 @@
 <template>
     <div id="app">
         <img alt="Vue logo" src="./assets/logo.png" width="120">
-        <HelloWorld msg="Ghost (expt) Explorer"/>
+        <Home msg="ghostin"/>
     </div>
 </template>
 
 <script>
-    import HelloWorld from './components/HelloWorld.vue'
+    import Home from './components/Home.vue'
 
     export default {
         name: 'App',
         components: {
-            HelloWorld
+            Home
         }
     }
 </script>
@@ -21,7 +21,7 @@
         background-color: #0D0D0D;
     }
     #app {
-        font-family: Avenir, Helvetica, Arial, sans-serif;
+        font-family: 'Sen', sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-align: center;

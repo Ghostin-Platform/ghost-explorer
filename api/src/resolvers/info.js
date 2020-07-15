@@ -1,3 +1,4 @@
+import * as R from 'ramda';
 import { getAddressById, getBlockById, getBlocks, getRewards, getTransactions, info } from '../domain/info';
 import {
   computeCurrentDifficulty,
@@ -27,6 +28,7 @@ const infoResolver = {
     seriesTxActivity: () => timeseries(TIME_SERIES_TX_ACTIVITY_PERCENTILE),
   },
   Block: {
+    feeSat: (block) => R.sum(R.map((t) => t.feeSat, block.transactions)),
     confirmations: (block) => fetch(CURRENT_BLOCK).then((height) => 1 + (height - block.height)),
   },
   Transaction: {

@@ -1,7 +1,7 @@
 import { logger } from './config/conf';
 
 export const EVENT_NEW = 'new';
-export const EVENT_UPDATE = 'new';
+export const EVENT_UPDATE = 'update';
 
 let clients = [];
 const createSeeMiddleware = () => {
@@ -40,6 +40,7 @@ const createSeeMiddleware = () => {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       Connection: 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
       'Cache-Control': 'no-cache, no-transform', // no-transform is required for dev proxy
     });
     clients.push(client);

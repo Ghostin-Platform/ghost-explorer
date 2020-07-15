@@ -49,9 +49,27 @@ type StatPercentile {
 }
 
 type Block {
+  height: Float!
+  feeSat: Float
   offset: String!
+  time: Int
+  mediantime: DateTime
+  size: Float
+  weight: Float
+  nonce: String
   hash: String!
-  difficulty: Int
+  previousblockhash: String
+  nextblockhash: String
+  difficulty: Float
+  version: Float
+  bits: String
+  isMainChain: Boolean
+  inSat: Float
+  outSat: Float
+  txSize: Int
+  transactions: [Transaction]
+  rewardTx: Transaction
+  rewardSat: Float
   confirmations: Int!
 }
 
@@ -67,6 +85,11 @@ type ScriptPubKey {
   addresses: [String]
 }
 
+type TxInAnon {
+  ring_size: Int
+  scriptdata: String
+  txinwitness: [String]
+}
 type TxInStandard {
   txid: String
   scriptSig: ScriptSig
@@ -80,8 +103,14 @@ type TxInCoinbase {
   coinbase: String
   sequence: Float
 }
-union TxIn = TxInStandard | TxInCoinbase
+union TxIn = TxInStandard | TxInCoinbase | TxInAnon
 
+type TxOutAnon {
+  pubkey: String
+  valueCommitment: String
+  data_hex: String
+  rangeproof: String
+}
 type TxOutStandard {
   value: Float
   valueSat: Float
@@ -96,7 +125,7 @@ type TxOutData {
   smsgfeerate: Float
   smsgdifficulty: String
 }
-union TxOut = TxOutStandard | TxOutData
+union TxOut = TxOutStandard | TxOutData | TxOutAnon
 
 type Transaction {
   offset: String!
@@ -138,10 +167,10 @@ type Reward {
 type Query {
   info: BlockChainInfo
   block(id: String!): Block
-  blocks(offset: String! = "+", limit: Int! = 50): [Block]
-  rewards(offset: String! = "+", limit: Int! = 50): [Reward]
+  blocks(offset: String! = "+", limit: Int! = 15): [Block]
+  rewards(offset: String! = "+", limit: Int! = 15): [Reward]
   transaction(id: String!): Transaction
-  transactions(offset: String! = "+", limit: Int! = 50): [Transaction]
+  transactions(offset: String! = "+", limit: Int! = 15): [Transaction]
   address(id: String!): Address
   difficulty: StatPercentile
   seriesDifficulty: [SerieDataPoint]

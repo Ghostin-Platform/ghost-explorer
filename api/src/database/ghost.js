@@ -1,11 +1,13 @@
 import * as R from 'ramda';
 import { rpcCall } from '../config/utils';
-import {blockStreamId, fetch} from './redis';
+import { blockStreamId, fetch } from './redis';
 
 export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
 export const BLOCK_MATURITY = 100;
 export const CURRENT_BLOCK = 'current.block';
+
+const toSat = (num) => num * 100000000;
 
 export const getNetworkInfo = async () => {
   const networkInfoPromise = rpcCall('getnetworkinfo');
@@ -19,6 +21,7 @@ export const getNetworkInfo = async () => {
   const currentBlock = await fetch(CURRENT_BLOCK);
   const syncPercent = (currentBlock * 100) / blockchainInfo.blocks;
   return {
+    __typename: 'BlockChainInfo',
     version: '1.0-beta',
     name: blockchainInfo.chain,
     connections: networkInfo.connections,
@@ -49,7 +52,18 @@ export const getTransaction = (txId) =>
     const isReward = ((rawTransaction.version >> 8) & 0xff) === 2;
     const variation = isReward ? outSat - inSat : inSat - outSat;
     const isNewCoins = R.find((vi) => vi.coinbase !== undefined, rawTransaction.vin) !== undefined;
-    return Object.assign(rawTransaction, { isReward, isNewCoins, variation, inSat, outSat });
+    // compute fees
+    const dataOut = R.filter((b) => b.type === 'data', rawTransaction.vout);
+    const feeSat = dataOut.length === 0 ? variation : toSat(R.sum(R.map((o) => o.ct_fee || 0, dataOut)));
+    return Object.assign(rawTransaction, {
+      __typename: 'Transaction',
+      isReward,
+      isNewCoins,
+      variation,
+      inSat,
+      outSat,
+      feeSat,
+    });
   });
 
 export const enrichBlock = async (block) => {
@@ -62,15 +76,24 @@ export const enrichBlock = async (block) => {
   const outSat = R.sum(R.map((t) => t.outSat, transactions));
   // Compete block, push to stream
   return {
+    __typename: 'Block',
     height,
     offset: blockStreamId(block),
+    size: block.size,
+    strippedsize: block.strippedsize,
+    weight: block.weight,
     time: block.time,
+    mediantime: block.mediantime,
     nonce: block.nonce,
     hash: block.hash,
     previousblockhash: block.previousblockhash,
     nextblockhash: block.nextblockhash,
+    chainwork: block.chainwork,
     difficulty: block.difficulty,
     version: block.version,
+    versionHex: block.versionHex,
+    merkleroot: block.merkleroot,
+    witnessmerkleroot: block.witnessmerkleroot,
     bits: block.bits,
     isMainChain: confirmations !== -1,
     inSat,
