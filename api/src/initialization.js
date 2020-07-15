@@ -1,8 +1,8 @@
 /* eslint-disable no-await-in-loop */
 import { logger } from './config/conf';
-import { write, fetch, clear, redisIsAlive, storeBlock, storeMatureBlock } from './database/redis';
+import { write, fetch, clear, redisIsAlive, storeBlock, storeTransaction } from './database/redis';
 import { getChainHeight } from './config/utils';
-import { BLOCK_MATURITY, CURRENT_BLOCK, enrichBlock, getBlockByHeight, getNetworkInfo } from './database/ghost';
+import { CURRENT_BLOCK, enrichBlock, getBlockByHeight, getNetworkInfo } from './database/ghost';
 import initBlockListener from './database/zeromq';
 import {
   statsDifficultyProcessor,
@@ -20,18 +20,12 @@ const checkSystemDependencies = async () => {
 };
 
 const processBlockData = async (block) => {
-  const { height } = block;
-  const matureHeight = height - BLOCK_MATURITY;
-  let matureBlockPromise;
-  if (matureHeight >= 0) {
-    matureBlockPromise = getBlockByHeight(matureHeight) //
-      .then((matureBlock) => enrichBlock(matureBlock)) //
-      .then((mBlock) => storeMatureBlock(mBlock));
-  } else {
-    matureBlockPromise = Promise.resolve();
+  const { height, transactions } = block;
+  await storeBlock(block);
+  for (let index = 0; index < transactions.length; index += 1) {
+    const transaction = transactions[index];
+    await storeTransaction(index, transaction);
   }
-  const newBlockPromise = storeBlock(block);
-  await Promise.all([matureBlockPromise, newBlockPromise]);
   await write(CURRENT_BLOCK, height);
 };
 
@@ -48,7 +42,8 @@ const initializePlatform = async (newPlatform) => {
     for (let index = currentSyncBlock + 1; index <= chainBlockHeight; index += 1) {
       logger.info(`[Ghost Explorer] Processing block: ${index}`);
       const block = await getBlockByHeight(index);
-      await processBlockData(block);
+      const enrichedBlock = await enrichBlock(block);
+      await processBlockData(enrichedBlock);
     }
   } else {
     logger.info(`[Ghost Explorer] Chain sync on last index ${chainBlockHeight}`);
@@ -70,21 +65,24 @@ const initStreamProcessors = async () => {
 
 const platformInit = async (reindex = false) => {
   try {
+    // Check deps
     await checkSystemDependencies();
+    // Start the platform
     const newPlatform = (await fetch(CURRENT_BLOCK)) === undefined;
-    await initializePlatform(newPlatform || reindex);
-    // Listen directly new block with zeroMQ
-    await initBlockListener(async (block) => {
-      const enrichedBlock = await enrichBlock(block);
-      await processBlockData(enrichedBlock);
-      // Broadcasting
-      const networkInfo = await getNetworkInfo();
-      await Promise.all([
-        broadcast(`${EVENT_NEW}_block`, enrichedBlock), //
-        broadcast(`${EVENT_UPDATE}_info`, networkInfo),
-      ]);
+    initializePlatform(newPlatform || reindex).then(async () => {
+      // Listen directly new block with zeroMQ
+      await initBlockListener(async (block) => {
+        const enrichedBlock = await enrichBlock(block);
+        await processBlockData(enrichedBlock);
+        // Broadcasting
+        const networkInfo = await getNetworkInfo();
+        await Promise.all([
+          broadcast(`${EVENT_NEW}_block`, enrichedBlock), //
+          broadcast(`${EVENT_UPDATE}_info`, networkInfo),
+        ]);
+      });
+      await initStreamProcessors();
     });
-    await initStreamProcessors();
   } catch (e) {
     logger.error(e);
     throw e;

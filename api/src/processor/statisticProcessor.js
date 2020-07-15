@@ -5,9 +5,10 @@ import seriesResolveFromFor from './processorUtils';
 import { broadcast, EVENT_UPDATE } from '../seeMiddleware';
 
 const computePercentStat = (values) => {
-  const percent = percentile(90, values);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const haveValues = values.length;
+  const percent = percentile(90, values) || 0;
+  const min = haveValues ? Math.min(...values) : 0;
+  const max = haveValues ? Math.max(...values) : 0;
   return { percentile: percent, min, max, size: values.length };
 };
 

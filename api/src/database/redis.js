@@ -7,8 +7,8 @@ import { DatabaseError } from '../config/errors';
 import { broadcast, EVENT_NEW } from '../seeMiddleware';
 
 const ONE_YEAR_SEC_RETENTION = 31556952;
+export const STREAM_TRANSACTION_KEY = 'stream.transactions';
 export const STREAM_BLOCK_KEY = 'stream.blocks';
-export const STREAM_MATURE_BLOCK_KEY = 'stream.mature.blocks';
 const redisOptions = {
   lazyConnect: true,
   port: conf.get('redis:port'),
@@ -159,13 +159,15 @@ const storeEvent = async (streamKey, id, key, data) => {
 };
 
 export const blockStreamId = (block) => `${block.time * 1000}-${block.height}`;
+export const txStreamId = (index, tx) => `${tx.blocktime * 1000}-${index}`;
 
 export const storeBlock = async (block) => {
   return storeEvent(STREAM_BLOCK_KEY, blockStreamId(block), 'block', block);
 };
 
-export const storeMatureBlock = async (block) => {
-  return storeEvent(STREAM_MATURE_BLOCK_KEY, blockStreamId(block), 'block', block);
+export const storeTransaction = async (index, tx) => {
+  const txWithOffset = Object.assign(tx, { offset: txStreamId(index, tx) });
+  return storeEvent(STREAM_TRANSACTION_KEY, txStreamId(index, tx), 'tx', txWithOffset);
 };
 
 const mapStreamToJS = ([id, data]) => {
@@ -184,6 +186,11 @@ export const streamOldestEventId = async (streamKey) => {
     return res[0][0];
   }
   return undefined;
+};
+
+export const streamRange = async (streamKey, offset, limit) => {
+  const client = await getClient();
+  return client.call('XREVRANGE', streamKey, offset, '-', 'COUNT', limit);
 };
 
 export const listenStream = async (streamKey, from, callback) => {

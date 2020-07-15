@@ -1,6 +1,7 @@
 import * as R from 'ramda';
 import { getEnrichedBlockByHash, getEnrichedBlockByHeight, getNetworkInfo, getTransaction } from '../database/ghost';
 import { rpcCall } from '../config/utils';
+import {STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange} from '../database/redis';
 
 export const info = async () => getNetworkInfo();
 
@@ -8,6 +9,24 @@ export const getBlockById = (id) => {
   // eslint-disable-next-line no-restricted-globals
   const isBlockNumber = isNaN(id) === false;
   return isBlockNumber ? getEnrichedBlockByHeight(parseInt(id, 10)) : getEnrichedBlockByHash(id);
+};
+
+export const getBlocks = async (offset, limit) => {
+  const rawData = await streamRange(STREAM_BLOCK_KEY, offset, limit);
+  return R.map((m) => {
+    const [, data] = m;
+    const [, jsonBlock] = data;
+    return JSON.parse(jsonBlock);
+  }, rawData);
+};
+
+export const getTransactions = async (offset, limit) => {
+  const rawData = await streamRange(STREAM_TRANSACTION_KEY, offset, limit);
+  return R.map((m) => {
+    const [, data] = m;
+    const [, jsonBlock] = data;
+    return JSON.parse(jsonBlock);
+  }, rawData);
 };
 
 export const getAddressById = async (id) => {

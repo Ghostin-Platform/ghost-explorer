@@ -1,4 +1,4 @@
-import { getAddressById, getBlockById, info } from '../domain/info';
+import { getAddressById, getBlockById, getBlocks, getTransactions, info } from '../domain/info';
 import {
   computeCurrentDifficulty,
   computeCurrentStakeWeight,
@@ -7,12 +7,16 @@ import {
   TIME_SERIES_STAKE_WEIGHT_PERCENTILE,
   TIME_SERIES_TX_ACTIVITY_PERCENTILE,
 } from '../processor/statisticProcessor';
-import { timeseries } from '../database/redis';
+import { fetch, timeseries } from '../database/redis';
+import { CURRENT_BLOCK, getTransaction } from '../database/ghost';
 
 const infoResolver = {
   Query: {
     info: () => info(),
     block: (_, { id }) => getBlockById(id),
+    blocks: (_, { offset, limit }) => getBlocks(offset, limit),
+    transaction: (_, { id }) => getTransaction(id),
+    transactions: (_, { offset, limit }) => getTransactions(offset, limit),
     address: (_, { id }) => getAddressById(id),
     stakeWeight: () => computeCurrentStakeWeight(),
     seriesStakeWeight: () => timeseries(TIME_SERIES_STAKE_WEIGHT_PERCENTILE),
@@ -22,7 +26,10 @@ const infoResolver = {
     seriesTxActivity: () => timeseries(TIME_SERIES_TX_ACTIVITY_PERCENTILE),
   },
   Block: {
-    confirmations: (block) => 0 - block.height,
+    confirmations: (block) => fetch(CURRENT_BLOCK).then((height) => 1 + (height - block.height)),
+  },
+  Transaction: {
+    confirmations: (tx) => fetch(CURRENT_BLOCK).then((height) => 1 + (height - tx.height)),
   },
   TxIn: {
     __resolveType: (obj) => {

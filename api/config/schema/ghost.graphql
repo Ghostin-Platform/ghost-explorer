@@ -49,9 +49,10 @@ type StatPercentile {
 }
 
 type Block {
+  offset: String!
   hash: String!
   difficulty: Int
-  confirmations: Int
+  confirmations: Int!
 }
 
 type ScriptSig {
@@ -98,6 +99,7 @@ type TxOutData {
 union TxOut = TxOutStandard | TxOutData
 
 type Transaction {
+  offset: String!
   hex: String
   height: Int
   txid: String
@@ -129,6 +131,9 @@ type Address {
 type Query {
   info: BlockChainInfo
   block(id: String!): Block
+  blocks(offset: String! = "+", limit: Int! = 50): [Block]
+  transaction(id: String!): Transaction
+  transactions(offset: String! = "+", limit: Int! = 50): [Transaction]
   address(id: String!): Address
   difficulty: StatPercentile
   seriesDifficulty: [SerieDataPoint]

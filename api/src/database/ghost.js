@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import { rpcCall } from '../config/utils';
-import { fetch } from './redis';
+import {blockStreamId, fetch} from './redis';
 
 export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
@@ -63,6 +63,7 @@ export const enrichBlock = async (block) => {
   // Compete block, push to stream
   return {
     height,
+    offset: blockStreamId(block),
     time: block.time,
     nonce: block.nonce,
     hash: block.hash,
