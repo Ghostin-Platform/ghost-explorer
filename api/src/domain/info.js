@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import { getEnrichedBlockByHash, getEnrichedBlockByHeight, getNetworkInfo, getTransaction } from '../database/ghost';
 import { rpcCall } from '../config/utils';
-import {STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange} from '../database/redis';
+import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
 
 export const info = async () => getNetworkInfo();
 
@@ -27,6 +27,14 @@ export const getTransactions = async (offset, limit) => {
     const [, jsonBlock] = data;
     return JSON.parse(jsonBlock);
   }, rawData);
+};
+
+export const getRewards = async (offset, limit) => {
+  const blocks = await getBlocks(offset, limit);
+  return R.map(
+    (b) => ({ date: b.time, address: R.head(b.rewardTx.vin).address, valueSat: b.rewardSat, blockHash: b.hash }),
+    blocks
+  );
 };
 
 export const getAddressById = async (id) => {

@@ -127,11 +127,19 @@ type Address {
   transactions: [Transaction]
 }
 
+type Reward {
+  date: DateTime
+  address: String
+  blockHash: String
+  valueSat: Float
+}
+
 ### QUERIES
 type Query {
   info: BlockChainInfo
   block(id: String!): Block
   blocks(offset: String! = "+", limit: Int! = 50): [Block]
+  rewards(offset: String! = "+", limit: Int! = 50): [Reward]
   transaction(id: String!): Transaction
   transactions(offset: String! = "+", limit: Int! = 50): [Transaction]
   address(id: String!): Address

@@ -1,4 +1,4 @@
-import { getAddressById, getBlockById, getBlocks, getTransactions, info } from '../domain/info';
+import { getAddressById, getBlockById, getBlocks, getRewards, getTransactions, info } from '../domain/info';
 import {
   computeCurrentDifficulty,
   computeCurrentStakeWeight,
@@ -17,6 +17,7 @@ const infoResolver = {
     blocks: (_, { offset, limit }) => getBlocks(offset, limit),
     transaction: (_, { id }) => getTransaction(id),
     transactions: (_, { offset, limit }) => getTransactions(offset, limit),
+    rewards: (_, { offset, limit }) => getRewards(offset, limit),
     address: (_, { id }) => getAddressById(id),
     stakeWeight: () => computeCurrentStakeWeight(),
     seriesStakeWeight: () => timeseries(TIME_SERIES_STAKE_WEIGHT_PERCENTILE),
