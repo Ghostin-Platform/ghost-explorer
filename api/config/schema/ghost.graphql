@@ -54,7 +54,7 @@ type Block {
   feeSat: Float
   offset: String!
   time: Int
-  mediantime: DateTime
+  mediantime: Int
   size: Float
   weight: Float
   nonce: String
@@ -132,17 +132,22 @@ union TxOut = TxOutStandard | TxOutData | TxOutAnon
 type Transaction {
   txid: ID!
   hash: String!
+  block: Block
+  size: Float
+  blocktime: Int
+  blockhash: String
+  blockheight: Int
   offset: String!
   hex: String
   height: Int
   confirmations: Int
-  time: DateTime
-  blocktime: DateTime
+  time: Int
   isReward: Boolean
   isNewCoins: Boolean
   variation: Float
   inSat: Float
   outSat: Float
+  feeSat: Float
   transferSat: Float
   vin: [TxIn]
   vout: [TxOut]
@@ -173,7 +178,7 @@ type Query {
   blocks(offset: String! = "+", limit: Int! = 5): [Block]
   rewards(offset: String! = "+", limit: Int! = 15): [Reward]
   transaction(id: String!): Transaction
-  transactions(offset: String! = "+", limit: Int! = 15): [Transaction]
+  transactions(offset: String! = "+", limit: Int! = 5): [Transaction]
   address(id: String!): Address
   difficulty: StatPercentile
   seriesDifficulty: [SerieDataPoint]

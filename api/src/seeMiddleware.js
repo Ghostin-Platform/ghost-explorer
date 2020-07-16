@@ -1,11 +1,13 @@
 import { logger } from './config/conf';
 
 export const EVENT_NEW_BLOCK = 'new_block';
+export const EVENT_NEW_TX = 'new_transaction';
 export const EVENT_NEW_POINT = 'new_point';
+
+export const EVENT_UPDATE_INFO = 'update_info';
 export const EVENT_UPDATE_DFFICULTY = 'update_difficulty';
 export const EVENT_UPDATE_STAKEWEIGHT = 'update_stakeWeight';
 export const EVENT_UPDATE_TXACTIVITY = 'update_txActivity';
-export const EVENT_UPDATE_INFO = 'update_info';
 
 let clients = [];
 const createSeeMiddleware = () => {

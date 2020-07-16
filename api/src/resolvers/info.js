@@ -28,14 +28,15 @@ const infoResolver = {
     seriesTxActivity: () => timeseries(TIME_SERIES_TX_ACTIVITY_PERCENTILE),
   },
   Block: {
-    feeSat: (block) => R.sum(R.map((t) => t.feeSat, block.transactions)),
     confirmations: (block) => fetch(CURRENT_BLOCK).then((height) => 1 + (height - block.height)),
   },
   Transaction: {
+    block: (tx) => getBlockById(tx.blockhash),
     confirmations: (tx) => fetch(CURRENT_BLOCK).then((height) => 1 + (height - tx.height)),
   },
   TxIn: {
     __resolveType: (obj) => {
+      if (obj.type === 'anon') return 'TxInAnon';
       if (obj.coinbase) return 'TxInCoinbase';
       return 'TxInStandard';
     },
@@ -43,6 +44,7 @@ const infoResolver = {
   TxOut: {
     __resolveType: (obj) => {
       if (obj.type === 'data') return 'TxOutData';
+      if (obj.type === 'anon') return 'TxOutAnon';
       return 'TxOutStandard';
     },
   },
