@@ -15,11 +15,15 @@ import Block from "./components/Block";
 import Transaction from "./components/Transaction";
 import Home from "./components/Home";
 
+// region configuration
+const graphqlApi = 'http://localhost:4000/graphql';
+export const sseApi = 'http://localhost:4000/events';
 Vue.config.productionTip = false
 Vue.use(VueApollo)
 Vue.use(VueSSE)
 Vue.use(VueMaterial)
 Vue.use(VueRouter)
+// endregion
 
 // region internal mutation
 export const ReadInfo = gql`query {
@@ -73,9 +77,7 @@ export const clientNewTxMutation = gql`
 // endregion
 
 // region apollo
-const httpLink = createHttpLink({
-    uri: 'http://localhost:4000/graphql',
-})
+const httpLink = createHttpLink({ uri: graphqlApi })
 const cache = new InMemoryCache()
 const resolvers = {
     Mutation: {

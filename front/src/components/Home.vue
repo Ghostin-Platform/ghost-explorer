@@ -77,17 +77,9 @@
 </template>
 
 <script>
-    import {
-        clientInfoUpdateMutation,
-        clientNewBlockMutation,
-        clientNewTxMutation,
-        ReadBlocks,
-        ReadInfo,
-        ReadTxs
-    } from "../main";
+    import { ReadBlocks, ReadInfo, ReadTxs } from "../main";
     import moment from 'moment';
 
-    let msgServer;
     export default {
         name: 'Home',
         computed: {
@@ -128,34 +120,6 @@
             info: () => ReadInfo,
             blocks: () => ReadBlocks,
             transactions: () => ReadTxs
-        },
-        mounted() {
-            const self = this;
-            // Start SSE Listener
-            const updateData = (mutation, key, message) =>
-                this.$apollo.mutate({ mutation, variables: {[key]: JSON.parse(message) } });
-            this.$sse('http://localhost:4000/events', {format: 'plain'}).then(sse => {
-                msgServer = sse;
-                sse.subscribe('new_block', (message) => {
-                    self.$data.now = moment()
-                    updateData(clientNewBlockMutation, 'block', message);
-                });
-                sse.subscribe('new_transaction', (message) => {
-                    updateData(clientNewTxMutation, 'tx', message);
-                });
-                sse.subscribe('update_info', (message) => {
-                    updateData(clientInfoUpdateMutation, 'info', message);
-                });
-            }).catch(err => {
-                console.error('Failed to connect to server', err);
-            });
-            // Now listener
-            setInterval(function () {
-                self.$data.now = moment()
-            }, 60000)
-        },
-        beforeDestroy() {
-            if (msgServer) msgServer.close();
         },
     }
 </script>
