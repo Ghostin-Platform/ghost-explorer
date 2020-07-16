@@ -29,7 +29,6 @@
             this.$sse(sseApi, {format: 'plain'}).then(sse => {
                 msgServer = sse;
                 sse.subscribe('new_block', (message) => {
-                    self.$data.now = moment()
                     updateData(clientNewBlockMutation, 'block', message);
                 });
                 sse.subscribe('new_transaction', (message) => {
