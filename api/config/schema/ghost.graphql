@@ -23,6 +23,14 @@ scalar ConstraintString
 scalar ConstraintNumber
 scalar Upload
 
+type MarketInfo {
+  usd: Float
+  usd_market_cap: Float
+  usd_24h_vol: Float
+  usd_24h_change: Float
+  last_updated_at: DateTime
+}
+
 type BlockChainInfo {
   version: ID!
   name: String
@@ -35,6 +43,7 @@ type BlockChainInfo {
   sync_percent: Float
   difficulty: Float
   stake_weight: Float
+  market: MarketInfo
 }
 
 type SerieDataPoint {

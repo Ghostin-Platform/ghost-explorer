@@ -10,7 +10,43 @@
                 <a href="https://cli.vuejs.org" target="_blank" rel="noopener">Please Tip us</a>.
             </p>
         </div>
-        <div v-if="$apollo.loading">Loading...</div>
+        <div v-if="$apollo.loading">
+            <md-progress-bar md-mode="query"></md-progress-bar>
+        </div>
+        <br/>
+        <div class="md-layout md-gutter">
+            <div class="md-layout-item">
+                <md-card v-bind:class="coinVarClass" style="width: 280px; text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{ info.market.usd }} $US</div>
+                            <div class="md-subhead">{{ info.market.usd_24h_change.toFixed(2) }}%</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+            </div>
+            <div class="md-layout-item">
+                <md-card class="md-primary"  style="width: 280px; text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{ displayDifficulty }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
+                            <div class="md-subhead">Staking difficulty</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+            </div>
+            <div class="md-layout-item">
+                <md-card class="md-primary" style="width: 280px; text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{ displayStakeWeight }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
+                            <div class="md-subhead">Network weight</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+            </div>
+        </div>
+        <br/>
         <div>
             <md-table md-card>
                 <md-table-toolbar>
@@ -106,15 +142,32 @@
                     const confirmations = this.info.height - tx.blockheight + 1;
                     return Object.assign(tx, { ago, transfer, out, fee, confirmations })
                 })
+            },
+            displayDifficulty() {
+                const formatter = new Intl.NumberFormat('en-US');
+                return formatter.format(this.info.difficulty)
+            },
+            displayStakeWeight() {
+                const formatter = new Intl.NumberFormat('en-US');
+                return formatter.format(this.info.stake_weight / 1e8)
+            },
+            coinVarClass() {
+                return this.info.usd_24h_change > 0 ? 'md-primary' : 'md-accent';
             }
         },
         data() {
             return {
                 now: moment(),
                 info: {
+                    difficulty: 0,
+                    stake_weight: 0,
                     height: 0,
                     sync_height: 0,
-                    sync_percent: 0
+                    sync_percent: 0,
+                    market: {
+                        usd: 0,
+                        usd_24h_change: 0,
+                    }
                 },
                 blocks: [],
                 transactions: []

@@ -29,10 +29,19 @@ Vue.use(VueRouter)
 export const ReadInfo = gql`query {
     info {
         height
+        difficulty
+        stake_weight
         timeoffset
         connections
         sync_height
         sync_percent
+        market {
+            usd
+            usd_market_cap
+            usd_24h_vol
+            usd_24h_change
+            last_updated_at
+        }
     }
 }`
 export const clientInfoUpdateMutation = gql`

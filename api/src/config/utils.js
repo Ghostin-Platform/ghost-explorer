@@ -1,6 +1,27 @@
 import axios from 'axios';
 import conf from './conf';
 
+export const httpGet = (url, key) => {
+  return axios
+    .get(url, {
+      headers: {
+        'content-type': 'application/json',
+        'User-Agent': 'jsonrpc',
+      },
+    })
+    .then((response) => {
+      const { data } = response;
+      return data[key];
+    });
+};
+
+export const getCoinMarket = () => {
+  return httpGet(
+    'https://api.coingecko.com/api/v3/simple/price?ids=ghost-by-mcafee&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true&include_last_updated_at=true',
+    'ghost-by-mcafee'
+  );
+};
+
 export const rpcCall = async (method, params, wallet = null) => {
   const baseURL = conf.get('app:daemon_rpc:uri');
   const dataParams = JSON.stringify({ id: 2, method, params });

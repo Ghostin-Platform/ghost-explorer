@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import { rpcCall } from '../config/utils';
+import { getCoinMarket, rpcCall } from '../config/utils';
 import { blockStreamId, fetch } from './redis';
 
 export const ONE_DAY_OF_BLOCKS = 720;
@@ -10,19 +10,22 @@ export const CURRENT_BLOCK = 'current.block';
 const toSat = (num) => num * 100000000;
 
 export const getNetworkInfo = async () => {
+  const coinMarketPromise = getCoinMarket();
   const networkInfoPromise = rpcCall('getnetworkinfo');
   const stackInfoPromise = rpcCall('getstakinginfo');
   const blockchainInfoPromise = rpcCall('getblockchaininfo');
-  const [networkInfo, stackInfo, blockchainInfo] = await Promise.all([
+  const [networkInfo, stackInfo, blockchainInfo, coinMarket] = await Promise.all([
     networkInfoPromise,
     stackInfoPromise,
     blockchainInfoPromise,
+    coinMarketPromise,
   ]);
   const currentBlock = await fetch(CURRENT_BLOCK);
   const syncPercent = (currentBlock * 100) / blockchainInfo.blocks;
   return {
     __typename: 'BlockChainInfo',
     version: '1.0-beta',
+    market: Object.assign(coinMarket, { __typename: 'MarketInfo' }),
     name: blockchainInfo.chain,
     connections: networkInfo.connections,
     timeoffset: networkInfo.timeoffset,
