@@ -3,7 +3,7 @@
         <div style="text-align: center">
             <img alt="Vue logo" src="../assets/logo.png" width="120">
             <h1 style="font-family: 'Sen', sans-serif">ghostin <span style="font-size: 18px">explorer</span></h1>
-            <div>Sync {{ info.sync_height }}/{{ info.height }} - {{ info.sync_percent.toFixed(2) }}%</div>
+            <div>{{ info.connections }} Peers | {{ info.sync_height }}/{{ info.height }}  - {{ info.sync_percent.toFixed(2) }}% Synchronized</div>
             <p>
                 ghostin (in for initiative) is a collection of software that aim to help the Ghost blockain community.<br>
                 Starting with a next generation explorer. And lot more to come.
@@ -85,7 +85,7 @@
         computed: {
             displayBlocks() {
                 return this.blocks.map(b => {
-                    const ago = moment(b.time * 1000).from(this.now);
+                    const ago = moment((b.time + this.info.timeoffset) * 1000).from(this.now);
                     const transfer = b.transferSat > 0 ? (b.transferSat / 1e8).toFixed(2) : 0;
                     const out = b.outSat > 0 ? (b.outSat / 1e8).toFixed(2) : 0;
                     const fee = b.feeSat > 0 ? (b.feeSat / 1e8).toFixed(6) : 0;
@@ -95,7 +95,7 @@
             },
             displayTxs() {
                 return this.transactions.map(tx => {
-                    const ago = moment(tx.time * 1000).from(this.now);
+                    const ago = moment((tx.time + this.info.timeoffset) * 1000).from(this.now);
                     const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
                     const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(2) : 0;
                     const fee = tx.feeSat > 0 ? (tx.feeSat / 1e8).toFixed(6) : 0;

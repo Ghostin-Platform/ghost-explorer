@@ -29,6 +29,7 @@ type BlockChainInfo {
   connections: Float
   node_version: String
   height: Float
+  timeoffset: Float
   verification_progress: Float
   sync_height: Float
   sync_percent: Float

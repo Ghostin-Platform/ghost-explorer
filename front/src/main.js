@@ -29,6 +29,8 @@ Vue.use(VueRouter)
 export const ReadInfo = gql`query {
     info {
         height
+        timeoffset
+        connections
         sync_height
         sync_percent
     }

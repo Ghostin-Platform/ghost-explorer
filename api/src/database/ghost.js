@@ -25,6 +25,7 @@ export const getNetworkInfo = async () => {
     version: '1.0-beta',
     name: blockchainInfo.chain,
     connections: networkInfo.connections,
+    timeoffset: networkInfo.timeoffset,
     node_version: networkInfo.subversion,
     height: blockchainInfo.blocks,
     verification_progress: blockchainInfo.verificationprogress,
