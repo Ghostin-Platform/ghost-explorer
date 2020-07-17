@@ -53,6 +53,7 @@ export const GetBlock = gql`query GetBlock($id: String!) {
             outSat
             transferSat
             isReward
+            isNewCoins
         }
     }
 }`
@@ -108,6 +109,7 @@ export const ReadTxs = gql`query {
         outSat
         transferSat
         isReward
+        isNewCoins
     }
 }`
 export const clientNewTxMutation = gql`

@@ -61,7 +61,7 @@
                 <md-card class="md-primary"  style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
-                            <div class="md-title">{{reward}} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-title">{{ reward }} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
                             <div class="md-subhead"># Block reward</div>
                         </md-card-header-text>
                     </md-card-header>
@@ -97,9 +97,8 @@
             <md-list-item>
                 <md-icon>undo</md-icon>
                 <div class="md-list-item-text">
-                    <span>
-                        <router-link :to="`/block/${block.previousblockhash}`">{{ block.previousblockhash }}</router-link>
-                    </span>
+                    <span v-if="block.previousblockhash"><router-link :to="`/block/${block.previousblockhash}`">{{ block.previousblockhash }}</router-link></span>
+                    <span v-else>-</span>
                     <span>Previous block</span>
                 </div>
                 <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
@@ -107,9 +106,8 @@
             <md-list-item>
                 <md-icon>redo</md-icon>
                 <div class="md-list-item-text">
-                    <span>
-                        <router-link :to="`/block/${block.nextblockhash}`">{{ block.nextblockhash }}</router-link>
-                    </span>
+                    <span v-if="block.nextblockhash"><router-link :to="`/block/${block.nextblockhash}`">{{ block.nextblockhash }}</router-link></span>
+                    <span v-else>-</span>
                     <span>Next block</span>
                 </div>
                 <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
@@ -131,22 +129,24 @@
                 <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
             </md-list-item>
         </md-list>
-        <h1 class="md-title">Transactions</h1>
+        <h1 class="md-title">{{ block.txSize }} Transactions</h1>
         <md-list v-for="tx in displayTxs" :key="tx.txid">
             <md-list-item>
                 <router-link :to="`/tx/${tx.txid}`">
                     <span v-if="tx.isReward"><md-icon class="md-primary">card_giftcard</md-icon></span>
-                    <div v-else-if="tx.isNewCoins"><md-icon class="md-primary">attach_money</md-icon></div>
+                    <div v-else-if="tx.isNewCoins"><md-icon class="md-primary">memory</md-icon></div>
                     <span v-else><md-icon class="md-primary">multiple_stop</md-icon></span>
                 </router-link>
                 <span style="margin-left: 35px" class="md-list-item-text">
                     <span v-if="tx.isReward">
                         {{ tx.out }} Ghost -- Reward {{ reward }} Ghost > __TYPE__ to X outputs (X spent) with X addressess
                     </span>
+                    <span v-else-if="tx.isNewCoins">
+                         {{ tx.out }} Ghost generated > __TYPE__ to X outputs (X spent) with X addressess
+                    </span>
                     <span v-else>
                          {{ tx.out }} Ghost -- Fee {{ tx.fee }} Ghost > __TYPE__ to X outputs (X spent) with X addressess
                     </span>
-
                 </span>
                 <md-button class="md-raised md-primary">0 Confirmations</md-button>
             </md-list-item>

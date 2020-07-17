@@ -87,7 +87,7 @@
                     <md-table-head># Ghost xfer</md-table-head>
                     <md-table-head># Ghost fee</md-table-head>
                     <md-table-head>Age</md-table-head>
-                    <md-table-head>Reward</md-table-head>
+                    <md-table-head>Type</md-table-head>
                     <md-table-head>Size</md-table-head>
                     <md-table-head># Conf</md-table-head>
                 </md-table-row>
@@ -100,8 +100,9 @@
                     <md-table-cell>{{ tx.fee }}</md-table-cell>
                     <md-table-cell>{{ tx.ago }}</md-table-cell>
                     <md-table-cell>
-                        <span v-if="tx.isReward"><md-icon>card_giftcard</md-icon></span>
-                        <span v-else><md-icon>multiple_stop</md-icon></span>
+                        <span v-if="tx.isReward"><md-icon class="md-primary">card_giftcard</md-icon></span>
+                        <div v-else-if="tx.isNewCoins"><md-icon class="md-primary">memory</md-icon></div>
+                        <span v-else><md-icon class="md-primary">multiple_stop</md-icon></span>
                     </md-table-cell>
                     <md-table-cell>{{ tx.size }}</md-table-cell>
                     <md-table-cell>{{ tx.confirmations }}</md-table-cell>
