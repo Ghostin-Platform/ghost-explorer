@@ -23,19 +23,20 @@ export const getNetworkInfo = async () => {
   const currentBlock = await fetch(CURRENT_BLOCK);
   const syncPercent = (currentBlock * 100) / blockchainInfo.blocks;
   return {
-    __typename: 'BlockChainInfo',
-    version: '1.0-beta',
     market: Object.assign(coinMarket, { __typename: 'MarketInfo' }),
-    name: blockchainInfo.chain,
     connections: networkInfo.connections,
     timeoffset: networkInfo.timeoffset,
     node_version: networkInfo.subversion,
     height: blockchainInfo.blocks,
     verification_progress: blockchainInfo.verificationprogress,
-    sync_height: currentBlock,
-    sync_percent: syncPercent,
     difficulty: stackInfo.difficulty,
     stake_weight: stackInfo.netstakeweight,
+    // Internal sync
+    __typename: 'BlockChainInfo',
+    version: '1.0-beta',
+    name: blockchainInfo.chain,
+    sync_height: currentBlock,
+    sync_percent: syncPercent,
   };
 };
 
@@ -70,6 +71,8 @@ export const getTransaction = (txId) =>
     return Object.assign(rawTransaction, {
       __typename: 'Transaction',
       blockheight: block.height,
+      voutSize: rawTransaction.vout.lenght,
+      vinSize: rawTransaction.vin.lenght,
       isReward,
       isNewCoins,
       variation,
@@ -118,9 +121,9 @@ export const enrichBlock = async (block) => {
     transferSat,
     variation: inSat - outSat,
     txSize: block.nTx,
-    transactions,
     rewardTx,
     rewardSat: rewardTx ? rewardTx.variation : 0,
+    transactions,
   };
 };
 

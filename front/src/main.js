@@ -26,6 +26,36 @@ Vue.use(VueRouter)
 // endregion
 
 // region internal mutation
+export const GetBlock = gql`query GetBlock($id: String!) {
+    block(id: $id) {
+        hash
+        time
+        difficulty
+        height
+        feeSat
+        txSize
+        rewardSat
+        merkleroot
+        witnessmerkleroot
+        previousblockhash
+        nextblockhash
+        bits
+        outSat
+        size
+        version
+        transactions {
+            txid
+            hash
+            time
+            size
+            blockheight
+            feeSat
+            outSat
+            transferSat
+            isReward
+        }
+    }
+}`
 export const ReadInfo = gql`query {
     info {
         height
@@ -123,13 +153,26 @@ const apolloProvider = new VueApollo({
 })
 // endregion
 
+// region routes
+const linkActiveClass = 'my-link-active-class'
+Vue.material.router.linkActiveClass = linkActiveClass
 const routes = [
     { path: '/', component: Home },
     { path: '/block/:id', component: Block },
     { path: '/tx/:id', component: Transaction }
 ]
 const router = new VueRouter({
-    routes // short for `routes: routes`
+    routes,
+    linkActiveClass
+})
+// endregion
+
+Vue.mixin({
+    data: function() {
+        return {
+            currentHeight: 0
+        }
+    }
 })
 
 new Vue({

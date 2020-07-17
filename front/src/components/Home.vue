@@ -16,17 +16,20 @@
         <br/>
         <div class="md-layout md-gutter">
             <div class="md-layout-item">
-                <md-card v-bind:class="coinVarClass" style="width: 280px; text-align: center; margin: auto">
+                <md-card v-bind:class="coinVarClass" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
-                            <div class="md-title">{{ info.market.usd }} $US</div>
+                            <div class="md-title">
+                                <md-icon>{{trendingClass}}</md-icon>
+                                {{ info.market.usd }} <span style="font-size: 12px;">$US</span>
+                            </div>
                             <div class="md-subhead">{{ info.market.usd_24h_change.toFixed(2) }}%</div>
                         </md-card-header-text>
                     </md-card-header>
                 </md-card>
             </div>
             <div class="md-layout-item">
-                <md-card class="md-primary"  style="width: 280px; text-align: center; margin: auto">
+                <md-card class="md-primary"  style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
                             <div class="md-title">{{ displayDifficulty }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
@@ -36,7 +39,7 @@
                 </md-card>
             </div>
             <div class="md-layout-item">
-                <md-card class="md-primary" style="width: 280px; text-align: center; margin: auto">
+                <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
                             <div class="md-title">{{ displayStakeWeight }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
@@ -48,10 +51,8 @@
         </div>
         <br/>
         <div>
-            <md-table md-card>
-                <md-table-toolbar>
-                    <h1 class="md-title">Latest Blocks</h1>
-                </md-table-toolbar>
+            <md-table>
+                <h1 class="md-title">Latest Blocks</h1>
                 <md-table-row>
                     <md-table-head>Block</md-table-head>
                     <md-table-head># Ghost out</md-table-head>
@@ -78,10 +79,8 @@
         </div>
         <br/>
         <div>
-            <md-table md-card>
-                <md-table-toolbar>
-                    <h1 class="md-title">Latest Transactions</h1>
-                </md-table-toolbar>
+            <md-table>
+                <h1 class="md-title">Latest Transactions</h1>
                 <md-table-row>
                     <md-table-head>Tx</md-table-head>
                     <md-table-head># Ghost out</md-table-head>
@@ -153,6 +152,9 @@
             },
             coinVarClass() {
                 return this.info.usd_24h_change > 0 ? 'md-primary' : 'md-accent';
+            },
+            trendingClass() {
+                return this.info.usd_24h_change >= 0 ? 'trending_up' : 'trending_down';
             }
         },
         data() {

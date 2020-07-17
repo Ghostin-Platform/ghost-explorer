@@ -1,11 +1,213 @@
 <template>
     <div>
-        <router-link :to="`/`">Home</router-link> > Block
+        <h1 style="font-family: 'Sen', sans-serif">Block <span style="font-size: 18px">#{{ block.height }}</span></h1>
+        <div class="md-layout md-gutter">
+            <div class="md-layout-item">
+                <h1 class="md-title">Summary</h1>
+                <md-card class="md-primary" style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{ creation }}</div>
+                            <div class="md-subhead">Block time</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+                <md-card class="md-primary" style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{ confirmations }}</div>
+                            <div class="md-subhead"># Confirmations</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+                <md-card class="md-primary" style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{ block.version }}</div>
+                            <div class="md-subhead">Version</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+            </div>
+            <div class="md-layout-item">
+                <h1 class="md-title">Statistics</h1>
+                <md-card class="md-primary" style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title"> {{ block.txSize }}</div>
+                            <div class="md-subhead"># Transactions</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{ displayDifficulty }} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-subhead">Staking difficulty</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{ block.size }}</div>
+                            <div class="md-subhead">Size (bytes)</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+            </div>
+            <div class="md-layout-item">
+                <h1 class="md-title">Coins</h1>
+                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title">{{reward}} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-subhead"># Block reward</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+                <md-card class="md-primary" style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title"> {{ fee }} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-subhead"># Transaction fees</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+                <md-card class="md-primary" style="text-align: center; margin: auto">
+                    <md-card-header>
+                        <md-card-header-text>
+                            <div class="md-title"> {{ out }} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-subhead"># Total output</div>
+                        </md-card-header-text>
+                    </md-card-header>
+                </md-card>
+            </div>
+        </div>
+        <h1 class="md-title">Hashes</h1>
+        <md-list class="md-double-line">
+            <md-list-item>
+                <md-icon>vpn_key</md-icon>
+                <div class="md-list-item-text">
+                    <span>{{ block.hash }}</span>
+                    <span>Self hash</span>
+                </div>
+                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+            </md-list-item>
+            <md-list-item>
+                <md-icon>undo</md-icon>
+                <div class="md-list-item-text">
+                    <span>
+                        <router-link :to="`/block/${block.previousblockhash}`">{{ block.previousblockhash }}</router-link>
+                    </span>
+                    <span>Previous block</span>
+                </div>
+                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+            </md-list-item>
+            <md-list-item>
+                <md-icon>redo</md-icon>
+                <div class="md-list-item-text">
+                    <span>
+                        <router-link :to="`/block/${block.nextblockhash}`">{{ block.nextblockhash }}</router-link>
+                    </span>
+                    <span>Next block</span>
+                </div>
+                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+            </md-list-item>
+            <md-list-item>
+                <md-icon>account_tree</md-icon>
+                <div class="md-list-item-text">
+                    <span>{{ block.merkleroot }}</span>
+                    <span>Merkle Root</span>
+                </div>
+                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+            </md-list-item>
+            <md-list-item>
+                <md-icon>fingerprint</md-icon>
+                <div class="md-list-item-text">
+                    <span>{{ block.witnessmerkleroot }}</span>
+                    <span>Witness Merkle Root</span>
+                </div>
+                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+            </md-list-item>
+        </md-list>
+        <h1 class="md-title">Transactions</h1>
+        <md-list v-for="tx in displayTxs" :key="tx.txid">
+            <md-list-item>
+                <router-link :to="`/tx/${tx.txid}`">
+                    <span v-if="tx.isReward"><md-icon class="md-primary">card_giftcard</md-icon></span>
+                    <div v-else-if="tx.isNewCoins"><md-icon class="md-primary">attach_money</md-icon></div>
+                    <span v-else><md-icon class="md-primary">multiple_stop</md-icon></span>
+                </router-link>
+                <span style="margin-left: 35px" class="md-list-item-text">
+                    <span v-if="tx.isReward">
+                        {{ tx.out }} Ghost -- Reward {{ reward }} Ghost > __TYPE__ to X outputs (X spent) with X addressess
+                    </span>
+                    <span v-else>
+                         {{ tx.out }} Ghost -- Fee {{ tx.fee }} Ghost > __TYPE__ to X outputs (X spent) with X addressess
+                    </span>
+
+                </span>
+                <md-button class="md-raised md-primary">0 Confirmations</md-button>
+            </md-list-item>
+        </md-list>
     </div>
 </template>
 
 <script>
+    import {GetBlock} from "../main";
+    import moment from 'moment';
+
     export default {
         name: 'Block',
+        data() {
+            return {
+                block: {
+                    height: 0,
+                    transactions: []
+                }
+            }
+        },
+        computed: {
+            confirmations() {
+                return 0
+            },
+            reward() {
+                return (this.block.rewardSat / 1e8);
+            },
+            fee() {
+                return (this.block.feeSat / 1e8);
+            },
+            out() {
+                return (this.block.outSat / 1e8).toFixed(2);
+            },
+            displayDifficulty() {
+                const formatter = new Intl.NumberFormat('en-US');
+                return formatter.format(this.block.difficulty)
+            },
+            creation() {
+                return moment.unix(this.block.time).format('LLL');
+            },
+            displayTxs() {
+                return this.block.transactions.map(tx => {
+                    const ago = moment(tx.time * 1000).from(moment());
+                    const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
+                    const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(2) : 0;
+                    const fee = tx.feeSat > 0 ? (tx.feeSat / 1e8).toFixed(6) : 0;
+                    const confirmations = 0; //this.info.height - tx.blockheight + 1;
+                    return Object.assign(tx, { ago, transfer, out, fee, confirmations })
+                })
+            },
+        },
+        apollo: {
+            block: {
+                query: () => GetBlock,
+                variables() {
+                    return {
+                        id: this.$route.params.id
+                    }
+                }
+            } ,
+        },
     }
 </script>

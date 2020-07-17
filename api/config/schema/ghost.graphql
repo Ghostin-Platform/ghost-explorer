@@ -68,6 +68,8 @@ type Block {
   size: Float
   weight: Float
   nonce: String
+  merkleroot: String
+  witnessmerkleroot: String
   previousblockhash: String
   nextblockhash: String
   difficulty: Float
@@ -160,7 +162,9 @@ type Transaction {
   feeSat: Float
   transferSat: Float
   vin: [TxIn]
+  vinSize: Int
   vout: [TxOut]
+  voutSize: Int
 }
 type Address {
   address: String!
