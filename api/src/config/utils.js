@@ -44,8 +44,10 @@ export const rpcCall = async (method, params, wallet = null) => {
       return data.result;
     })
     .catch((err) => {
-      const { error } = err.response.data;
-      if (error.code === -1 || error.code === -5 || error.code === -8) return null;
+      if (err.response && err.response.data) {
+        const { error } = err.response.data;
+        if (error.code === -1 || error.code === -5 || error.code === -8) return null;
+      }
       throw Error(err);
     });
 };

@@ -10,9 +10,12 @@ import {
   statsTxActivityProcessor,
 } from './processor/statisticProcessor';
 import { broadcast, EVENT_NEW_BLOCK, EVENT_NEW_TX, EVENT_UPDATE_INFO } from './seeMiddleware';
+import { elIsAlive } from './database/elasticSearch';
 
 // Check every dependencies
 const checkSystemDependencies = async () => {
+  await elIsAlive();
+  logger.info(`[Pre check] Elastic is alive`);
   // Check if redis is here
   await redisIsAlive();
   logger.info(`[Pre check] Redis is alive`);
@@ -58,9 +61,9 @@ const initializePlatform = async (newPlatform) => {
 };
 
 const initStreamProcessors = async () => {
-  await statsDifficultyProcessor();
-  await statsStakeWeightProcessor();
-  await statsTxActivityProcessor();
+  // await statsDifficultyProcessor();
+  // await statsStakeWeightProcessor();
+  // await statsTxActivityProcessor();
 };
 
 const platformInit = async (reindex = false) => {

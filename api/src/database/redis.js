@@ -96,7 +96,12 @@ export const timeseries = async (name) => {
 // region stream
 const storeEvent = async (streamKey, id, key, data) => {
   const client = await getClient();
-  return client.call('XADD', streamKey, id, key, JSON.stringify(data));
+  try {
+    await client.call('XADD', streamKey, id, key, JSON.stringify(data));
+  } catch (e) {
+    console.log(e);
+    // throw e;
+  }
 };
 
 export const blockStreamId = (block) => `${block.time * 1000}-${block.height}`;

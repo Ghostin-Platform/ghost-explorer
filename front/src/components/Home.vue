@@ -100,9 +100,27 @@
                     <md-table-cell>{{ tx.fee }}</md-table-cell>
                     <md-table-cell>{{ tx.ago }}</md-table-cell>
                     <md-table-cell>
-                        <span v-if="tx.isReward"><md-icon class="md-primary">card_giftcard</md-icon></span>
-                        <div v-else-if="tx.isNewCoins"><md-icon class="md-primary">memory</md-icon></div>
-                        <span v-else><md-icon class="md-primary">multiple_stop</md-icon></span>
+                        <div v-if="tx.type === 'reward'">
+                            <md-icon class="md-primary">card_giftcard</md-icon>
+                        </div>
+                        <div v-else-if="tx.type === 'coinbase'">
+                            <md-icon class="md-primary">memory</md-icon>
+                        </div>
+                        <div v-else-if="tx.type === 'blind'">
+                            <md-icon class="md-primary">masks</md-icon>
+                        </div>
+                        <div v-else-if="tx.type === 'anon'">
+                            <md-icon class="md-primary">security</md-icon>
+                        </div>
+                        <div v-else-if="tx.type === 'mixed_private'">
+                            <md-icon class="md-primary">camera</md-icon>
+                        </div>
+                        <div v-else-if="tx.type === 'mixed_standard'">
+                            <md-icon class="md-primary">local_police</md-icon>
+                        </div>
+                        <div v-else>
+                            <md-icon class="md-primary">multiple_stop</md-icon>
+                        </div>
                     </md-table-cell>
                     <md-table-cell>{{ tx.size }}</md-table-cell>
                     <md-table-cell>{{ tx.confirmations }}</md-table-cell>

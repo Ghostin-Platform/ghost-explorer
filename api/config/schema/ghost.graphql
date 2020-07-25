@@ -32,7 +32,8 @@ type MarketInfo {
 }
 
 type BlockChainInfo {
-  version: ID!
+  id: ID!
+  version: String!
   name: String
   connections: Float
   node_version: String
@@ -59,7 +60,8 @@ type StatPercentile {
 }
 
 type Block {
-  hash: ID!
+  id: ID!
+  hash: String!
   height: Float!
   feeSat: Float
   offset: String!
@@ -104,6 +106,11 @@ type TxInAnon {
   scriptdata: String
   txinwitness: [String]
 }
+type TxInBlind {
+  ring_size: Int
+  scriptdata: String
+  txinwitness: [String]
+}
 type TxInStandard {
   txid: String
   scriptSig: ScriptSig
@@ -117,13 +124,22 @@ type TxInCoinbase {
   coinbase: String
   sequence: Float
 }
-union TxIn = TxInStandard | TxInCoinbase | TxInAnon
+union TxIn = TxInStandard | TxInCoinbase | TxInBlind | TxInAnon
 
 type TxOutAnon {
   pubkey: String
   valueCommitment: String
   data_hex: String
   rangeproof: String
+}
+type TxOutBlind {
+  valueCommitment: String
+  scriptPubKey: ScriptPubKey
+  data_hex: String
+  rangeproof: String
+  spentTxId: String
+  spentIndex: Int
+  spentHeight: Int
 }
 type TxOutStandard {
   value: Float
@@ -135,15 +151,33 @@ type TxOutStandard {
 }
 type TxOutData {
   data_hex: String
+  ct_fee: Float
   dev_fund_cfwd: Float
   smsgfeerate: Float
   smsgdifficulty: String
 }
-union TxOut = TxOutStandard | TxOutData | TxOutAnon
+union TxOut = TxOutStandard | TxOutData | TxOutBlind | TxOutAnon
+
+enum TransactionType {
+  coinbase
+  reward
+  standard
+  blind
+  anon
+  mixed_standard
+  mixed_private
+}
+
+type VoutAddr {
+  address: String!
+  vout: [TxOut]
+}
 
 type Transaction {
-  txid: ID!
+  id: ID!
+  txid: String!
   hash: String!
+  type: TransactionType
   block: Block
   size: Float
   blocktime: Int
@@ -154,8 +188,6 @@ type Transaction {
   height: Int
   confirmations: Int
   time: Int
-  isReward: Boolean
-  isNewCoins: Boolean
   variation: Float
   inSat: Float
   outSat: Float
@@ -165,8 +197,11 @@ type Transaction {
   vinSize: Int
   vout: [TxOut]
   voutSize: Int
+  voutAddr: [VoutAddr]
+  voutAddrSize: Int
 }
 type Address {
+  id: ID!
   address: String!
   balance: Float
   totalReceived: Float

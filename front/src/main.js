@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 import {InMemoryCache} from "apollo-cache-inmemory";
+// import { persistCache } from 'apollo-cache-persist';
 import {createHttpLink} from "apollo-link-http";
 import ApolloClient from "apollo-client";
 import VueApollo from 'vue-apollo'
@@ -28,6 +29,7 @@ Vue.use(VueRouter)
 // region internal mutation
 export const GetBlock = gql`query GetBlock($id: String!) {
     block(id: $id) {
+        id
         hash
         time
         difficulty
@@ -44,7 +46,11 @@ export const GetBlock = gql`query GetBlock($id: String!) {
         size
         version
         transactions {
+            id
+            type
             txid
+            voutSize
+            voutAddrSize
             hash
             time
             size
@@ -52,13 +58,12 @@ export const GetBlock = gql`query GetBlock($id: String!) {
             feeSat
             outSat
             transferSat
-            isReward
-            isNewCoins
         }
     }
 }`
 export const ReadInfo = gql`query {
     info {
+        id
         height
         difficulty
         stake_weight
@@ -82,6 +87,7 @@ export const clientInfoUpdateMutation = gql`
 `;
 export const ReadBlocks = gql`query {
     blocks {
+        id
         hash
         feeSat
         outSat
@@ -99,6 +105,8 @@ export const clientNewBlockMutation = gql`
 `;
 export const ReadTxs = gql`query {
     transactions {
+        id
+        type
         txid
         hash
         time
@@ -108,8 +116,6 @@ export const ReadTxs = gql`query {
         feeSat
         outSat
         transferSat
-        isReward
-        isNewCoins
     }
 }`
 export const clientNewTxMutation = gql`
@@ -122,31 +128,84 @@ export const clientNewTxMutation = gql`
 // region apollo
 const httpLink = createHttpLink({ uri: graphqlApi })
 const cache = new InMemoryCache()
+const updateGlobalInfo = (info) => {
+    try {
+        const data = cache.readQuery({query: ReadInfo});
+        data.info = info;
+        cache.writeQuery({query: ReadInfo, data });
+    } catch (e) {
+        // Nothing to do
+    }
+}
+const updateBlocksListing = (block) => {
+    // Update the block list on the home
+    try {
+        const oldData = cache.readQuery({query: ReadBlocks});
+        // Update the number of confirmations for all other blocks
+        const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
+        // Add the new block on top
+        blocks.unshift(block);
+        blocks.pop();
+        const data = {blocks};
+        cache.writeQuery({query: ReadBlocks, data});
+    } catch (e) {
+        // Nothing to do
+    }
+}
+const updateTrxListing = (tx) => {
+    try {
+        const data = cache.readQuery({query: ReadTxs});
+        data.transactions.unshift(tx);
+        data.transactions.pop();
+        cache.writeQuery({query: ReadTxs, data});
+    } catch (e) {
+        // Nothing to do
+    }
+}
+const updateBlockNextHash = (block) => {
+    // Update the next hash
+    try {
+        apolloClient.writeFragment({
+            id: `Block:${block.previousblockhash}`,
+            fragment: gql`
+                fragment UpdateBlock on Block {
+                    nextblockhash
+                }
+            `,
+            data: {
+                __typename: 'Block',
+                nextblockhash: block.hash,
+            },
+        });
+    } catch (e) {
+        // Nothing to do
+    }
+}
 const resolvers = {
     Mutation: {
-        newBlock: (_, { block }, { cache }) => {
-            const oldData = cache.readQuery({query: ReadBlocks});
-            const blocks = R.map(b => Object.assign(b, { confirmations: b.confirmations + 1}), oldData.blocks)
-            blocks.unshift(block);
-            blocks.pop();
-            const data = { blocks };
-            cache.writeQuery({query: ReadBlocks, data });
+        newBlock: (_, { block }) => {
+            updateBlocksListing(block);
+            updateBlockNextHash(block);
         },
-        newTransaction: (_, { tx }, { cache }) => {
-            const data = cache.readQuery({query: ReadTxs});
-            data.transactions.unshift(tx);
-            data.transactions.pop();
-            cache.writeQuery({query: ReadTxs, data });
+        newTransaction: (_, { tx }) => {
+            updateTrxListing(tx);
         },
-        updateInfo: (_, { info }, { cache }) => {
-            const data = cache.readQuery({query: ReadInfo});
-            data.info = info;
-            cache.writeQuery({query: ReadInfo, data });
+        updateInfo: (_, { info }) => {
+            updateGlobalInfo(info);
         }
     }
 }
+
+// const init = async () => {
+//     await persistCache({
+//         cache,
+//         storage: window.localStorage,
+//     });
+// };
+
 const apolloClient = new ApolloClient({
     link: httpLink,
+    connectToDevTools: true,
     cache,
     resolvers
 })
@@ -177,6 +236,7 @@ Vue.mixin({
     }
 })
 
+// init().then(() => {})
 new Vue({
     el: '#app',
     router,

@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import { getAddressById, getBlockById, getBlocks, getRewards, getTransactions, info } from '../domain/info';
 import {
   computeCurrentDifficulty,
@@ -36,6 +35,7 @@ const infoResolver = {
   },
   TxIn: {
     __resolveType: (obj) => {
+      if (obj.type === 'blind') return 'TxInBlind';
       if (obj.type === 'anon') return 'TxInAnon';
       if (obj.coinbase) return 'TxInCoinbase';
       return 'TxInStandard';
@@ -44,6 +44,7 @@ const infoResolver = {
   TxOut: {
     __resolveType: (obj) => {
       if (obj.type === 'data') return 'TxOutData';
+      if (obj.type === 'blind') return 'TxOutBlind';
       if (obj.type === 'anon') return 'TxOutAnon';
       return 'TxOutStandard';
     },

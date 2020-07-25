@@ -39,15 +39,16 @@
                         </md-card-header-text>
                     </md-card-header>
                 </md-card>
-                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
-                            <div class="md-title">{{ displayDifficulty }} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-title">{{ displayDifficulty }} <img alt="Vue logo" src="../assets/logo14.png"
+                                                                               width="14"></div>
                             <div class="md-subhead">Staking difficulty</div>
                         </md-card-header-text>
                     </md-card-header>
                 </md-card>
-                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
                             <div class="md-title">{{ block.size }}</div>
@@ -58,10 +59,11 @@
             </div>
             <div class="md-layout-item">
                 <h1 class="md-title">Coins</h1>
-                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
-                            <div class="md-title">{{ reward }} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-title">{{ reward }} <img alt="Vue logo" src="../assets/logo14.png"
+                                                                    width="14"></div>
                             <div class="md-subhead"># Block reward</div>
                         </md-card-header-text>
                     </md-card-header>
@@ -69,7 +71,8 @@
                 <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
-                            <div class="md-title"> {{ fee }} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-title"> {{ fee }} <img alt="Vue logo" src="../assets/logo14.png" width="14">
+                            </div>
                             <div class="md-subhead"># Transaction fees</div>
                         </md-card-header-text>
                     </md-card-header>
@@ -77,7 +80,8 @@
                 <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
-                            <div class="md-title"> {{ out }} <img alt="Vue logo" src="../assets/logo14.png" width="14"></div>
+                            <div class="md-title"> {{ out }} <img alt="Vue logo" src="../assets/logo14.png" width="14">
+                            </div>
                             <div class="md-subhead"># Total output</div>
                         </md-card-header-text>
                     </md-card-header>
@@ -92,7 +96,9 @@
                     <span>{{ block.hash }}</span>
                     <span>Self hash</span>
                 </div>
-                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+                <md-button class="md-icon-button md-list-action">
+                    <md-icon>content_copy</md-icon>
+                </md-button>
             </md-list-item>
             <md-list-item>
                 <md-icon>undo</md-icon>
@@ -101,7 +107,9 @@
                     <span v-else>-</span>
                     <span>Previous block</span>
                 </div>
-                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+                <md-button class="md-icon-button md-list-action">
+                    <md-icon>content_copy</md-icon>
+                </md-button>
             </md-list-item>
             <md-list-item>
                 <md-icon>redo</md-icon>
@@ -110,7 +118,9 @@
                     <span v-else>-</span>
                     <span>Next block</span>
                 </div>
-                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+                <md-button class="md-icon-button md-list-action">
+                    <md-icon>content_copy</md-icon>
+                </md-button>
             </md-list-item>
             <md-list-item>
                 <md-icon>account_tree</md-icon>
@@ -118,7 +128,9 @@
                     <span>{{ block.merkleroot }}</span>
                     <span>Merkle Root</span>
                 </div>
-                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+                <md-button class="md-icon-button md-list-action">
+                    <md-icon>content_copy</md-icon>
+                </md-button>
             </md-list-item>
             <md-list-item>
                 <md-icon>fingerprint</md-icon>
@@ -126,42 +138,77 @@
                     <span>{{ block.witnessmerkleroot }}</span>
                     <span>Witness Merkle Root</span>
                 </div>
-                <md-button class="md-icon-button md-list-action"><md-icon>content_copy</md-icon></md-button>
+                <md-button class="md-icon-button md-list-action">
+                    <md-icon>content_copy</md-icon>
+                </md-button>
             </md-list-item>
         </md-list>
         <h1 class="md-title">{{ block.txSize }} Transactions</h1>
         <md-list v-for="tx in displayTxs" :key="tx.txid">
             <md-list-item>
                 <router-link :to="`/tx/${tx.txid}`">
-                    <span v-if="tx.isReward"><md-icon class="md-primary">card_giftcard</md-icon></span>
-                    <div v-else-if="tx.isNewCoins"><md-icon class="md-primary">memory</md-icon></div>
-                    <span v-else><md-icon class="md-primary">multiple_stop</md-icon></span>
+                    <div v-if="tx.type === 'reward'">
+                        <md-icon class="md-primary">card_giftcard</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'coinbase'">
+                        <md-icon class="md-primary">memory</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'blind'">
+                        <md-icon class="md-primary">masks</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'anon'">
+                        <md-icon class="md-primary">security</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'mixed_private'">
+                        <md-icon class="md-primary">camera</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'mixed_standard'">
+                        <md-icon class="md-primary">local_police</md-icon>
+                    </div>
+                    <div v-else>
+                        <md-icon class="md-primary">multiple_stop</md-icon>
+                    </div>
                 </router-link>
                 <span style="margin-left: 35px" class="md-list-item-text">
-                    <span v-if="tx.isReward">
-                        {{ tx.out }} Ghost -- Reward {{ reward }} Ghost > __TYPE__ to X outputs (X spent) with X addressess
+                    <span v-if="tx.type === 'reward'">
+                        Reward <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ reward }} Ghost (from {{ tx.out }} stake) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
                     </span>
-                    <span v-else-if="tx.isNewCoins">
-                         {{ tx.out }} Ghost generated > __TYPE__ to X outputs (X spent) with X addressess
+                    <span v-else-if="tx.type === 'coinbase'">
+                        New coin <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ tx.out }} Ghost to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
+                    </span>
+                    <span v-else-if="tx.type === 'blind'">
+                        Blinded <router-link :to="`/tx/${tx.id}`">transaction</router-link> ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
+                    </span>
+                    <span v-else-if="tx.type === 'anon'">
+                        Anonymous <router-link :to="`/tx/${tx.id}`">transaction</router-link> ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
+                    </span>
+                    <span v-else-if="tx.type === 'mixed_private'">
+                        Mixed blind/anon <router-link :to="`/tx/${tx.id}`">transaction</router-link> ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
+                    </span>
+                    <span v-else-if="tx.type === 'mixed_standard'">
+                        Mixed standard/private <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
                     </span>
                     <span v-else>
-                         {{ tx.out }} Ghost -- Fee {{ tx.fee }} Ghost > __TYPE__ to X outputs (X spent) with X addressess
+                        Standard <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
                     </span>
                 </span>
-                <md-button class="md-raised md-primary">0 Confirmations</md-button>
+                <router-link :to="`/tx/${tx.id}`"><md-button class="md-raised md-primary">{{ confirmations }} Confirmations</md-button></router-link>
             </md-list-item>
         </md-list>
     </div>
 </template>
 
 <script>
-    import {GetBlock} from "../main";
+    import {GetBlock, ReadInfo} from "../main";
     import moment from 'moment';
 
     export default {
         name: 'Block',
         data() {
             return {
+                info: {
+                    height: 0
+                },
                 block: {
                     height: 0,
                     transactions: []
@@ -170,7 +217,7 @@
         },
         computed: {
             confirmations() {
-                return 0
+                return this.info.height - this.block.height + 1;
             },
             reward() {
                 return (this.block.rewardSat / 1e8);
@@ -192,10 +239,10 @@
                 return this.block.transactions.map(tx => {
                     const ago = moment(tx.time * 1000).from(moment());
                     const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
-                    const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(2) : 0;
+                    const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(4) : 0;
                     const fee = tx.feeSat > 0 ? (tx.feeSat / 1e8).toFixed(6) : 0;
                     const confirmations = 0; //this.info.height - tx.blockheight + 1;
-                    return Object.assign(tx, { ago, transfer, out, fee, confirmations })
+                    return Object.assign(tx, {ago, transfer, out, fee, confirmations})
                 })
             },
         },
@@ -207,7 +254,8 @@
                         id: this.$route.params.id
                     }
                 }
-            } ,
+            },
+            info: () => ReadInfo,
         },
     }
 </script>

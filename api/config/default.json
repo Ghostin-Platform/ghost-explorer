@@ -11,6 +11,9 @@
     },
     "session_secret": "598cb5e4-0463-4f2c-9332-deab5c81a4f0"
   },
+  "elasticsearch": {
+    "url": "http://localhost:9200"
+  },
   "redis": {
     "hostname": "localhost",
     "port": 6379

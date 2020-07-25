@@ -46,8 +46,8 @@ export const getAddressById = async (id) => {
   for (let index = 0; index < resolvedTxs.length; index += 1) {
     const operations = [];
     const transaction = resolvedTxs[index];
-    const { vin, vout, isReward, variation, blocktime } = transaction;
-    if (isReward) rewards.push({ date: blocktime, value: variation });
+    const { vin, vout, type, variation, blocktime } = transaction;
+    if (type === 'reward') rewards.push({ date: blocktime, value: variation });
     for (let indexIn = 0; indexIn < vin.length; indexIn += 1) {
       const flowIn = vin[indexIn];
       const { address, valueSat } = flowIn;
@@ -55,13 +55,13 @@ export const getAddressById = async (id) => {
         operations.push({ date: blocktime, value: -valueSat });
       }
     }
-    if (operations.length > 0 && !isReward) {
+    if (operations.length > 0 && type !== 'reward') {
       fees.push({ date: blocktime, value: variation });
     }
     for (let indexOut = 0; indexOut < vout.length; indexOut += 1) {
       const flowOut = vout[indexOut];
-      const { type, scriptPubKey, valueSat } = flowOut;
-      if (type !== 'data') {
+      const { scriptPubKey, valueSat } = flowOut;
+      if (flowOut.type !== 'data') {
         const outAddress = R.head(scriptPubKey.addresses);
         if (outAddress === id) {
           operations.push({ date: blocktime, value: valueSat });
