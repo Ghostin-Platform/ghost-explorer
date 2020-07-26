@@ -3,8 +3,9 @@
         <div v-if="$apollo.loading">
             <md-progress-bar md-mode="query"></md-progress-bar>
         </div>
-        <router-link :to="`/`">Home</router-link> > Help us
-        <div></div>
+        <h2 style="font-family: 'Sen', sans-serif">
+            <router-link :to="`/`">Home</router-link>
+            > help us</h2>
         <p style="font-size: 12px">
             ghostin (in for initiative) is a collection of software that aim to help the Ghost blockain community.
             Starting with a next generation explorer. And lot more to come.<br/>

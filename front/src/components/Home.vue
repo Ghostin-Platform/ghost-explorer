@@ -73,7 +73,7 @@
                         <b>6 Latest blocks</b>
                         <router-link style="float: right;" :to="`/blocks`">See all blocks</router-link>
                     </div>
-                    <md-card class="md-primary" style="margin: auto">
+                    <md-card class="md-primary" style="margin: auto; cursor: pointer" @click.native="$router.push('/mempool')">
                         <md-card-header>
                             <md-card-header-text>
                                 <md-icon>memory</md-icon>

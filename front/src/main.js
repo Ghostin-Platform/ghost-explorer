@@ -19,6 +19,7 @@ import Tip from "./components/Tip";
 import VueQrcode from '@chenfengyuan/vue-qrcode';
 import InfiniteLoading from 'vue-infinite-loading';
 import Blocks from "./components/Blocks";
+import Mempool from "./components/Mempool";
 
 // region configuration
 const graphqlApi = 'http://localhost:4000/graphql';
@@ -299,6 +300,7 @@ const linkActiveClass = 'my-link-active-class'
 Vue.material.router.linkActiveClass = linkActiveClass
 const routes = [
     { path: '/', component: Home },
+    { path: '/mempool', component: Mempool },
     { path: '/blocks', component: Blocks },
     { path: '/tip', component: Tip },
     { path: '/block/:id', component: Block },
