@@ -1,4 +1,5 @@
 /* eslint-disable no-await-in-loop */
+import * as R from 'ramda';
 import { logger } from './config/conf';
 import { write, fetch, clear, redisIsAlive, storeBlock, storeTransaction } from './database/redis';
 import { getChainHeight } from './config/utils';
@@ -10,9 +11,17 @@ import {
   getNetworkInfo,
 } from './database/ghost';
 import initBlockListener from './database/zeromq';
-import { broadcast, EVENT_NEW_BLOCK, EVENT_NEW_TX, EVENT_UPDATE_INFO } from './seeMiddleware';
-import { elCreateIndexes, elDeleteIndexes, elIsAlive } from './database/elasticSearch';
+import {
+  broadcast,
+  EVENT_MEMPOOL_ADDED,
+  EVENT_MEMPOOL_REMOVED,
+  EVENT_NEW_BLOCK,
+  EVENT_NEW_TX,
+  EVENT_UPDATE_INFO
+} from './seeMiddleware';
+import { elCreateIndexes, elIsAlive } from './database/elasticSearch';
 import { indexingBlockProcessor, indexingTrxProcessor } from './processor/statisticProcessor';
+import listenMempool from './processor/mempoolProcessor';
 
 // Check every dependencies
 const checkSystemDependencies = async () => {
@@ -79,19 +88,20 @@ const platformInit = async (reindex = false) => {
     const newPlatform = (await fetch(CURRENT_PROCESSING_BLOCK)) === undefined;
     initializePlatform(newPlatform || reindex).then(async () => {
       // Listen directly new block with zeroMQ
+      await listenMempool(async (added, removed) => {
+        const networkInfo = await getNetworkInfo();
+        broadcast(EVENT_UPDATE_INFO, networkInfo);
+        R.map((a) => broadcast(EVENT_MEMPOOL_ADDED, a), added);
+        R.map((a) => broadcast(EVENT_MEMPOOL_REMOVED, a), removed);
+      });
       await initBlockListener(async (block) => {
         const enrichedBlock = await enrichBlock(block);
         const { transactions } = await processBlockData(enrichedBlock);
         // Broadcasting
-        const broadcasts = [];
         const networkInfo = await getNetworkInfo();
-        broadcasts.push(broadcast(EVENT_UPDATE_INFO, networkInfo));
-        broadcasts.push(broadcast(EVENT_NEW_BLOCK, enrichedBlock));
-        for (let index = 0; index < transactions.length; index += 1) {
-          const transaction = transactions[index];
-          broadcasts.push(broadcast(EVENT_NEW_TX, transaction));
-        }
-        await Promise.all(broadcasts);
+        broadcast(EVENT_UPDATE_INFO, networkInfo);
+        broadcast(EVENT_NEW_BLOCK, enrichedBlock);
+        R.map((tx) => broadcast(EVENT_NEW_TX, tx), transactions);
       });
     });
   } catch (e) {

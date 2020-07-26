@@ -116,10 +116,15 @@
                         <div class="md-list-item-text">
                             <span v-if="block.previousblockhash"><router-link :to="`/block/${block.previousblockhash}`">{{ block.previousblockhash }}</router-link></span>
                             <span v-else>-</span>
-                            <span>Previous block</span>
+                            <div>
+                                <span v-if="block.previousblockhash">
+                                    Previous block ({{ block.height - 1 }})
+                                </span>
+                                <span v-else>Previous block</span>
+                            </div>
                         </div>
                         <md-button @click="copy(block.previousblockhash)"  class="md-icon-button md-list-action">
-                            <md-icon >content_copy</md-icon>
+                            <md-icon>content_copy</md-icon>
                         </md-button>
                     </md-list-item>
                     <md-list-item>
@@ -127,7 +132,12 @@
                         <div class="md-list-item-text">
                             <span v-if="block.nextblockhash"><router-link :to="`/block/${block.nextblockhash}`">{{ block.nextblockhash }}</router-link></span>
                             <span v-else>-</span>
-                            <span>Next block</span>
+                            <div>
+                                <span v-if="block.nextblockhash">
+                                    Next block ({{ block.height + 1 }})
+                                </span>
+                                <span v-else>Next block</span>
+                            </div>
                         </div>
                         <md-button @click="copy(block.nextblockhash)" class="md-icon-button md-list-action">
                             <md-icon>content_copy</md-icon>
@@ -205,6 +215,10 @@
                         <md-button disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ confirmations }} Confirmations</md-button>
                     </md-list-item>
                 </md-list>
+                <infinite-loading @infinite="infiniteHandler">
+                    <div slot="no-more" style="margin-top: 10px">No more transactions</div>
+                    <div slot="no-results" style="margin-top: 10px"></div>
+                </infinite-loading>
             </div>
         </div>
     </div>
@@ -218,6 +232,7 @@
         name: 'Block',
         data() {
             return {
+                page: 10,
                 info: {
                     height: 0
                 },
@@ -230,7 +245,29 @@
         methods: {
             async copy(s) {
                 await navigator.clipboard.writeText(s);
-            }
+            },
+            infiniteHandler($state) {
+                const variables = {
+                  id: this.$route.params.id,
+                  txOffset: this.page,
+                  txLimit: 5,
+                };
+                this.$apollo.queries.block.fetchMore({
+                    variables,
+                    updateQuery: (previousResult, { fetchMoreResult }) => {
+                        const newTxs = fetchMoreResult.block.transactions
+                        if (newTxs.length > 0) {
+                            this.page += newTxs.length;
+                            $state.loaded();
+                        } else {
+                            $state.complete();
+                        }
+                        return {
+                            block: Object.assign(this.block, { transactions: [...previousResult.block.transactions, ...newTxs] })
+                        }
+                    },
+                })
+            },
         },
         computed: {
             confirmations() {
@@ -269,7 +306,9 @@
                 query: () => GetBlock,
                 variables() {
                     return {
-                        id: this.$route.params.id
+                        id: this.$route.params.id,
+                        txOffset: 0,
+                        txLimit: 5,
                     }
                 }
             },

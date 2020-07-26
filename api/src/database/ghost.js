@@ -11,16 +11,22 @@ export const GROUP_CONCURRENCY = 25; // Number of query in //
 
 const toSat = (num) => num * 100000000;
 
+export const getPooledTransactions = () => rpcCall('getrawmempool');
+
+export const getPooledTransactionsCount = () => getPooledTransactions().then(async (pooledTx) => pooledTx.length);
+
 export const getNetworkInfo = async () => {
   const coinMarketPromise = getCoinMarket();
   const networkInfoPromise = rpcCall('getnetworkinfo');
   const stackInfoPromise = rpcCall('getstakinginfo');
   const blockchainInfoPromise = rpcCall('getblockchaininfo');
-  const [networkInfo, stackInfo, blockchainInfo, coinMarket] = await Promise.all([
+  const pooledTxCountPromise = getPooledTransactionsCount();
+  const [networkInfo, stackInfo, blockchainInfo, coinMarket, pooledTxCount] = await Promise.all([
     networkInfoPromise,
     stackInfoPromise,
     blockchainInfoPromise,
     coinMarketPromise,
+    pooledTxCountPromise,
   ]);
   const currentBlock = await fetch(CURRENT_PROCESSING_BLOCK);
   const syncPercent = (currentBlock * 100) / blockchainInfo.blocks;
@@ -32,6 +38,7 @@ export const getNetworkInfo = async () => {
     name: blockchainInfo.chain,
     sync_height: currentBlock,
     sync_percent: syncPercent,
+    pooledTxCount,
     // Extra info
     market: Object.assign(coinMarket, { __typename: 'MarketInfo' }),
     connections: networkInfo.connections,

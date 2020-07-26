@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 import {InMemoryCache, IntrospectionFragmentMatcher} from "apollo-cache-inmemory";
-// import { persistCache } from 'apollo-cache-persist';
+//import { persistCache } from 'apollo-cache-persist';
 import {createHttpLink} from "apollo-link-http";
 import ApolloClient from "apollo-client";
 import VueApollo from 'vue-apollo'
@@ -17,6 +17,8 @@ import Transaction from "./components/Transaction";
 import Home from "./components/Home";
 import Tip from "./components/Tip";
 import VueQrcode from '@chenfengyuan/vue-qrcode';
+import InfiniteLoading from 'vue-infinite-loading';
+import Blocks from "./components/Blocks";
 
 // region configuration
 const graphqlApi = 'http://localhost:4000/graphql';
@@ -26,6 +28,7 @@ Vue.use(VueApollo)
 Vue.use(VueSSE)
 Vue.use(VueMaterial)
 Vue.use(VueRouter)
+Vue.use(InfiniteLoading, { distance: 300 });
 Vue.component(VueQrcode.name, VueQrcode);
 // endregion
 
@@ -77,7 +80,7 @@ export const GetTx = gql`query GetTx($id: String!) {
         }
     }
 }`
-export const GetBlock = gql`query GetBlock($id: String!) {
+export const GetBlock = gql`query GetBlock($id: String!, $txOffset: Int!, $txLimit: Int!) {
     block(id: $id) {
         id
         hash
@@ -95,7 +98,7 @@ export const GetBlock = gql`query GetBlock($id: String!) {
         outSat
         size
         version
-        transactions(offset: 0, limit: 50) {
+        transactions(offset: $txOffset, limit: $txLimit) {
             id
             type
             txid
@@ -117,6 +120,7 @@ export const ReadInfo = gql`query {
         id
         height
         difficulty
+        pooledTxCount
         stake_weight
         timeoffset
         connections
@@ -138,10 +142,11 @@ export const clientInfoUpdateMutation = gql`
         updateInfo(info: $info) @client
     }
 `;
-export const ReadBlocks = gql`query {
-    blocks {
+export const ReadBlocks = gql`query GetBlocks($offset: String!, $limit: Int!) {
+    blocks(offset: $offset, limit: $limit) {
         id
         hash
+        offset
         feeSat
         outSat
         height
@@ -200,14 +205,28 @@ const updateGlobalInfo = (info) => {
 const updateBlocksListing = (block) => {
     // Update the block list on the home
     try {
-        const oldData = cache.readQuery({query: ReadBlocks});
+        const oldData = cache.readQuery({query: ReadBlocks, variables: { offset: "+", limit: 50 }});
+        // Update the number of confirmations for all other blocks
+        const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
+        // Add the new block on top
+        blocks.unshift(block);
+        const data = {blocks};
+        cache.writeQuery({query: ReadBlocks, variables: { offset: "+", limit: 50 }, data});
+    } catch (e) {
+        // Nothing to do
+    }
+}
+const updateHomeBlocksListing = (block) => {
+    // Update the block list on the home
+    try {
+        const oldData = cache.readQuery({query: ReadBlocks, variables: { offset: "+", limit: 6 }});
         // Update the number of confirmations for all other blocks
         const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
         // Add the new block on top
         blocks.unshift(block);
         blocks.pop();
         const data = {blocks};
-        cache.writeQuery({query: ReadBlocks, data});
+        cache.writeQuery({query: ReadBlocks, variables: { offset: "+", limit: 6 }, data});
     } catch (e) {
         // Nothing to do
     }
@@ -244,6 +263,7 @@ const updateBlockNextHash = (block) => {
 const resolvers = {
     Mutation: {
         newBlock: (_, { block }) => {
+            updateHomeBlocksListing(block);
             updateBlocksListing(block);
             updateBlockNextHash(block);
         },
@@ -256,12 +276,12 @@ const resolvers = {
     }
 }
 
-// const init = async () => {
-//     await persistCache({
-//         cache,
-//         storage: window.localStorage,
-//     });
-// };
+//const init = async () => {
+//    await persistCache({
+//        cache,
+//        storage: window.localStorage,
+//    });
+//};
 
 const apolloClient = new ApolloClient({
     link: httpLink,
@@ -279,6 +299,7 @@ const linkActiveClass = 'my-link-active-class'
 Vue.material.router.linkActiveClass = linkActiveClass
 const routes = [
     { path: '/', component: Home },
+    { path: '/blocks', component: Blocks },
     { path: '/tip', component: Tip },
     { path: '/block/:id', component: Block },
     { path: '/tx/:id', component: Transaction }
@@ -297,7 +318,16 @@ Vue.mixin({
     }
 })
 
-// init().then(() => {})
+//init().then(() => {
+//    new Vue({
+//        el: '#app',
+//        router,
+//        // inject apolloProvider here like vue-router or vuex
+//        apolloProvider,
+//        render: h => h(App),
+//    })
+//})
+
 new Vue({
     el: '#app',
     router,

@@ -1,5 +1,8 @@
 <template>
     <div>
+        <div v-if="$apollo.loading">
+            <md-progress-bar md-mode="query"></md-progress-bar>
+        </div>
         <router-link :to="`/`">Home</router-link> > Help us
         <div></div>
         <p style="font-size: 12px">

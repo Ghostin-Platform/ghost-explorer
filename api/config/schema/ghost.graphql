@@ -36,6 +36,7 @@ type BlockChainInfo {
   version: String!
   name: String
   connections: Float
+  pooledTxCount: Int
   node_version: String
   height: Float
   timeoffset: Float

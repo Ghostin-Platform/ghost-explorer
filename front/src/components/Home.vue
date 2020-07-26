@@ -69,6 +69,17 @@
             </div>
             <div class="md-layout-item">
                 <div>
+                    <md-card class="md-primary" style="margin: auto">
+                        <md-card-header>
+                            <md-card-header-text>
+                                <md-icon>memory</md-icon>
+                                <span style="margin-left: 10px;">Next blocks will contains <b>{{ info.pooledTxCount }}</b> transactions in addition to the reward tx</span>
+                            </md-card-header-text>
+                        </md-card-header>
+                    </md-card>
+                </div>
+                <br/>
+                <div>
                     <div style="width: 100%; margin-bottom: 5px">
                         <b>6 Latest blocks</b>
                         <router-link style="float: right;" :to="`/blocks`">See all blocks</router-link>
@@ -305,7 +316,15 @@
                 value
               }
             }`,
-            blocks: () => ReadBlocks,
+            blocks: {
+                query: () => ReadBlocks,
+                variables() {
+                    return {
+                        offset: '+',
+                        limit: 6
+                    }
+                }
+            },
             transactions: () => ReadTxs
         },
     }

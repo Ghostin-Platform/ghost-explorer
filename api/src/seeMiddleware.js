@@ -2,7 +2,9 @@ import { logger } from './config/conf';
 
 export const EVENT_NEW_BLOCK = 'new_block';
 export const EVENT_NEW_TX = 'new_transaction';
-export const EVENT_NEW_POINT = 'new_point';
+
+export const EVENT_MEMPOOL_ADDED = 'new_mempool';
+export const EVENT_MEMPOOL_REMOVED = 'del_mempool';
 
 export const EVENT_UPDATE_INFO = 'update_info';
 export const EVENT_UPDATE_DFFICULTY = 'update_difficulty';

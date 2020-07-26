@@ -1,5 +1,8 @@
 <template>
     <div>
+        <div v-if="$apollo.loading">
+            <md-progress-bar md-mode="query"></md-progress-bar>
+        </div>
         <h2 style="font-family: 'Sen', sans-serif"><router-link :to="`/`">Home</router-link>
             > Block <span style="font-size: 16px"><router-link :to="`/block/${transaction.blockhash}`">#{{ transaction.blockheight }}</router-link></span>
             > Transaction <span style="font-size: 16px">#{{ transaction.txid }}</span></h2>
@@ -213,7 +216,6 @@
                             <md-button disabled style="width: 200px;" class="md-raised md-primary">-</md-button>
                         </div>
                         <div v-else-if="outElem.__typename === 'TxOutBlind'">
-
                             <div v-if="outElem.spentTxId">
                                 <md-button @click="$router.push(`/tx/${outElem.spentTxId}`)"
                                            style="width: 200px; background-color: #a94442" class="md-raised md-primary">Blinded (S)
