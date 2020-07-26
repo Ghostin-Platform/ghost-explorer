@@ -171,25 +171,25 @@
                 </router-link>
                 <span style="margin-left: 35px" class="md-list-item-text">
                     <span v-if="tx.type === 'reward'">
-                        Reward <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ reward }} Ghost (from {{ tx.out }} stake) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
+                        Reward <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ reward }} Ghost (from {{ tx.satIn }} stake) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                     </span>
                     <span v-else-if="tx.type === 'coinbase'">
-                        New coin <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ tx.out }} Ghost to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
+                        New coin <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ tx.out }} Ghost to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                     </span>
                     <span v-else-if="tx.type === 'blind'">
-                        Blinded <router-link :to="`/tx/${tx.id}`">transaction</router-link> ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
+                        Blinded <router-link :to="`/tx/${tx.id}`">transaction</router-link> ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                     </span>
                     <span v-else-if="tx.type === 'anon'">
                         Anonymous <router-link :to="`/tx/${tx.id}`">transaction</router-link> ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
                     </span>
                     <span v-else-if="tx.type === 'mixed_private'">
-                        Mixed blind/anon <router-link :to="`/tx/${tx.id}`">transaction</router-link> ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
+                        Mixed blind/anon <router-link :to="`/tx/${tx.id}`">transaction</router-link> ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                     </span>
                     <span v-else-if="tx.type === 'mixed_standard'">
                         Mixed standard/private <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
                     </span>
                     <span v-else>
-                        Standard <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddrSize }} addresses
+                        Standard <router-link :to="`/tx/${tx.id}`">transaction</router-link> of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                     </span>
                 </span>
                 <router-link :to="`/tx/${tx.id}`"><md-button class="md-raised md-primary">{{ confirmations }} Confirmations</md-button></router-link>
@@ -220,7 +220,7 @@
                 return this.info.height - this.block.height + 1;
             },
             reward() {
-                return (this.block.rewardSat / 1e8);
+                return (this.block.rewardSat / 1e8).toFixed(4);
             },
             fee() {
                 return (this.block.feeSat / 1e8);
@@ -239,10 +239,11 @@
                 return this.block.transactions.map(tx => {
                     const ago = moment(tx.time * 1000).from(moment());
                     const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
+                    const satIn = tx.inSat > 0 ? (tx.inSat / 1e8).toFixed(4) : 0;
                     const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(4) : 0;
                     const fee = tx.feeSat > 0 ? (tx.feeSat / 1e8).toFixed(6) : 0;
                     const confirmations = 0; //this.info.height - tx.blockheight + 1;
-                    return Object.assign(tx, {ago, transfer, out, fee, confirmations})
+                    return Object.assign(tx, {ago, transfer, out, satIn, fee, confirmations})
                 })
             },
         },

@@ -1,86 +1,23 @@
-import percentile from 'percentile';
-import { addSeriesPoint, STREAM_BLOCK_KEY, listenStream, write } from '../database/redis';
-import { ONE_DAY_OF_BLOCKS } from '../database/ghost';
-import seriesResolveFromFor from './processorUtils';
-import { broadcast, EVENT_UPDATE_DFFICULTY, EVENT_UPDATE_STAKEWEIGHT, EVENT_UPDATE_TXACTIVITY } from '../seeMiddleware';
+import { STREAM_BLOCK_KEY, listenStream, STREAM_TRANSACTION_KEY, write } from '../database/redis';
+import streamFromResolver from './processorUtils';
+import { elIndex, INDEX_BLOCK, INDEX_TRX } from '../database/elasticSearch';
 
-const computePercentStat = (values) => {
-  const haveValues = values.length;
-  const percent = percentile(90, values) || 0;
-  const min = haveValues ? Math.min(...values) : 0;
-  const max = haveValues ? Math.max(...values) : 0;
-  return { percentile: percent, min, max, size: values.length };
+// region indexing
+export const CURRENT_INDEXING_BLOCK = 'indexing.current.block';
+export const indexingBlockProcessor = async () => {
+  const from = await streamFromResolver(CURRENT_INDEXING_BLOCK);
+  return listenStream(STREAM_BLOCK_KEY, from, 'block', async (id, block) => {
+    await elIndex(INDEX_BLOCK, block);
+    await write(CURRENT_INDEXING_BLOCK, id);
+  });
 };
 
-// region stake weight
-let memoryStakes = []; // List of computed stake weight
-export const TIME_SERIES_STAKE_WEIGHT = 'seriesStakeWeight';
-export const TIME_SERIES_STAKE_WEIGHT_POSITION = 'timeseries.stake.weight.position';
-export const TIME_SERIES_STAKE_WEIGHT_PERCENTILE = 'timeseries.stake.weight.percentile';
-export const computeCurrentStakeWeight = () => computePercentStat(memoryStakes);
-const computeStakeWeightSeries = async (id, block) => {
-  const { time, rewardTx } = block;
-  if (!rewardTx) return;
-  if (memoryStakes.length > 0 && memoryStakes.length % ONE_DAY_OF_BLOCKS === 0) {
-    const percent = percentile(90, memoryStakes);
-    await addSeriesPoint(TIME_SERIES_STAKE_WEIGHT, TIME_SERIES_STAKE_WEIGHT_PERCENTILE, percent, time);
-    await write(TIME_SERIES_STAKE_WEIGHT_POSITION, id);
-    memoryStakes = [];
-  } else {
-    memoryStakes.push(rewardTx.outSat);
-    broadcast(EVENT_UPDATE_STAKEWEIGHT, computeCurrentStakeWeight());
-  }
-};
-export const statsStakeWeightProcessor = async () => {
-  const from = await seriesResolveFromFor(TIME_SERIES_STAKE_WEIGHT_POSITION, TIME_SERIES_STAKE_WEIGHT_PERCENTILE);
-  return listenStream(STREAM_BLOCK_KEY, from, async (id, block) => computeStakeWeightSeries(id, block));
-};
-// endregion
-
-// region difficulty
-let memoryDifficulties = [];
-export const TIME_SERIES_DIFFICULTY = 'seriesDifficulty';
-export const TIME_SERIES_DIFFICULTY_POSITION = 'timeseries.difficulty.position';
-export const TIME_SERIES_DIFFICULTY_PERCENTILE = 'timeseries.difficulty.percentile';
-export const computeCurrentDifficulty = () => computePercentStat(memoryDifficulties);
-const computeDifficultySeries = async (id, block) => {
-  const { time, difficulty } = block;
-  if (memoryDifficulties.length > 0 && memoryDifficulties.length % ONE_DAY_OF_BLOCKS === 0) {
-    const percent = percentile(90, memoryDifficulties);
-    await addSeriesPoint(TIME_SERIES_DIFFICULTY, TIME_SERIES_DIFFICULTY_PERCENTILE, percent, time);
-    await write(TIME_SERIES_DIFFICULTY_POSITION, id);
-    memoryDifficulties = [];
-  } else {
-    memoryDifficulties.push(difficulty);
-    broadcast(EVENT_UPDATE_DFFICULTY, computeCurrentDifficulty());
-  }
-};
-export const statsDifficultyProcessor = async () => {
-  const from = await seriesResolveFromFor(TIME_SERIES_DIFFICULTY_POSITION, TIME_SERIES_DIFFICULTY_PERCENTILE);
-  return listenStream(STREAM_BLOCK_KEY, from, async (id, block) => computeDifficultySeries(id, block));
-};
-// endregion
-
-// region transaction activity
-let memoryTxActivities = [];
-export const TIME_SERIES_TX_ACTIVITY = 'seriesTxActivity';
-export const TIME_SERIES_TX_ACTIVITY_POSITION = 'timeseries.tx.activity.position';
-export const TIME_SERIES_TX_ACTIVITY_PERCENTILE = 'timeseries.tx.activity.percentile';
-export const computeCurrentTxActivity = () => computePercentStat(memoryTxActivities);
-const computeTxActivitySeries = async (id, block) => {
-  const { time, txSize } = block;
-  if (memoryTxActivities.length > 0 && memoryTxActivities.length % ONE_DAY_OF_BLOCKS === 0) {
-    const percent = percentile(90, memoryTxActivities);
-    await addSeriesPoint(TIME_SERIES_TX_ACTIVITY, TIME_SERIES_TX_ACTIVITY_PERCENTILE, percent, time);
-    await write(TIME_SERIES_TX_ACTIVITY_POSITION, id);
-    memoryTxActivities = [];
-  } else {
-    memoryTxActivities.push(txSize);
-    broadcast(EVENT_UPDATE_TXACTIVITY, computeCurrentTxActivity());
-  }
-};
-export const statsTxActivityProcessor = async () => {
-  const from = await seriesResolveFromFor(TIME_SERIES_TX_ACTIVITY_POSITION, TIME_SERIES_TX_ACTIVITY_PERCENTILE);
-  return listenStream(STREAM_BLOCK_KEY, from, async (id, block) => computeTxActivitySeries(id, block));
+export const CURRENT_INDEXING_TRX = 'indexing.current.trx';
+export const indexingTrxProcessor = async () => {
+  const from = await streamFromResolver(CURRENT_INDEXING_TRX);
+  return listenStream(STREAM_TRANSACTION_KEY, from, 'tx', async (id, tx) => {
+    await elIndex(INDEX_TRX, tx);
+    await write(CURRENT_INDEXING_TRX, id);
+  });
 };
 // endregion

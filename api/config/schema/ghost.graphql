@@ -44,12 +44,18 @@ type BlockChainInfo {
   sync_percent: Float
   difficulty: Float
   stake_weight: Float
+  moneysupply: Float
   market: MarketInfo
 }
 
-type SerieDataPoint {
-  date: DateTime
-  value: Float
+type PercentileDataPoint {
+  time: Int!
+  value: StatPercentile!
+}
+
+type DataPoint {
+  time: Int!
+  value: Float!
 }
 
 type StatPercentile {
@@ -83,10 +89,10 @@ type Block {
   transferSat: Float
   variation: Float
   txSize: Int
-  transactions: [Transaction]
   rewardTx: Transaction
   rewardSat: Float
   confirmations: Int!
+  transactions(offset: Int! = 0, limit: Int! = 5): [Transaction]
 }
 
 type ScriptSig {
@@ -173,6 +179,11 @@ type VoutAddr {
   vout: [TxOut]
 }
 
+type VinAddr {
+  address: String!
+  vout: [TxIn]
+}
+
 type Transaction {
   id: ID!
   txid: String!
@@ -189,16 +200,22 @@ type Transaction {
   confirmations: Int
   time: Int
   variation: Float
-  inSat: Float
-  outSat: Float
   feeSat: Float
   transferSat: Float
+  # vin
+  inSat: Float
   vin: [TxIn]
+  vinAddresses: [String]
+  vinPerAddresses: [VinAddr]
+  vinAddressesSize: Int
   vinSize: Int
+  # vout
+  outSat: Float
   vout: [TxOut]
+  voutAddresses: [String]
+  voutPerAddresses: [VoutAddr]
+  voutAddressesSize: Int
   voutSize: Int
-  voutAddr: [VoutAddr]
-  voutAddrSize: Int
 }
 type Address {
   id: ID!
@@ -207,9 +224,9 @@ type Address {
   totalReceived: Float
   totalSent: Float
   nbTx: Int
-  txVariations: [SerieDataPoint]
-  rewards: [SerieDataPoint]
-  fees: [SerieDataPoint]
+  txVariations: [PercentileDataPoint]
+  rewards: [PercentileDataPoint]
+  fees: [PercentileDataPoint]
   transactions: [Transaction]
 }
 
@@ -227,12 +244,11 @@ type Query {
   blocks(offset: String! = "+", limit: Int! = 5): [Block]
   rewards(offset: String! = "+", limit: Int! = 15): [Reward]
   transaction(id: String!): Transaction
-  transactions(offset: String! = "+", limit: Int! = 5): [Transaction]
+  transactions(offset: String! = "+", limit: Int! = 15): [Transaction]
   address(id: String!): Address
   difficulty: StatPercentile
-  seriesDifficulty: [SerieDataPoint]
+  seriesDifficulty: [PercentileDataPoint]
   stakeWeight: StatPercentile
-  seriesStakeWeight: [SerieDataPoint]
-  txActivity: StatPercentile
-  seriesTxActivity: [SerieDataPoint]
+  seriesStakeWeight: [PercentileDataPoint]
+  seriesTxCount: [DataPoint]
 }

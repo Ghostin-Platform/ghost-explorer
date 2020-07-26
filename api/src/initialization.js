@@ -2,15 +2,17 @@
 import { logger } from './config/conf';
 import { write, fetch, clear, redisIsAlive, storeBlock, storeTransaction } from './database/redis';
 import { getChainHeight } from './config/utils';
-import { CURRENT_BLOCK, enrichBlock, getBlockByHeight, getNetworkInfo } from './database/ghost';
-import initBlockListener from './database/zeromq';
 import {
-  statsDifficultyProcessor,
-  statsStakeWeightProcessor,
-  statsTxActivityProcessor,
-} from './processor/statisticProcessor';
+  CURRENT_PROCESSING_BLOCK,
+  enrichBlock,
+  getBlockByHeight,
+  getBlockTransactions,
+  getNetworkInfo,
+} from './database/ghost';
+import initBlockListener from './database/zeromq';
 import { broadcast, EVENT_NEW_BLOCK, EVENT_NEW_TX, EVENT_UPDATE_INFO } from './seeMiddleware';
-import { elIsAlive } from './database/elasticSearch';
+import { elCreateIndexes, elDeleteIndexes, elIsAlive } from './database/elasticSearch';
+import { indexingBlockProcessor, indexingTrxProcessor } from './processor/statisticProcessor';
 
 // Check every dependencies
 const checkSystemDependencies = async () => {
@@ -23,21 +25,23 @@ const checkSystemDependencies = async () => {
 };
 
 const processBlockData = async (block) => {
-  const { height, transactions } = block;
+  const { height, tx } = block;
   await storeBlock(block);
+  const transactions = await getBlockTransactions(block, 0, tx.length);
   for (let index = 0; index < transactions.length; index += 1) {
     const transaction = transactions[index];
     await storeTransaction(index, transaction);
   }
-  await write(CURRENT_BLOCK, height);
+  await write(CURRENT_PROCESSING_BLOCK, height);
+  return { block, transactions };
 };
 
 const initializePlatform = async (newPlatform) => {
   if (newPlatform) {
-    await clear(CURRENT_BLOCK);
+    await clear(CURRENT_PROCESSING_BLOCK);
   }
   // Get current situation
-  const currentBlock = await fetch(CURRENT_BLOCK);
+  const currentBlock = await fetch(CURRENT_PROCESSING_BLOCK);
   const chainBlockHeight = await getChainHeight();
   // Looking if we have some missing processing blocks
   const currentSyncBlock = currentBlock || -1;
@@ -53,7 +57,7 @@ const initializePlatform = async (newPlatform) => {
     return;
   }
   // If it take too long to re-sync, do it again recursively
-  const initLastBlock = await fetch(CURRENT_BLOCK);
+  const initLastBlock = await fetch(CURRENT_PROCESSING_BLOCK);
   const currentHeight = await getChainHeight();
   if (initLastBlock < currentHeight) {
     await initializePlatform(false);
@@ -61,35 +65,34 @@ const initializePlatform = async (newPlatform) => {
 };
 
 const initStreamProcessors = async () => {
-  // await statsDifficultyProcessor();
-  // await statsStakeWeightProcessor();
-  // await statsTxActivityProcessor();
+  await indexingBlockProcessor();
+  await indexingTrxProcessor();
 };
 
 const platformInit = async (reindex = false) => {
   try {
     // Check deps
     await checkSystemDependencies();
+    await elCreateIndexes();
+    await initStreamProcessors();
     // Start the platform
-    const newPlatform = (await fetch(CURRENT_BLOCK)) === undefined;
+    const newPlatform = (await fetch(CURRENT_PROCESSING_BLOCK)) === undefined;
     initializePlatform(newPlatform || reindex).then(async () => {
       // Listen directly new block with zeroMQ
       await initBlockListener(async (block) => {
         const enrichedBlock = await enrichBlock(block);
-        await processBlockData(enrichedBlock);
+        const { transactions } = await processBlockData(enrichedBlock);
         // Broadcasting
         const broadcasts = [];
         const networkInfo = await getNetworkInfo();
         broadcasts.push(broadcast(EVENT_UPDATE_INFO, networkInfo));
         broadcasts.push(broadcast(EVENT_NEW_BLOCK, enrichedBlock));
-        const { transactions } = enrichedBlock;
         for (let index = 0; index < transactions.length; index += 1) {
           const transaction = transactions[index];
           broadcasts.push(broadcast(EVENT_NEW_TX, transaction));
         }
         await Promise.all(broadcasts);
       });
-      await initStreamProcessors();
     });
   } catch (e) {
     logger.error(e);

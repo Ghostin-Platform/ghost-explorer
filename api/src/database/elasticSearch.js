@@ -1,9 +1,11 @@
 /* eslint-disable no-underscore-dangle */
 import { Client } from '@elastic/elasticsearch';
 import * as R from 'ramda';
+import moment from 'moment';
 import conf, { logger } from '../config/conf';
 import { ConfigurationError, DatabaseError } from '../config/errors';
 
+const MAX_WINDOW_SIZE = 50000;
 export const INDEX_BLOCK = 'ghost_block';
 export const INDEX_TRX = 'ghost_trx';
 export const PLATFORM_INDICES = [INDEX_BLOCK, INDEX_TRX];
@@ -25,11 +27,6 @@ export const elIsAlive = async () => {
         throw ConfigurationError('ElasticSearch seems down');
       }
     );
-};
-
-export const elIndexExists = async (indexName) => {
-  const existIndex = await el.indices.exists({ index: indexName });
-  return existIndex.body === true;
 };
 
 export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
@@ -55,14 +52,6 @@ export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
               },
               mappings: {
                 dynamic_templates: [
-                  {
-                    integers: {
-                      match_mapping_type: 'long',
-                      mapping: {
-                        type: 'integer',
-                      },
-                    },
-                  },
                   {
                     strings: {
                       match_mapping_type: 'string',
@@ -108,6 +97,7 @@ export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
     })
   );
 };
+
 export const elDeleteIndexes = async (indexesToDelete = PLATFORM_INDICES) => {
   return Promise.all(
     indexesToDelete.map((index) => {
@@ -121,158 +111,21 @@ export const elDeleteIndexes = async (indexesToDelete = PLATFORM_INDICES) => {
   );
 };
 
-export const elCount = (indexName, options = {}) => {
-  const { endDate = null, types = null, relationshipType = null, fromId = null } = options;
-  let must = [];
-  if (endDate !== null) {
-    must = R.append(
-      {
-        range: {
-          created_at: {
-            format: 'strict_date_optional_time',
-            lt: endDate,
-          },
-        },
-      },
-      must
-    );
-  }
-  if (types !== null && types.length > 0) {
-    const should = types.map((typeValue) => {
-      return {
-        bool: {
-          should: [{ match_phrase: { 'entity_type.keyword': typeValue } }],
-          minimum_should_match: 1,
-        },
-      };
-    });
-    must = R.append(
-      {
-        bool: {
-          should,
-          minimum_should_match: 1,
-        },
-      },
-      must
-    );
-  }
-  if (relationshipType !== null) {
-    must = R.append(
-      {
-        bool: {
-          should: {
-            match_phrase: { 'relationship_type.keyword': relationshipType },
-          },
-        },
-      },
-      must
-    );
-  }
-  if (fromId !== null) {
-    must = R.append(
-      {
-        bool: {
-          should: {
-            match_phrase: { 'connections.internal_id': fromId },
-          },
-          minimum_should_match: 1,
-        },
-      },
-      must
-    );
-  }
-  const query = {
-    index: indexName,
-    body: {
-      query: {
-        bool: {
-          must,
-        },
-      },
-    },
-  };
-  logger.debug(`[ELASTICSEARCH] countEntities`, { query });
-  return el.count(query).then((data) => {
-    return data.body.count;
-  });
-};
-export const elAggregationCount = (type, aggregationField, start, end) => {
-  const haveRange = start && end;
-  const dateFilter = [];
-  if (haveRange) {
-    dateFilter.push({
-      range: {
-        created_at: {
-          gte: start,
-          lte: end,
-        },
-      },
-    });
-  }
-  const query = {
-    index: PLATFORM_INDICES,
-    body: {
-      size: 10000,
-      query: {
-        bool: {
-          must: dateFilter,
-          should: [{ match_phrase: { 'entity_type.keyword': type } }],
-          minimum_should_match: 1,
-        },
-      },
-      aggs: {
-        genres: {
-          terms: {
-            field: `${aggregationField}.keyword`,
-            size: 100,
-          },
-        },
-      },
-    },
-  };
-  logger.debug(`[ELASTICSEARCH] aggregationCount`, { query });
-  return el.search(query).then((data) => {
-    const { buckets } = data.body.aggregations.genres;
-    return R.map((b) => ({ label: b.key, value: b.doc_count }), buckets);
-  });
-};
-
-/* istanbul ignore next */
-export const elReindex = async (indices) => {
-  return Promise.all(
-    indices.map((indexMap) => {
-      return el.reindex({
-        timeout: '60m',
-        body: {
-          source: {
-            index: indexMap.source,
-          },
-          dest: {
-            index: indexMap.dest,
-          },
-        },
-      });
-    })
-  );
-};
 export const elIndex = async (indexName, documentBody, refresh = true) => {
-  const internalId = documentBody.internal_id;
-  const entityType = documentBody.entity_type ? documentBody.entity_type : '';
-  logger.debug(`[ELASTICSEARCH] index > ${entityType} ${internalId} in ${indexName}`, documentBody);
   await el
     .index({
       index: indexName,
-      id: documentBody.internal_id,
+      id: documentBody.id,
       refresh,
       timeout: '60m',
-      body: R.dissoc('_index', documentBody),
+      body: documentBody,
     })
     .catch((err) => {
       throw DatabaseError('Error indexing elastic', { error: err, body: documentBody });
     });
   return documentBody;
 };
-/* istanbul ignore next */
+
 export const elUpdate = (indexName, documentId, documentBody, retry = 5) => {
   return el
     .update({
@@ -287,6 +140,7 @@ export const elUpdate = (indexName, documentId, documentBody, retry = 5) => {
       throw DatabaseError('Error updating elastic', { error: err, documentId, body: documentBody });
     });
 };
+
 export const elDeleteByField = async (indexName, fieldName, value) => {
   const query = {
     match: { [fieldName]: value },
@@ -298,3 +152,294 @@ export const elDeleteByField = async (indexName, fieldName, value) => {
   });
   return value;
 };
+
+export const currentDayStakeWeight = () => {
+  const start = moment().startOf('day').unix();
+  const query = {
+    index: INDEX_TRX,
+    _source_excludes: '*', // Dont need to get anything
+    size: MAX_WINDOW_SIZE,
+    body: {
+      query: {
+        bool: {
+          must: [
+            { match_phrase: { type: 'reward' } },
+            {
+              range: {
+                time: {
+                  gte: start,
+                },
+              },
+            },
+          ],
+        },
+      },
+      aggs: {
+        stake_size: {
+          percentiles: {
+            field: `inSat`,
+          },
+        },
+        min_stake: {
+          min: {
+            field: `inSat`,
+          },
+        },
+        max_stake: {
+          max: {
+            field: `inSat`,
+          },
+        },
+      },
+    },
+  };
+  return el.search(query).then((data) => {
+    const agg = data.body.aggregations;
+    const percentile = agg.stake_size.values['95.0'];
+    const min = agg.min_stake.value;
+    const max = agg.max_stake.value;
+    const size = data.body.hits.total.value;
+    return { min, max, size, percentile };
+  });
+};
+
+export const monthlyStakeWeight = () => {
+  const start = moment().startOf('month').unix();
+  const query = {
+    index: INDEX_TRX,
+    _source_excludes: '*', // Dont need to get anything
+    size: MAX_WINDOW_SIZE,
+    body: {
+      query: {
+        bool: {
+          must: [
+            { match_phrase: { type: 'reward' } },
+            {
+              range: {
+                time: {
+                  gte: start,
+                },
+              },
+            },
+          ],
+        },
+      },
+      aggs: {
+        stake_per_day: {
+          date_histogram: {
+            field: 'time',
+            calendar_interval: 'day',
+          },
+          aggs: {
+            stake_size: {
+              percentiles: {
+                field: `inSat`,
+              },
+            },
+            min_stake: {
+              min: {
+                field: `inSat`,
+              },
+            },
+            max_stake: {
+              max: {
+                field: `inSat`,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return el.search(query).then((data) => {
+    const { buckets } = data.body.aggregations.stake_per_day;
+    return R.map(
+      (b) => ({
+        time: b.key / 1000,
+        value: {
+          percentile: b.stake_size.values['95.0'],
+          min: b.min_stake.value,
+          max: b.max_stake.value,
+          size: b.doc_count,
+        },
+      }),
+      buckets
+    );
+  });
+};
+
+export const monthlyTxCount = () => {
+  const start = moment().startOf('month').unix();
+  const query = {
+    index: INDEX_BLOCK,
+    _source_excludes: '*', // Dont need to get anything
+    size: MAX_WINDOW_SIZE,
+    body: {
+      query: {
+        bool: {
+          must: [
+            {
+              range: {
+                time: {
+                  gte: start,
+                },
+              },
+            },
+          ],
+        },
+      },
+      aggs: {
+        tx_per_day: {
+          date_histogram: {
+            field: 'time',
+            calendar_interval: 'day',
+          },
+          aggs: {
+            supply: {
+              sum: {
+                field: `txSize`,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return el.search(query).then((data) => {
+    const { buckets } = data.body.aggregations.tx_per_day;
+    return R.map(
+      (b) => ({
+        time: b.key / 1000,
+        value: b.supply.value,
+      }),
+      buckets
+    );
+  });
+};
+
+export const monthlyDifficulty = () => {
+  const start = moment().startOf('month').unix();
+  const query = {
+    index: INDEX_BLOCK,
+    _source_excludes: '*', // Dont need to get anything
+    size: MAX_WINDOW_SIZE,
+    body: {
+      query: {
+        bool: {
+          must: [
+            {
+              range: {
+                time: {
+                  gte: start,
+                },
+              },
+            },
+          ],
+        },
+      },
+      aggs: {
+        difficulty_per_day: {
+          date_histogram: {
+            field: 'time',
+            calendar_interval: 'day',
+          },
+          aggs: {
+            difficulty_size: {
+              percentiles: {
+                field: `difficulty`,
+              },
+            },
+            min_difficulty: {
+              min: {
+                field: `difficulty`,
+              },
+            },
+            max_difficulty: {
+              max: {
+                field: `difficulty`,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return el.search(query).then((data) => {
+    const { buckets } = data.body.aggregations.difficulty_per_day;
+    return R.map(
+      (b) => ({
+        time: b.key / 1000,
+        value: {
+          percentile: b.difficulty_size.values['95.0'],
+          min: b.min_difficulty.value,
+          max: b.max_difficulty.value,
+          size: b.doc_count,
+        },
+      }),
+      buckets
+    );
+  });
+};
+
+/*
+export const monthlySupply = () => {
+  const start = moment().startOf('month').unix();
+  const query = {
+    index: INDEX_TRX,
+    _source_excludes: '*', // Dont need to get anything
+    size: MAX_WINDOW_SIZE,
+    body: {
+      query: {
+        bool: {
+          must: [
+            {
+              range: {
+                time: {
+                  gte: start,
+                },
+              },
+            },
+          ],
+          should: [{ match_phrase: { type: 'coinbase' } }, { match_phrase: { type: 'reward' } }],
+          minimum_should_match: 1,
+        },
+      },
+      aggs: {
+        supply_per_day: {
+          date_histogram: {
+            field: 'time',
+            calendar_interval: 'day',
+          },
+          aggs: {
+            supply: {
+              sum: {
+                field: `variation`,
+              },
+            },
+            cumulative_supply: {
+              cumulative_sum: {
+                buckets_path: 'supply',
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return el
+    .search(query)
+    .then((data) => {
+      const { buckets } = data.body.aggregations.supply_per_day;
+      return R.map(
+        (b) => ({
+          time: b.key / 1000,
+          value: b.cumulative_supply.value,
+        }),
+        buckets
+      );
+    })
+    .catch((e) => {
+      throw e;
+    });
+};
+*/

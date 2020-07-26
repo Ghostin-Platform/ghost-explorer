@@ -1,5 +1,12 @@
 import * as R from 'ramda';
-import { getEnrichedBlockByHash, getEnrichedBlockByHeight, getNetworkInfo, getTransaction } from '../database/ghost';
+import { Promise } from 'bluebird';
+import {
+  getEnrichedBlockByHash,
+  getEnrichedBlockByHeight,
+  getNetworkInfo,
+  getTransaction,
+  GROUP_CONCURRENCY,
+} from '../database/ghost';
 import { rpcCall } from '../config/utils';
 import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
 
@@ -39,7 +46,10 @@ export const getRewards = async (offset, limit) => {
 
 export const getAddressById = async (id) => {
   const transactions = await rpcCall('getaddresstxids', [id]);
-  const resolvedTxs = await Promise.all(R.map((tx) => getTransaction(tx), transactions));
+  // const resolvedTxs = await Promise.all(R.map((tx) => getTransaction(tx), R.take(3, transactions)));
+  const resolvedTxs = await Promise.map(transactions, (txId) => getTransaction(txId), {
+    concurrency: GROUP_CONCURRENCY,
+  });
   const rewards = [];
   const fees = [];
   const txVariations = [];
@@ -83,6 +93,7 @@ export const getAddressById = async (id) => {
   const totalSent = R.sum(R.filter((t) => t.value < 0, txVariations).map((s) => s.value));
   const balance = totalReceived + totalSent;
   return {
+    id,
     address: id,
     balance,
     totalReceived,

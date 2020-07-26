@@ -2,20 +2,22 @@
     <div class="page-container">
             <md-content>
                 <div style=" position: sticky; top: 0; z-index: 9999">
-                    <div class="md-layout" style="background-color: #373737; padding-top: 15px; padding-bottom: 15px;">
+                    <div class="md-layout" style="background-color: #162447; padding-top: 15px; padding-bottom: 15px;">
                         <div class="md-layout-item md-size-15"></div>
                         <div class="md-layout-item">
                             <div class="md-layout-item md-layout md-gutter">
-                                <div class="md-layout-item md-size-15">
+                                <div class="md-layout-item md-size-10" style="padding-left: 0">
                                     <img alt="Vue logo" src="./assets/logo.png" width="32">
-                                    <span style="font-family: 'Sen', sans-serif; margin-left: 10px; font-size: 22px" class="md-title">ghostin</span>
+                                    <span style="font-family: 'Sen', sans-serif; margin-left: 10px; font-size: 18px" class="md-title">ghostin</span>
                                 </div>
-                                <div class="md-layout-item md-size-15">
-                                    <md-button @click.native="$router.push({ path: '/'})" style="margin: 0 !important;">Blockchain explorer</md-button>
+                                <div class="md-layout-item md-size-20" style="padding-top: 5px">
+                                    <router-link style="font-family: 'Sen', sans-serif; font-size: 18px;" :to="`/`">blockchain explorer</router-link>
                                 </div>
+                                <!--
                                 <div class="md-layout-item md-size-10">
                                     <md-button @click.native="$router.push({ path: '/cold'})" style="margin: 0 !important;">Cold staking pool</md-button>
                                 </div>
+                                -->
                             </div>
                         </div>
                         <div class="md-layout-item md-size-15"></div>

@@ -1,12 +1,10 @@
 /* eslint-disable no-await-in-loop */
 import Redis from 'ioredis';
-import moment from 'moment';
 import * as R from 'ramda';
 import conf, { logger } from '../config/conf';
 import { DatabaseError } from '../config/errors';
-import { broadcast, EVENT_NEW_POINT } from '../seeMiddleware';
 
-const ONE_YEAR_SEC_RETENTION = 31556952;
+// const ONE_YEAR_SEC_RETENTION = 31556952;
 export const STREAM_TRANSACTION_KEY = 'stream.transactions';
 export const STREAM_BLOCK_KEY = 'stream.blocks';
 const redisOptions = {
@@ -72,27 +70,6 @@ export const clear = async (key) => {
 };
 // endregion
 
-// region time series
-export const initTimeseries = async (name, retention = ONE_YEAR_SEC_RETENTION) => {
-  const client = await getClient();
-  await client.call('TS.CREATE', name, 'RETENTION', retention);
-};
-
-export const addSeriesPoint = async (series, name, value, stamp) => {
-  const client = await getClient();
-  logger.info(`[Ghost Explorer] Add series point: ${name} ${value} ${stamp}`);
-  await client.call('TS.ADD', name, stamp, value);
-  await broadcast(EVENT_NEW_POINT, { date: stamp, value, series });
-};
-
-export const timeseries = async (name) => {
-  const startDate = moment().subtract(1, 'months');
-  const client = await getClient();
-  const valueSeries = await client.call('TS.RANGE', name, startDate.unix(), '+');
-  return R.map((item) => ({ date: R.head(item), value: R.last(item) }), valueSeries);
-};
-// endregion
-
 // region stream
 const storeEvent = async (streamKey, id, key, data) => {
   const client = await getClient();
@@ -130,7 +107,7 @@ export const streamRange = async (streamKey, offset, limit) => {
   return client.call('XREVRANGE', streamKey, offset, '-', 'COUNT', limit);
 };
 
-export const listenStream = async (streamKey, from, callback) => {
+export const listenStream = async (streamKey, from, dataKey, callback) => {
   const client = await getClient();
   let lastProcessedEventId = from;
   const processStep = () => {
@@ -138,9 +115,9 @@ export const listenStream = async (streamKey, from, callback) => {
       if (streamResult) {
         const [, results] = R.head(streamResult);
         const data = R.head(R.map((r) => mapStreamToJS(r), results));
-        const { eventId, block } = data;
+        const { eventId } = data;
         lastProcessedEventId = eventId;
-        await callback(eventId, block);
+        await callback(eventId, data[dataKey]);
       }
       return true;
     });

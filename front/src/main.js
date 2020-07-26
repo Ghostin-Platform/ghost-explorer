@@ -15,6 +15,8 @@ import './assets/ghost.css'
 import Block from "./components/Block";
 import Transaction from "./components/Transaction";
 import Home from "./components/Home";
+import Tip from "./components/Tip";
+import VueQrcode from '@chenfengyuan/vue-qrcode';
 
 // region configuration
 const graphqlApi = 'http://localhost:4000/graphql';
@@ -24,6 +26,7 @@ Vue.use(VueApollo)
 Vue.use(VueSSE)
 Vue.use(VueMaterial)
 Vue.use(VueRouter)
+Vue.component(VueQrcode.name, VueQrcode);
 // endregion
 
 // region internal mutation
@@ -45,17 +48,18 @@ export const GetBlock = gql`query GetBlock($id: String!) {
         outSat
         size
         version
-        transactions {
+        transactions(offset: 0, limit: 50) {
             id
             type
             txid
             voutSize
-            voutAddrSize
+            voutAddressesSize
             hash
             time
             size
             blockheight
             feeSat
+            inSat
             outSat
             transferSat
         }
@@ -71,6 +75,7 @@ export const ReadInfo = gql`query {
         connections
         sync_height
         sync_percent
+        moneysupply
         market {
             usd
             usd_market_cap
@@ -80,6 +85,7 @@ export const ReadInfo = gql`query {
         }
     }
 }`
+
 export const clientInfoUpdateMutation = gql`
     mutation($info: BlockChainInfo!) {
         updateInfo(info: $info) @client
@@ -219,6 +225,7 @@ const linkActiveClass = 'my-link-active-class'
 Vue.material.router.linkActiveClass = linkActiveClass
 const routes = [
     { path: '/', component: Home },
+    { path: '/tip', component: Tip },
     { path: '/block/:id', component: Block },
     { path: '/tx/:id', component: Transaction }
 ]

@@ -1,14 +1,12 @@
 import { getAddressById, getBlockById, getBlocks, getRewards, getTransactions, info } from '../domain/info';
+import { fetch } from '../database/redis';
+import { CURRENT_PROCESSING_BLOCK, getBlockTransactions, getTransaction } from '../database/ghost';
 import {
-  computeCurrentDifficulty,
-  computeCurrentStakeWeight,
-  computeCurrentTxActivity,
-  TIME_SERIES_DIFFICULTY_PERCENTILE,
-  TIME_SERIES_STAKE_WEIGHT_PERCENTILE,
-  TIME_SERIES_TX_ACTIVITY_PERCENTILE,
-} from '../processor/statisticProcessor';
-import { fetch, timeseries } from '../database/redis';
-import { CURRENT_BLOCK, getTransaction } from '../database/ghost';
+  currentDayStakeWeight,
+  monthlyDifficulty,
+  monthlyStakeWeight,
+  monthlyTxCount,
+} from '../database/elasticSearch';
 
 const infoResolver = {
   Query: {
@@ -19,19 +17,18 @@ const infoResolver = {
     transactions: (_, { offset, limit }) => getTransactions(offset, limit),
     rewards: (_, { offset, limit }) => getRewards(offset, limit),
     address: (_, { id }) => getAddressById(id),
-    stakeWeight: () => computeCurrentStakeWeight(),
-    seriesStakeWeight: () => timeseries(TIME_SERIES_STAKE_WEIGHT_PERCENTILE),
-    difficulty: () => computeCurrentDifficulty(),
-    seriesDifficulty: () => timeseries(TIME_SERIES_DIFFICULTY_PERCENTILE),
-    txActivity: () => computeCurrentTxActivity(),
-    seriesTxActivity: () => timeseries(TIME_SERIES_TX_ACTIVITY_PERCENTILE),
+    stakeWeight: () => currentDayStakeWeight(),
+    seriesStakeWeight: () => monthlyStakeWeight(),
+    seriesDifficulty: () => monthlyDifficulty(),
+    seriesTxCount: () => monthlyTxCount(),
   },
   Block: {
-    confirmations: (block) => fetch(CURRENT_BLOCK).then((height) => 1 + (height - block.height)),
+    transactions: (block, { offset, limit }) => getBlockTransactions(block, offset, limit),
+    confirmations: (block) => fetch(CURRENT_PROCESSING_BLOCK).then((height) => 1 + (height - block.height)),
   },
   Transaction: {
     block: (tx) => getBlockById(tx.blockhash),
-    confirmations: (tx) => fetch(CURRENT_BLOCK).then((height) => 1 + (height - tx.height)),
+    confirmations: (tx) => fetch(CURRENT_PROCESSING_BLOCK).then((height) => 1 + (height - tx.height)),
   },
   TxIn: {
     __resolveType: (obj) => {

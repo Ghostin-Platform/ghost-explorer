@@ -1,11 +1,13 @@
 import * as R from 'ramda';
+import { Promise } from 'bluebird';
 import { getCoinMarket, rpcCall } from '../config/utils';
 import { blockStreamId, fetch } from './redis';
 
 export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
 export const BLOCK_MATURITY = 100;
-export const CURRENT_BLOCK = 'current.block';
+export const CURRENT_PROCESSING_BLOCK = 'processing.current.block';
+export const GROUP_CONCURRENCY = 25; // Number of query in //
 
 const toSat = (num) => num * 100000000;
 
@@ -20,7 +22,7 @@ export const getNetworkInfo = async () => {
     blockchainInfoPromise,
     coinMarketPromise,
   ]);
-  const currentBlock = await fetch(CURRENT_BLOCK);
+  const currentBlock = await fetch(CURRENT_PROCESSING_BLOCK);
   const syncPercent = (currentBlock * 100) / blockchainInfo.blocks;
   return {
     // Internal sync
@@ -39,6 +41,8 @@ export const getNetworkInfo = async () => {
     verification_progress: blockchainInfo.verificationprogress,
     difficulty: stackInfo.difficulty,
     stake_weight: stackInfo.netstakeweight,
+    moneysupply: blockchainInfo.moneysupply,
+    delayedblocks: blockchainInfo.delayedblocks,
   };
 };
 
@@ -78,6 +82,26 @@ const computeTrxType = (rawTransaction) => {
   return TYPE_MIXED_STANDARD;
 };
 
+const computeVinPerAddr = (rawTransaction) => {
+  const addresses = new Map();
+  for (let index = 0; index < rawTransaction.vin.length; index += 1) {
+    const rawVin = rawTransaction.vin[index];
+    if (rawVin.address) {
+      const current = addresses.get(rawVin.address);
+      if (current) {
+        current.push(rawVin);
+      } else {
+        addresses.set(rawVin.address, [rawVin]);
+      }
+    }
+  }
+  const vinPerAddresses = [];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const [key, value] of addresses.entries()) {
+    vinPerAddresses.push({ address: key, vin: value });
+  }
+  return vinPerAddresses;
+};
 const computeVoutPerAddr = (rawTransaction) => {
   const addresses = new Map();
   for (let index = 0; index < rawTransaction.vout.length; index += 1) {
@@ -94,60 +118,72 @@ const computeVoutPerAddr = (rawTransaction) => {
       }
     }
   }
-  return addresses;
+  const voutPerAddresses = [];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const [key, value] of addresses.entries()) {
+    voutPerAddresses.push({ address: key, vout: value });
+  }
+  return voutPerAddresses;
 };
 
 export const getTransaction = (txId) =>
-  rpcCall('getrawtransaction', [txId, 1]).then(async (rawTransaction) => {
-    if (!rawTransaction) return null;
-    const block = await getBlockByHash(rawTransaction.blockhash);
-    const inSat = R.sum(R.map((v) => v.valueSat || 0, rawTransaction.vin));
-    const outSat = R.sum(R.map((v) => v.valueSat || 0, rawTransaction.vout));
-    // eslint-disable-next-line no-bitwise
-    const isReward = ((rawTransaction.version >> 8) & 0xff) === 2;
-    const variation = isReward ? outSat - inSat : inSat - outSat;
+  rpcCall('getrawtransaction', [txId, 1]).then(async (rawTx) => {
+    if (!rawTx) return null;
+    const block = await getBlockByHash(rawTx.blockhash);
+    const inSat = R.sum(R.map((v) => v.valueSat || 0, rawTx.vin));
+    const outSat = R.sum(R.map((v) => v.valueSat || 0, rawTx.vout));
     // compute fees
-    const type = computeTrxType(rawTransaction);
-    const dataOut = R.filter((b) => b.type === TYPE_DATA && b.ct_fee, rawTransaction.vout);
+    const type = computeTrxType(rawTx);
+    const isReward = type === TYPE_REWARD;
+    const isCoinbase = type === TYPE_COINBASE;
+    const variation = isReward || isCoinbase ? outSat - inSat : inSat - outSat;
+    const dataOut = R.filter((b) => b.type === TYPE_DATA && b.ct_fee, rawTx.vout);
     let feeSat = 0;
     if (type !== TYPE_COINBASE && type !== TYPE_REWARD) {
       feeSat = dataOut.length === 0 ? variation : toSat(R.sum(R.map((o) => o.ct_fee || 0, dataOut)));
     }
     // Compute spent amount (coins changing address)
-    const inAddresses = R.map((v) => v.address, rawTransaction.vin);
-    const outDiff = R.filter(
-      (r) => !inAddresses.includes(R.head(r.scriptPubKey?.addresses ?? [])),
-      rawTransaction.vout
-    );
+    const vinAddresses = R.map((v) => v.address, rawTx.vin);
+    const outDiff = R.filter((r) => !vinAddresses.includes(R.head(r.scriptPubKey?.addresses ?? [])), rawTx.vout);
     // vout per addresses
-    const voutAddr = [];
-    const voutAddrMap = computeVoutPerAddr(rawTransaction);
-    // eslint-disable-next-line no-restricted-syntax
-    for (const [key, value] of voutAddrMap.entries()) {
-      voutAddr.push({ address: key, vout: value });
-    }
+    const voutPerAddresses = computeVoutPerAddr(rawTx);
+    const voutAddresses = R.map((v) => v.address, voutPerAddresses);
+    const vinPerAddresses = computeVinPerAddr(rawTx);
     const transferSat = R.sum(R.map((s) => s.valueSat || 0, outDiff));
-    return Object.assign(rawTransaction, {
+    return Object.assign(rawTx, {
       __typename: 'Transaction',
-      id: rawTransaction.txid,
+      id: rawTx.txid,
       type,
       blockheight: block.height,
-      voutSize: R.filter((tx) => tx.type !== TYPE_DATA, rawTransaction.vout).length,
-      vinSize: rawTransaction.vin.length,
-      variation,
+      // vin
       inSat,
+      vinAddresses,
+      vinPerAddresses,
+      vinAddressesSize: vinAddresses.length,
+      vinSize: rawTx.vin.length,
+      // vout
       outSat,
+      voutAddresses,
+      voutPerAddresses,
+      voutAddressesSize: voutAddresses.length,
+      voutSize: R.filter((tx) => tx.type !== TYPE_DATA, rawTx.vout).length,
+      // Sat computation
+      variation,
       feeSat,
       transferSat,
-      voutAddr,
-      voutAddrSize: voutAddr.length,
     });
   });
+
+export const getBlockTransactions = (block, offset = 0, limit = 5) => {
+  const { tx } = block;
+  const limitedTxs = R.take(limit, tx.slice(offset));
+  return Promise.map(limitedTxs, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
+};
 
 export const enrichBlock = async (block) => {
   const { height, tx, confirmations } = block;
   // Resolving transactions
-  const transactions = await Promise.all(R.map(async (txId) => getTransaction(txId), tx));
+  const transactions = await getBlockTransactions(block, 0, tx.length);
   // Process reward transaction
   const rewardTx = R.find((indexTx) => indexTx.type === TYPE_REWARD, transactions);
   const inSat = R.sum(R.map((t) => t.inSat, transactions));
@@ -182,10 +218,10 @@ export const enrichBlock = async (block) => {
     feeSat,
     transferSat,
     variation: inSat - outSat,
+    tx,
     txSize: block.nTx,
     rewardTx,
     rewardSat: rewardTx ? rewardTx.variation : 0,
-    transactions,
   };
 };
 
