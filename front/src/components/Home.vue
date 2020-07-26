@@ -38,7 +38,7 @@
                         </md-card-header-text>
                     </md-card-header>
                 </md-card>
-                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
                             <div class="md-title">{{ displayDifficulty }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
@@ -47,7 +47,7 @@
                         </md-card-header-text>
                     </md-card-header>
                 </md-card>
-                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
                             <div class="md-title">{{ (stakeWeight.percentile/ 1e8).toFixed(2) }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
@@ -56,21 +56,26 @@
                         </md-card-header-text>
                     </md-card-header>
                 </md-card>
-                <md-card class="md-primary"  style="text-align: center; margin: auto">
+                <md-card class="md-primary" style="text-align: center; margin: auto">
                     <md-card-header>
                         <md-card-header-text>
                             <div class="md-title">{{ this.seriesTxCount.length > 0 ? this.seriesTxCount[this.seriesTxCount.length - 1].value : 0 }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">txs</span></div>
                             <div class="md-subhead">Current day #Transactions</div>
-                            <TimeSparkChart :chartData="txChartData"  style="height: 60px; margin-top: 5px"></TimeSparkChart>
+                            <TimeSparkChart :chartData="txChartData" style="height: 60px; margin-top: 5px"></TimeSparkChart>
+                            <RadarChart :chartData="txRadarData"></RadarChart>
                         </md-card-header-text>
                     </md-card-header>
                 </md-card>
             </div>
             <div class="md-layout-item">
                 <div>
+                    <div style="width: 100%; margin-bottom: 5px">
+                        <b>6 Latest blocks</b>
+                        <router-link style="float: right;" :to="`/blocks`">See all blocks</router-link>
+                    </div>
                     <md-table>
-                        <md-table-row>
-                            <md-table-head>Block</md-table-head>
+                        <md-table-row style="background-color: #101010">
+                            <md-table-head >Block</md-table-head>
                             <md-table-head># Ghost out</md-table-head>
                             <md-table-head># Ghost xfer</md-table-head>
                             <md-table-head># Ghost fee</md-table-head>
@@ -79,10 +84,10 @@
                             <md-table-head>Size</md-table-head>
                             <md-table-head># Conf</md-table-head>
                         </md-table-row>
-                        <md-table-row v-for="block in displayBlocks" :key="block.hash">
-                            <md-table-cell>
-                                <router-link :to="`/block/${block.hash}`">{{ block.height }}</router-link>
-                            </md-table-cell>
+                        <md-table-row v-for="block in displayBlocks" :key="block.hash"
+                                      @click.native="$router.push(`/block/${block.hash}`)"
+                                      style="background-color: #101010; cursor: pointer;">
+                            <md-table-cell>{{ block.height }}</md-table-cell>
                             <md-table-cell>{{ block.out }}</md-table-cell>
                             <md-table-cell>{{ block.transfer }}</md-table-cell>
                             <md-table-cell>{{ block.fee }}</md-table-cell>
@@ -94,10 +99,15 @@
                     </md-table>
                 </div>
                 <br/>
+                <br/>
                 <div>
+                    <div style="width: 100%; margin-bottom: 5px">
+                        <b>15 Latest transactions</b>
+                        <router-link style="float: right;" :to="`/blocks`">See all transactions</router-link>
+                    </div>
                     <md-table>
-                        <md-table-row>
-                            <md-table-head>Transaction</md-table-head>
+                        <md-table-row style="background-color: #101010">
+                            <md-table-head>Tx</md-table-head>
                             <md-table-head># Ghost out</md-table-head>
                             <md-table-head># Ghost xfer</md-table-head>
                             <md-table-head># Ghost fee</md-table-head>
@@ -106,10 +116,10 @@
                             <md-table-head>Size</md-table-head>
                             <md-table-head># Conf</md-table-head>
                         </md-table-row>
-                        <md-table-row v-for="tx in displayTxs" :key="tx.txid">
-                            <md-table-cell>
-                                <router-link :to="`/tx/${tx.txid}`">{{ tx.txid.substring(0, 7) }}...</router-link>
-                            </md-table-cell>
+                        <md-table-row v-for="tx in displayTxs" :key="tx.txid"
+                                      @click.native="$router.push(`/tx/${tx.txid}`)"
+                                      style="background-color: #101010; cursor: pointer;">
+                            <md-table-cell>{{ tx.txid.substring(0, tx.blockheight.toString().length) }}</md-table-cell>
                             <md-table-cell>{{ tx.out }}</md-table-cell>
                             <md-table-cell>{{ tx.transfer }}</md-table-cell>
                             <md-table-cell>{{ tx.fee }}</md-table-cell>
@@ -156,6 +166,7 @@
     import moment from 'moment';
     import gql from "graphql-tag";
     import TimeSparkChart from "./charts/TimeSparkChart";
+    import RadarChart from "./charts/RadarChart";
 
     const buildSparkDataset = (series, inSat = false) => {
         const datasets = [{ data: series.map(d => ({ x: new Date(d.time * 1000), y: d.value.percentile / ( inSat ? 1e8 : 1) }) )}]
@@ -164,7 +175,7 @@
 
     export default {
         name: 'Home',
-        components: {TimeSparkChart},
+        components: {RadarChart, TimeSparkChart},
         computed: {
             supply() {
                 const formatter = new Intl.NumberFormat('en-US');
@@ -217,6 +228,11 @@
             txChartData() {
                 const datasets = [{ data: this.seriesTxCount.map(d => ({ x: new Date(d.time * 1000), y: d.value }) )}]
                 return { datasets };
+            },
+            txRadarData() {
+                const labels = this.txTypeVentilation.map(d => d.key )
+                const datasets = [{ data: this.txTypeVentilation.map(d => d.value ) }]
+                return { labels, datasets };
             }
         },
         data() {
@@ -239,6 +255,7 @@
                 seriesDifficulty: [],
                 seriesStakeWeight: [],
                 seriesTxCount: [],
+                txTypeVentilation: [],
                 stakeWeight: {
                     percentile: 0
                 }
@@ -266,6 +283,12 @@
                 value {
                   percentile
                 }
+              }
+            }`,
+            txTypeVentilation: () => gql`query {
+              txTypeVentilation {
+                key
+                value
               }
             }`,
             seriesDifficulty: () => gql`query {

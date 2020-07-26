@@ -203,8 +203,48 @@ export const currentDayStakeWeight = () => {
   });
 };
 
+export const currentDayTxTypeVentilation = () => {
+  const start = moment().startOf('day').unix();
+  const query = {
+    index: INDEX_TRX,
+    _source_excludes: '*', // Dont need to get anything
+    size: MAX_WINDOW_SIZE,
+    body: {
+      query: {
+        bool: {
+          must: [
+            {
+              range: {
+                time: {
+                  gte: start,
+                },
+              },
+            },
+          ],
+        },
+      },
+      aggs: {
+        types: {
+          terms: { field: 'type.keyword' },
+        },
+      },
+    },
+  };
+  return el.search(query).then((data) => {
+    const { buckets } = data.body.aggregations.types;
+    const txTypes = buckets.map((b) => ({ key: b.key, value: Math.log(b.doc_count) / Math.log(2) }));
+    if (!R.find((d) => d.key === 'reward', txTypes)) txTypes.push({ key: 'reward', value: 0 });
+    if (!R.find((d) => d.key === 'standard', txTypes)) txTypes.push({ key: 'standard', value: 0 });
+    if (!R.find((d) => d.key === 'blind', txTypes)) txTypes.push({ key: 'blind', value: 0 });
+    if (!R.find((d) => d.key === 'anon', txTypes)) txTypes.push({ key: 'anon', value: 0 });
+    if (!R.find((d) => d.key === 'mixed_standard', txTypes)) txTypes.push({ key: 'mixed_standard', value: 0 });
+    if (!R.find((d) => d.key === 'mixed_private', txTypes)) txTypes.push({ key: 'mixed_private', value: 0 });
+    return txTypes;
+  });
+};
+
 export const monthlyStakeWeight = () => {
-  const start = moment().startOf('month').unix();
+  const start = moment().subtract(1, 'month').unix();
   const query = {
     index: INDEX_TRX,
     _source_excludes: '*', // Dont need to get anything
@@ -269,7 +309,7 @@ export const monthlyStakeWeight = () => {
 };
 
 export const monthlyTxCount = () => {
-  const start = moment().startOf('month').unix();
+  const start = moment().subtract(1, 'month').unix();
   const query = {
     index: INDEX_BLOCK,
     _source_excludes: '*', // Dont need to get anything
@@ -318,7 +358,7 @@ export const monthlyTxCount = () => {
 };
 
 export const monthlyDifficulty = () => {
-  const start = moment().startOf('month').unix();
+  const start = moment().subtract(1, 'month').unix();
   const query = {
     index: INDEX_BLOCK,
     _source_excludes: '*', // Dont need to get anything

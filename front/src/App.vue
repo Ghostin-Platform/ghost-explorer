@@ -1,8 +1,8 @@
 <template>
     <div class="page-container">
-            <md-content>
+            <md-content style="height: 100vh;">
                 <div style=" position: sticky; top: 0; z-index: 9999">
-                    <div class="md-layout" style="background-color: #162447; padding-top: 15px; padding-bottom: 15px;">
+                    <div class="md-layout" style="background-color: #000000; padding-top: 15px; padding-bottom: 15px;">
                         <div class="md-layout-item md-size-15"></div>
                         <div class="md-layout-item">
                             <div class="md-layout-item md-layout md-gutter">
@@ -10,8 +10,11 @@
                                     <img alt="Vue logo" src="./assets/logo.png" width="32">
                                     <span style="font-family: 'Sen', sans-serif; margin-left: 10px; font-size: 18px" class="md-title">ghostin</span>
                                 </div>
-                                <div class="md-layout-item md-size-20" style="padding-top: 5px">
-                                    <router-link style="font-family: 'Sen', sans-serif; font-size: 18px;" :to="`/`">blockchain explorer</router-link>
+                                <div class="md-layout-item md-size-15" style="padding-top: 6px">
+                                    <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/`">blockchain explorer</router-link>
+                                </div>
+                                <div class="md-layout-item md-size-10" style="padding-top: 6px">
+                                    <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/tip`">help us</router-link>
                                 </div>
                                 <!--
                                 <div class="md-layout-item md-size-10">
@@ -23,15 +26,15 @@
                         <div class="md-layout-item md-size-15"></div>
                     </div>
                 </div>
-                <div class="md-layout" style="margin-top: 25px">
+                <div class="md-layout" style="margin-top: 25px; padding-bottom: 25px; background-color: #080808">
                     <div class="md-layout-item md-size-15"></div>
                     <div class="md-layout-item">
                         <router-view></router-view>
                     </div>
                     <div class="md-layout-item md-size-15"></div>
                 </div>
-                <md-divider md-inset style="margin-top: 65px"></md-divider>
-                <div style="text-align: center; margin: auto; padding: 15px">
+                <md-divider></md-divider>
+                <div style="text-align: center; margin: auto; padding: 15px; background-color: #080808">
                     <span style="font-size: 16px; font-family: 'Sen', sans-serif">ghostin @ 2020</span>
                 </div>
             </md-content>

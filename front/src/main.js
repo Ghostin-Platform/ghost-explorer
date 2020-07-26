@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import App from './App.vue'
-import {InMemoryCache} from "apollo-cache-inmemory";
+import {InMemoryCache, IntrospectionFragmentMatcher} from "apollo-cache-inmemory";
 // import { persistCache } from 'apollo-cache-persist';
 import {createHttpLink} from "apollo-link-http";
 import ApolloClient from "apollo-client";
@@ -30,6 +30,53 @@ Vue.component(VueQrcode.name, VueQrcode);
 // endregion
 
 // region internal mutation
+export const GetTx = gql`query GetTx($id: String!) {
+    transaction(id: $id) {
+        id
+        txid
+        hash
+        time
+        inSat
+        outSat
+        feeSat
+        blockhash
+        variation
+        size
+        locktime
+        blockheight
+        type
+        vin {
+            __typename
+            ...on TxInStandard {
+                address
+                valueSat
+            }
+            ...on TxInBlind {
+                address
+                ring_size
+            }
+            ...on TxInAnon {
+                ring_size
+            }
+        }
+        vout {
+            __typename
+            ... on TxOutStandard {
+                valueSat
+                spentTxId
+                scriptPubKey {
+                    addresses
+                }
+            }
+            ... on TxOutBlind {
+                spentTxId
+                scriptPubKey {
+                    addresses
+                }
+            }
+        }
+    }
+}`
 export const GetBlock = gql`query GetBlock($id: String!) {
     block(id: $id) {
         id
@@ -133,7 +180,14 @@ export const clientNewTxMutation = gql`
 
 // region apollo
 const httpLink = createHttpLink({ uri: graphqlApi })
-const cache = new InMemoryCache()
+const fragmentMatcher = new IntrospectionFragmentMatcher({
+    introspectionQueryResultData: {
+        __schema: {
+            types: [], // no types provided
+        },
+    },
+});
+const cache = new InMemoryCache( { fragmentMatcher })
 const updateGlobalInfo = (info) => {
     try {
         const data = cache.readQuery({query: ReadInfo});

@@ -53,8 +53,13 @@ type PercentileDataPoint {
   value: StatPercentile!
 }
 
-type DataPoint {
+type TimeDataPoint {
   time: Int!
+  value: Float!
+}
+
+type DataPoint {
+  key: String!
   value: Float!
 }
 
@@ -115,6 +120,7 @@ type TxInAnon {
 type TxInBlind {
   ring_size: Int
   scriptdata: String
+  address: String
   txinwitness: [String]
 }
 type TxInStandard {
@@ -199,6 +205,7 @@ type Transaction {
   height: Int
   confirmations: Int
   time: Int
+  locktime: Int
   variation: Float
   feeSat: Float
   transferSat: Float
@@ -241,14 +248,16 @@ type Reward {
 type Query {
   info: BlockChainInfo
   block(id: String!): Block
-  blocks(offset: String! = "+", limit: Int! = 5): [Block]
+  blocks(offset: String! = "+", limit: Int! = 6): [Block]
   rewards(offset: String! = "+", limit: Int! = 15): [Reward]
   transaction(id: String!): Transaction
   transactions(offset: String! = "+", limit: Int! = 15): [Transaction]
   address(id: String!): Address
+  # Stats
   difficulty: StatPercentile
   seriesDifficulty: [PercentileDataPoint]
   stakeWeight: StatPercentile
   seriesStakeWeight: [PercentileDataPoint]
-  seriesTxCount: [DataPoint]
+  seriesTxCount: [TimeDataPoint]
+  txTypeVentilation: [DataPoint]
 }

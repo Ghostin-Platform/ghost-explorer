@@ -3,6 +3,7 @@ import { fetch } from '../database/redis';
 import { CURRENT_PROCESSING_BLOCK, getBlockTransactions, getTransaction } from '../database/ghost';
 import {
   currentDayStakeWeight,
+  currentDayTxTypeVentilation,
   monthlyDifficulty,
   monthlyStakeWeight,
   monthlyTxCount,
@@ -21,6 +22,7 @@ const infoResolver = {
     seriesStakeWeight: () => monthlyStakeWeight(),
     seriesDifficulty: () => monthlyDifficulty(),
     seriesTxCount: () => monthlyTxCount(),
+    txTypeVentilation: () => currentDayTxTypeVentilation(),
   },
   Block: {
     transactions: (block, { offset, limit }) => getBlockTransactions(block, offset, limit),
