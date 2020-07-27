@@ -29,7 +29,7 @@ Vue.use(VueApollo)
 Vue.use(VueSSE)
 Vue.use(VueMaterial)
 Vue.use(VueRouter)
-Vue.use(InfiniteLoading, { distance: 300 });
+Vue.use(InfiniteLoading, {distance: 300});
 Vue.component(VueQrcode.name, VueQrcode);
 // endregion
 
@@ -40,6 +40,7 @@ export const GetTx = gql`query GetTx($id: String!) {
         txid
         hash
         time
+        blocktime
         inSat
         outSat
         feeSat
@@ -79,6 +80,22 @@ export const GetTx = gql`query GetTx($id: String!) {
                 }
             }
         }
+    }
+}`
+export const GetPool = gql`query GetPool($offset: Int!, $limit: Int!) {
+    mempool(offset: $offset, limit: $limit) {
+        id
+        type
+        txid
+        voutSize
+        voutAddressesSize
+        hash
+        time
+        size
+        feeSat
+        inSat
+        outSat
+        transferSat
     }
 }`
 export const GetBlock = gql`query GetBlock($id: String!, $txOffset: Int!, $txLimit: Int!) {
@@ -162,6 +179,16 @@ export const clientNewBlockMutation = gql`
         newBlock(block: $block) @client
     }
 `;
+export const clientAddMempoolMutation = gql`
+    mutation($tx: Transaction!) {
+        addMempool(tx: $tx) @client
+    }
+`;
+export const clientDelMempoolMutation = gql`
+    mutation($tx: String!) {
+        delMempool(tx: $tx) @client
+    }
+`;
 export const ReadTxs = gql`query {
     transactions {
         id
@@ -185,7 +212,7 @@ export const clientNewTxMutation = gql`
 // endregion
 
 // region apollo
-const httpLink = createHttpLink({ uri: graphqlApi })
+const httpLink = createHttpLink({uri: graphqlApi})
 const fragmentMatcher = new IntrospectionFragmentMatcher({
     introspectionQueryResultData: {
         __schema: {
@@ -193,12 +220,12 @@ const fragmentMatcher = new IntrospectionFragmentMatcher({
         },
     },
 });
-const cache = new InMemoryCache( { fragmentMatcher })
+const cache = new InMemoryCache({fragmentMatcher})
 const updateGlobalInfo = (info) => {
     try {
         const data = cache.readQuery({query: ReadInfo});
         data.info = info;
-        cache.writeQuery({query: ReadInfo, data });
+        cache.writeQuery({query: ReadInfo, data});
     } catch (e) {
         // Nothing to do
     }
@@ -206,13 +233,30 @@ const updateGlobalInfo = (info) => {
 const updateBlocksListing = (block) => {
     // Update the block list on the home
     try {
-        const oldData = cache.readQuery({query: ReadBlocks, variables: { offset: "+", limit: 50 }});
+        const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}});
         // Update the number of confirmations for all other blocks
         const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
         // Add the new block on top
         blocks.unshift(block);
         const data = {blocks};
-        cache.writeQuery({query: ReadBlocks, variables: { offset: "+", limit: 50 }, data});
+        cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}, data});
+    } catch (e) {
+        // Nothing to do
+    }
+}
+const updateMempoolListing = (tx, removal) => {
+    // Update the block list on the home
+    try {
+        const oldData = cache.readQuery({query: GetPool, variables: {offset: 0, limit: 50}});
+        let mempool;
+        if (removal) {
+            mempool = R.filter(d => d.txid !== tx, oldData.mempool);
+        } else {
+            mempool = oldData.mempool;
+            mempool.unshift(tx);
+        }
+        const data = {mempool};
+        cache.writeQuery({query: GetPool, variables: {offset: 0, limit: 50}, data});
     } catch (e) {
         // Nothing to do
     }
@@ -220,24 +264,48 @@ const updateBlocksListing = (block) => {
 const updateHomeBlocksListing = (block) => {
     // Update the block list on the home
     try {
-        const oldData = cache.readQuery({query: ReadBlocks, variables: { offset: "+", limit: 6 }});
+        const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: 6}});
         // Update the number of confirmations for all other blocks
         const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
         // Add the new block on top
         blocks.unshift(block);
         blocks.pop();
         const data = {blocks};
-        cache.writeQuery({query: ReadBlocks, variables: { offset: "+", limit: 6 }, data});
+        cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: 6}, data});
     } catch (e) {
         // Nothing to do
     }
 }
 const updateTrxListing = (tx) => {
+    // Update the home trx listing
     try {
         const data = cache.readQuery({query: ReadTxs});
         data.transactions.unshift(tx);
         data.transactions.pop();
         cache.writeQuery({query: ReadTxs, data});
+    } catch (e) {
+        // Nothing to do
+    }
+    // Update the global trx listing
+    // TODO
+    // Update the tx height if exists
+    try {
+        apolloClient.writeFragment({
+            id: `Transaction:${tx.id}`,
+            fragment: gql`
+                fragment UpdateTx on Transaction {
+                    time
+                    blockheight
+                    blockhash
+                }
+            `,
+            data: {
+                __typename: 'Transaction',
+                time: tx.time,
+                blockhash: tx.blockhash,
+                blockheight: tx.blockheight,
+            },
+        });
     } catch (e) {
         // Nothing to do
     }
@@ -263,15 +331,21 @@ const updateBlockNextHash = (block) => {
 }
 const resolvers = {
     Mutation: {
-        newBlock: (_, { block }) => {
+        newBlock: (_, {block}) => {
             updateHomeBlocksListing(block);
             updateBlocksListing(block);
             updateBlockNextHash(block);
         },
-        newTransaction: (_, { tx }) => {
+        addMempool: (_, {tx}) => {
+            updateMempoolListing(tx, false);
+        },
+        delMempool: (_, {tx}) => {
+            updateMempoolListing(tx, true);
+        },
+        newTransaction: (_, {tx}) => {
             updateTrxListing(tx);
         },
-        updateInfo: (_, { info }) => {
+        updateInfo: (_, {info}) => {
             updateGlobalInfo(info);
         }
     }
@@ -299,12 +373,12 @@ const apolloProvider = new VueApollo({
 const linkActiveClass = 'my-link-active-class'
 Vue.material.router.linkActiveClass = linkActiveClass
 const routes = [
-    { path: '/', component: Home },
-    { path: '/mempool', component: Mempool },
-    { path: '/blocks', component: Blocks },
-    { path: '/tip', component: Tip },
-    { path: '/block/:id', component: Block },
-    { path: '/tx/:id', component: Transaction }
+    {path: '/', component: Home},
+    {path: '/mempool', component: Mempool},
+    {path: '/blocks', component: Blocks},
+    {path: '/tip', component: Tip},
+    {path: '/block/:id', component: Block},
+    {path: '/tx/:id', component: Transaction}
 ]
 const router = new VueRouter({
     routes,
@@ -313,7 +387,7 @@ const router = new VueRouter({
 // endregion
 
 Vue.mixin({
-    data: function() {
+    data: function () {
         return {
             currentHeight: 0
         }

@@ -1,11 +1,12 @@
 /* eslint-disable no-await-in-loop */
 import * as R from 'ramda';
-import { getPooledTransactions } from '../database/ghost';
+import { getRawPooledTransactions, getTransaction } from '../database/ghost';
 
 let lastPoolData = [];
 const listenMempool = async (callback) => {
   const processStep = async () => {
-    const pooledTxs = await getPooledTransactions();
+    const txs = await getRawPooledTransactions();
+    const pooledTxs = Object.keys(txs);
     // console.log(`Checking pool`, pooledTxs);
     if (!R.equals(lastPoolData.sort(), pooledTxs.sort())) {
       // Find removed
@@ -13,7 +14,6 @@ const listenMempool = async (callback) => {
       for (let rIndex = 0; rIndex < lastPoolData.length; rIndex += 1) {
         const previouslyPooled = lastPoolData[rIndex];
         if (!pooledTxs.includes(previouslyPooled)) {
-          // console.log(`removed ${previouslyPooled}`);
           removed.push(previouslyPooled);
         }
       }
@@ -22,13 +22,13 @@ const listenMempool = async (callback) => {
       for (let aIndex = 0; aIndex < pooledTxs.length; aIndex += 1) {
         const inPool = pooledTxs[aIndex];
         if (!lastPoolData.includes(inPool)) {
-          // console.log(`Added ${inPool}`);
-          added.push(inPool);
+          const addedTx = await getTransaction(inPool);
+          added.push(addedTx);
         }
       }
+      lastPoolData = pooledTxs;
       callback(added, removed);
     }
-    lastPoolData = pooledTxs;
   };
   const wait = (time) => {
     return new Promise((resolve) => {
@@ -39,12 +39,12 @@ const listenMempool = async (callback) => {
   };
   const processingLoop = async () => {
     while (true) {
-      await wait(5000);
+      await wait(500);
       await processStep();
     }
   };
   // noinspection ES6MissingAwait
-  lastPoolData = await getPooledTransactions();
+  lastPoolData = await getRawPooledTransactions().then((data) => Object.keys(data));
   processingLoop();
 };
 

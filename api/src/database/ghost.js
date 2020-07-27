@@ -11,9 +11,10 @@ export const GROUP_CONCURRENCY = 25; // Number of query in //
 
 const toSat = (num) => num * 100000000;
 
-export const getPooledTransactions = () => rpcCall('getrawmempool');
+export const getRawPooledTransactions = (verbose = true) => rpcCall('getrawmempool', [verbose]);
 
-export const getPooledTransactionsCount = () => getPooledTransactions().then(async (pooledTx) => pooledTx.length);
+export const getPooledTransactionsCount = () =>
+  getRawPooledTransactions(false).then(async (pooledTx) => pooledTx.length);
 
 export const getNetworkInfo = async () => {
   const coinMarketPromise = getCoinMarket();
@@ -136,7 +137,12 @@ const computeVoutPerAddr = (rawTransaction) => {
 export const getTransaction = (txId) =>
   rpcCall('getrawtransaction', [txId, 1]).then(async (rawTx) => {
     if (!rawTx) return null;
-    const block = await getBlockByHash(rawTx.blockhash);
+    let poolInfo = {};
+    if (!rawTx.blockheight) {
+      // No blockheight, mempooled tx
+      const pool = await getRawPooledTransactions();
+      poolInfo = pool[rawTx.txid];
+    }
     const inSat = R.sum(R.map((v) => v.valueSat || 0, rawTx.vin));
     const outSat = R.sum(R.map((v) => v.valueSat || 0, rawTx.vout));
     // compute fees
@@ -161,7 +167,8 @@ export const getTransaction = (txId) =>
       __typename: 'Transaction',
       id: rawTx.txid,
       type,
-      blockheight: block.height,
+      time: rawTx.time || poolInfo.time,
+      blockheight: rawTx.height,
       // vin
       inSat,
       vinAddresses,
@@ -185,6 +192,20 @@ export const getBlockTransactions = (block, offset = 0, limit = 5) => {
   const { tx } = block;
   const limitedTxs = R.take(limit, tx.slice(offset));
   return Promise.map(limitedTxs, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
+};
+
+export const getPooledTransactions = async (offset = 0, limit = 5) => {
+  const poolTx = await getRawPooledTransactions();
+  const poolTxIds = Object.keys(poolTx);
+  const limitedTxs = R.take(limit, poolTxIds.slice(offset));
+  return Promise.map(
+    limitedTxs,
+    async (txId) => {
+      const tx = await getTransaction(txId);
+      return Object.assign(tx, poolTx[tx.id]);
+    },
+    { concurrency: GROUP_CONCURRENCY }
+  );
 };
 
 export const enrichBlock = async (block) => {

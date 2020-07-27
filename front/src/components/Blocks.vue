@@ -1,41 +1,47 @@
 <template>
     <div>
-        <div v-if="$apollo.loading">
-            <md-progress-bar md-mode="query"></md-progress-bar>
+        <div style="min-height: 5px; margin-bottom: 8px">
+            <div v-if="$apollo.loading">
+                <md-progress-bar md-mode="query"></md-progress-bar>
+            </div>
         </div>
-        <h2 style="font-family: 'Sen', sans-serif"><router-link :to="`/`">Home</router-link>
-            > Blocks</h2>
-        <div class="md-layout md-gutter">
-            <div class="md-layout-item">
-                <div>
-                    <md-table>
-                        <md-table-row style="background-color: #101010; overflow-y: auto">
-                            <md-table-head >Block</md-table-head>
-                            <md-table-head># Ghost out</md-table-head>
-                            <md-table-head># Ghost xfer</md-table-head>
-                            <md-table-head># Ghost fee</md-table-head>
-                            <md-table-head>Age</md-table-head>
-                            <md-table-head># Tx</md-table-head>
-                            <md-table-head>Size</md-table-head>
-                            <md-table-head># Conf</md-table-head>
-                        </md-table-row>
-                        <md-table-row v-for="block in displayBlocks" :key="block.hash"
-                                      @click.native="$router.push(`/block/${block.hash}`)"
-                                      style="background-color: #101010; cursor: pointer;">
-                            <md-table-cell>{{ block.height }}</md-table-cell>
-                            <md-table-cell>{{ block.out }}</md-table-cell>
-                            <md-table-cell>{{ block.transfer }}</md-table-cell>
-                            <md-table-cell>{{ block.fee }}</md-table-cell>
-                            <md-table-cell>{{ block.ago }}</md-table-cell>
-                            <md-table-cell>{{ block.txSize }}</md-table-cell>
-                            <md-table-cell>{{ block.size }}</md-table-cell>
-                            <md-table-cell>{{ block.confirmations }}</md-table-cell>
-                        </md-table-row>
-                    </md-table>
-                    <infinite-loading v-if="!loadingBlocks" @infinite="infiniteHandler">
-                        <div slot="no-more" style="margin-top: 10px">No more blocks</div>
-                        <div slot="no-results" style="margin-top: 10px"></div>
-                    </infinite-loading>
+        <div>
+            <h3>
+                <router-link :to="`/`">Home</router-link><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Blocks
+            </h3>
+            <md-divider style="margin-bottom: 20px"></md-divider>
+            <div class="md-layout md-gutter">
+                <div class="md-layout-item">
+                    <div>
+                        <md-table>
+                            <md-table-row style="background-color: #101010; overflow-y: auto">
+                                <md-table-head >Block</md-table-head>
+                                <md-table-head># Ghost out</md-table-head>
+                                <md-table-head># Ghost xfer</md-table-head>
+                                <md-table-head># Ghost fee</md-table-head>
+                                <md-table-head>Age</md-table-head>
+                                <md-table-head># Tx</md-table-head>
+                                <md-table-head>Size</md-table-head>
+                                <md-table-head># Conf</md-table-head>
+                            </md-table-row>
+                            <md-table-row v-for="block in displayBlocks" :key="block.hash"
+                                          @click.native="$router.push(`/block/${block.hash}`)"
+                                          style="background-color: #101010; cursor: pointer;">
+                                <md-table-cell>{{ block.height }}</md-table-cell>
+                                <md-table-cell>{{ block.out }}</md-table-cell>
+                                <md-table-cell>{{ block.transfer }}</md-table-cell>
+                                <md-table-cell>{{ block.fee }}</md-table-cell>
+                                <md-table-cell>{{ block.ago }}</md-table-cell>
+                                <md-table-cell>{{ block.txSize }}</md-table-cell>
+                                <md-table-cell>{{ block.size }}</md-table-cell>
+                                <md-table-cell>{{ block.confirmations }}</md-table-cell>
+                            </md-table-row>
+                        </md-table>
+                        <infinite-loading v-if="!loadingBlocks" @infinite="infiniteHandler">
+                            <div slot="no-more" style="margin-top: 10px">No more blocks</div>
+                            <div slot="no-results" style="margin-top: 10px"></div>
+                        </infinite-loading>
+                    </div>
                 </div>
             </div>
         </div>

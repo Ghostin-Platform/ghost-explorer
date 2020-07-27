@@ -17,7 +17,7 @@ import {
   EVENT_MEMPOOL_REMOVED,
   EVENT_NEW_BLOCK,
   EVENT_NEW_TX,
-  EVENT_UPDATE_INFO
+  EVENT_UPDATE_INFO,
 } from './seeMiddleware';
 import { elCreateIndexes, elIsAlive } from './database/elasticSearch';
 import { indexingBlockProcessor, indexingTrxProcessor } from './processor/statisticProcessor';
@@ -91,8 +91,8 @@ const platformInit = async (reindex = false) => {
       await listenMempool(async (added, removed) => {
         const networkInfo = await getNetworkInfo();
         broadcast(EVENT_UPDATE_INFO, networkInfo);
-        R.map((a) => broadcast(EVENT_MEMPOOL_ADDED, a), added);
-        R.map((a) => broadcast(EVENT_MEMPOOL_REMOVED, a), removed);
+        if (added.length > 0) R.map((a) => broadcast(EVENT_MEMPOOL_ADDED, a), added);
+        if (removed.length > 0) R.map((a) => broadcast(EVENT_MEMPOOL_REMOVED, a), removed);
       });
       await initBlockListener(async (block) => {
         const enrichedBlock = await enrichBlock(block);
