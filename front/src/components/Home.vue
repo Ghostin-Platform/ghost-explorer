@@ -8,13 +8,13 @@
         <div>
             <h3>
                 <md-icon style="margin-top: -1px">keyboard_capslock</md-icon> Ghostin /<span style="color: #116aff">in for initiative</span>/ is a platform that aim to help the Ghost blockchain community
-                <b style="float: right"><router-link :to="`/tip`"><b>Please support us</b></router-link></b>
+                <b style="float: right"><router-link :to="`/support`"><b>Please support us</b></router-link></b>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
             <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
                     <div style="width: 100%; margin-bottom: 5px">
-                        <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized</b>
+                        <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
                     </div>
                     <md-card v-bind:style="coinVarClass">
                         <md-card-header>
@@ -272,8 +272,8 @@
         mounted() {
             const self = this;
             setInterval(function () {
-                self.$data.now = moment().add(5, 'seconds')
-            }, 15000)
+                self.$data.now = moment().add(self.info.timeoffset, 'seconds')
+            }, 5000)
         },
         apollo: {
             info: () => ReadInfo,

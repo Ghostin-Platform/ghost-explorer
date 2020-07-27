@@ -15,12 +15,13 @@ import './assets/ghost.css'
 import Block from "./components/Block";
 import Transaction from "./components/Transaction";
 import Home from "./components/Home";
-import Tip from "./components/Tip";
 import VueQrcode from '@chenfengyuan/vue-qrcode';
 import InfiniteLoading from 'vue-infinite-loading';
 import Blocks from "./components/Blocks";
 import Mempool from "./components/Mempool";
 import Transactions from "./components/Transactions";
+import Address from "./components/Address";
+import Support from "./components/Support";
 
 // region configuration
 const graphqlApi = 'http://localhost:4000/graphql';
@@ -399,9 +400,10 @@ const routes = [
     {path: '/mempool', component: Mempool},
     {path: '/blocks', component: Blocks},
     {path: '/transactions', component: Transactions},
-    {path: '/tip', component: Tip},
+    {path: '/support', component: Support},
     {path: '/block/:id', component: Block},
-    {path: '/tx/:id', component: Transaction}
+    {path: '/tx/:id', component: Transaction},
+    {path: '/address/:id', component: Address}
 ]
 const router = new VueRouter({
     routes,

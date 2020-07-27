@@ -14,7 +14,7 @@
                                 <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/`">blockchain explorer</router-link>
                             </div>
                             <div class="md-layout-item md-size-10" style="padding-top: 6px">
-                                <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/tip`">help us</router-link>
+                                <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/support`">support us</router-link>
                             </div>
                             <!--
                             <div class="md-layout-item md-size-10">
