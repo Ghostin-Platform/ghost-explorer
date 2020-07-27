@@ -36,14 +36,6 @@ export const getTransactions = async (offset, limit) => {
   }, rawData);
 };
 
-export const getRewards = async (offset, limit) => {
-  const blocks = await getBlocks(offset, limit);
-  return R.map(
-    (b) => ({ date: b.time, address: R.head(b.rewardTx.vin).address, valueSat: b.rewardSat, blockHash: b.hash }),
-    blocks
-  );
-};
-
 export const getAddressById = async (id) => {
   const transactions = await rpcCall('getaddresstxids', [id]);
   // const resolvedTxs = await Promise.all(R.map((tx) => getTransaction(tx), R.take(3, transactions)));

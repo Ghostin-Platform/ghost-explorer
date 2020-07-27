@@ -250,7 +250,6 @@ type Query {
   info: BlockChainInfo
   block(id: String!): Block
   blocks(offset: String! = "+", limit: Int! = 6): [Block]
-  rewards(offset: String! = "+", limit: Int! = 15): [Reward]
   transaction(id: String!): Transaction
   transactions(offset: String! = "+", limit: Int! = 12): [Transaction]
   mempool(offset: Int! = 0, limit: Int! = 15): [Transaction]

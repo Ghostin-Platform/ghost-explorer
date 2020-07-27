@@ -1,6 +1,11 @@
-import { getAddressById, getBlockById, getBlocks, getRewards, getTransactions, info } from '../domain/info';
+import { getAddressById, getBlockById, getBlocks, getTransactions, info } from '../domain/info';
 import { fetch } from '../database/redis';
-import {CURRENT_PROCESSING_BLOCK, getBlockTransactions, getPooledTransactions, getTransaction} from '../database/ghost';
+import {
+  CURRENT_PROCESSING_BLOCK,
+  getBlockTransactions,
+  getPooledTransactions,
+  getTransaction,
+} from '../database/ghost';
 import {
   currentDayStakeWeight,
   currentDayTxTypeVentilation,
@@ -17,7 +22,6 @@ const infoResolver = {
     transaction: (_, { id }) => getTransaction(id),
     transactions: (_, { offset, limit }) => getTransactions(offset, limit),
     mempool: (_, { offset, limit }) => getPooledTransactions(offset, limit),
-    rewards: (_, { offset, limit }) => getRewards(offset, limit),
     address: (_, { id }) => getAddressById(id),
     stakeWeight: () => currentDayStakeWeight(),
     seriesStakeWeight: () => monthlyStakeWeight(),

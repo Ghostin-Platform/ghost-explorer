@@ -19,7 +19,7 @@
                                 <md-table-head># Ghost out</md-table-head>
                                 <md-table-head># Ghost xfer</md-table-head>
                                 <md-table-head># Ghost fee</md-table-head>
-                                <md-table-head>Age</md-table-head>
+                                <md-table-head>Block time</md-table-head>
                                 <md-table-head># Tx</md-table-head>
                                 <md-table-head>Size</md-table-head>
                                 <md-table-head># Conf</md-table-head>
@@ -31,7 +31,7 @@
                                 <md-table-cell>{{ block.out }}</md-table-cell>
                                 <md-table-cell>{{ block.transfer }}</md-table-cell>
                                 <md-table-cell>{{ block.fee }}</md-table-cell>
-                                <md-table-cell>{{ block.ago }}</md-table-cell>
+                                <md-table-cell>{{ block.received }}</md-table-cell>
                                 <md-table-cell>{{ block.txSize }}</md-table-cell>
                                 <md-table-cell>{{ block.size }}</md-table-cell>
                                 <md-table-cell>{{ block.confirmations }}</md-table-cell>
@@ -100,12 +100,12 @@
         computed: {
             displayBlocks() {
                 return this.blocks.map(b => {
-                    const ago = moment(b.time * 1000).from(moment());
+                    const received = moment.unix(b.time).format('LLL');
                     const transfer = b.transferSat > 0 ? (b.transferSat / 1e8).toFixed(2) : 0;
                     const out = b.outSat > 0 ? (b.outSat / 1e8).toFixed(2) : 0;
                     const fee = b.feeSat > 0 ? (b.feeSat / 1e8).toFixed(6) : 0;
                     const confirmations = this.info.height - b.height + 1;
-                    return Object.assign(b, { ago, transfer, out, fee, confirmations })
+                    return Object.assign(b, { received, transfer, out, fee, confirmations })
                 })
             },
         },

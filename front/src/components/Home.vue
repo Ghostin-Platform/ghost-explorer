@@ -108,7 +108,7 @@
                     <div>
                         <div style="width: 100%; margin-bottom: 5px">
                             <b>12 Latest transactions</b>
-                            <router-link style="float: right;" :to="`/blocks`">See all transactions</router-link>
+                            <router-link style="float: right;" :to="`/transactions`">See all transactions</router-link>
                         </div>
                         <md-table>
                             <md-table-row style="background-color: #101010">
@@ -272,7 +272,7 @@
         mounted() {
             const self = this;
             setInterval(function () {
-                self.$data.now = moment()
+                self.$data.now = moment().add(5, 'seconds')
             }, 15000)
         },
         apollo: {
@@ -322,7 +322,15 @@
                     }
                 }
             },
-            transactions: () => ReadTxs
+            transactions: {
+                query: () => ReadTxs,
+                variables() {
+                    return {
+                        offset: '+',
+                        limit: 12
+                    }
+                }
+            },
         },
     }
 </script>

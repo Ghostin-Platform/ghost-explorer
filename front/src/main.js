@@ -20,6 +20,7 @@ import VueQrcode from '@chenfengyuan/vue-qrcode';
 import InfiniteLoading from 'vue-infinite-loading';
 import Blocks from "./components/Blocks";
 import Mempool from "./components/Mempool";
+import Transactions from "./components/Transactions";
 
 // region configuration
 const graphqlApi = 'http://localhost:4000/graphql';
@@ -34,6 +35,43 @@ Vue.component(VueQrcode.name, VueQrcode);
 // endregion
 
 // region internal mutation
+export const ReadInfo = gql`query {
+    info {
+        id
+        height
+        difficulty
+        pooledTxCount
+        stake_weight
+        timeoffset
+        connections
+        sync_height
+        sync_percent
+        moneysupply
+        market {
+            usd
+            usd_market_cap
+            usd_24h_vol
+            usd_24h_change
+            last_updated_at
+        }
+    }
+}`
+export const GetPool = gql`query GetPool($offset: Int!, $limit: Int!) {
+    mempool(offset: $offset, limit: $limit) {
+        id
+        type
+        txid
+        voutSize
+        voutAddressesSize
+        hash
+        time
+        size
+        feeSat
+        inSat
+        outSat
+        transferSat
+    }
+}`
 export const GetTx = gql`query GetTx($id: String!) {
     transaction(id: $id) {
         id
@@ -82,22 +120,6 @@ export const GetTx = gql`query GetTx($id: String!) {
         }
     }
 }`
-export const GetPool = gql`query GetPool($offset: Int!, $limit: Int!) {
-    mempool(offset: $offset, limit: $limit) {
-        id
-        type
-        txid
-        voutSize
-        voutAddressesSize
-        hash
-        time
-        size
-        feeSat
-        inSat
-        outSat
-        transferSat
-    }
-}`
 export const GetBlock = gql`query GetBlock($id: String!, $txOffset: Int!, $txLimit: Int!) {
     block(id: $id) {
         id
@@ -133,33 +155,6 @@ export const GetBlock = gql`query GetBlock($id: String!, $txOffset: Int!, $txLim
         }
     }
 }`
-export const ReadInfo = gql`query {
-    info {
-        id
-        height
-        difficulty
-        pooledTxCount
-        stake_weight
-        timeoffset
-        connections
-        sync_height
-        sync_percent
-        moneysupply
-        market {
-            usd
-            usd_market_cap
-            usd_24h_vol
-            usd_24h_change
-            last_updated_at
-        }
-    }
-}`
-
-export const clientInfoUpdateMutation = gql`
-    mutation($info: BlockChainInfo!) {
-        updateInfo(info: $info) @client
-    }
-`;
 export const ReadBlocks = gql`query GetBlocks($offset: String!, $limit: Int!) {
     blocks(offset: $offset, limit: $limit) {
         id
@@ -174,6 +169,28 @@ export const ReadBlocks = gql`query GetBlocks($offset: String!, $limit: Int!) {
         transferSat
     }
 }`
+export const ReadTxs = gql`query GetTxs($offset: String!, $limit: Int!) {
+    transactions(offset: $offset, limit: $limit) {
+        id
+        type
+        txid
+        hash
+        time
+        size
+        offset
+        blockheight
+        blockhash
+        feeSat
+        outSat
+        transferSat
+    }
+}`
+
+export const clientInfoUpdateMutation = gql`
+    mutation($info: BlockChainInfo!) {
+        updateInfo(info: $info) @client
+    }
+`;
 export const clientNewBlockMutation = gql`
     mutation($block: Block!) {
         newBlock(block: $block) @client
@@ -189,21 +206,6 @@ export const clientDelMempoolMutation = gql`
         delMempool(tx: $tx) @client
     }
 `;
-export const ReadTxs = gql`query {
-    transactions {
-        id
-        type
-        txid
-        hash
-        time
-        size
-        blockheight
-        blockhash
-        feeSat
-        outSat
-        transferSat
-    }
-}`
 export const clientNewTxMutation = gql`
     mutation($tx: Transaction!) {
         newTransaction(tx: $tx) @client
@@ -230,37 +232,7 @@ const updateGlobalInfo = (info) => {
         // Nothing to do
     }
 }
-const updateBlocksListing = (block) => {
-    // Update the block list on the home
-    try {
-        const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}});
-        // Update the number of confirmations for all other blocks
-        const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
-        // Add the new block on top
-        blocks.unshift(block);
-        const data = {blocks};
-        cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}, data});
-    } catch (e) {
-        // Nothing to do
-    }
-}
-const updateMempoolListing = (tx, removal) => {
-    // Update the block list on the home
-    try {
-        const oldData = cache.readQuery({query: GetPool, variables: {offset: 0, limit: 50}});
-        let mempool;
-        if (removal) {
-            mempool = R.filter(d => d.txid !== tx, oldData.mempool);
-        } else {
-            mempool = oldData.mempool;
-            mempool.unshift(tx);
-        }
-        const data = {mempool};
-        cache.writeQuery({query: GetPool, variables: {offset: 0, limit: 50}, data});
-    } catch (e) {
-        // Nothing to do
-    }
-}
+// blocks
 const updateHomeBlocksListing = (block) => {
     // Update the block list on the home
     try {
@@ -276,18 +248,22 @@ const updateHomeBlocksListing = (block) => {
         // Nothing to do
     }
 }
-const updateTrxListing = (tx) => {
-    // Update the home trx listing
+const updateBlocksListing = (block) => {
+    // Update the block list on the home
     try {
-        const data = cache.readQuery({query: ReadTxs});
-        data.transactions.unshift(tx);
-        data.transactions.pop();
-        cache.writeQuery({query: ReadTxs, data});
+        const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}});
+        // Update the number of confirmations for all other blocks
+        const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
+        // Add the new block on top
+        blocks.unshift(block);
+        const data = {blocks};
+        cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}, data});
     } catch (e) {
         // Nothing to do
     }
-    // Update the global trx listing
-    // TODO
+}
+// Transactions
+const updateTx = (tx) => {
     // Update the tx height if exists
     try {
         apolloClient.writeFragment({
@@ -306,6 +282,49 @@ const updateTrxListing = (tx) => {
                 blockheight: tx.blockheight,
             },
         });
+    } catch (e) {
+        // Nothing to do
+    }
+}
+const updateHomeTrxListing = (tx) => {
+    // Update the home trx listing
+    try {
+        const data = cache.readQuery({query: ReadTxs, variables: {offset: "+", limit: 12}});
+        data.transactions.unshift(tx);
+        data.transactions.pop();
+        cache.writeQuery({query: ReadTxs, variables: {offset: "+", limit: 12}, data});
+    } catch (e) {
+        // Nothing to do
+    }
+}
+const updateTrxListing = (tx) => {
+    // Update the block list on the home
+    try {
+        const oldData = cache.readQuery({query: ReadTxs, variables: {offset: "+", limit: 50}});
+        // Update the number of confirmations for all other blocks
+        const transactions = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.transactions);
+        // Add the new block on top
+        transactions.unshift(tx);
+        const data = {transactions};
+        cache.writeQuery({query: ReadTxs, variables: {offset: "+", limit: 50}, data});
+    } catch (e) {
+        // Nothing to do
+    }
+}
+// Pool
+const updateMempoolListing = (tx, removal) => {
+    // Update the block list on the home
+    try {
+        const oldData = cache.readQuery({query: GetPool, variables: {offset: 0, limit: 50}});
+        let mempool;
+        if (removal) {
+            mempool = R.filter(d => d.txid !== tx, oldData.mempool);
+        } else {
+            mempool = oldData.mempool;
+            mempool.unshift(tx);
+        }
+        const data = {mempool};
+        cache.writeQuery({query: GetPool, variables: {offset: 0, limit: 50}, data});
     } catch (e) {
         // Nothing to do
     }
@@ -329,6 +348,7 @@ const updateBlockNextHash = (block) => {
         // Nothing to do
     }
 }
+
 const resolvers = {
     Mutation: {
         newBlock: (_, {block}) => {
@@ -343,7 +363,9 @@ const resolvers = {
             updateMempoolListing(tx, true);
         },
         newTransaction: (_, {tx}) => {
+            updateHomeTrxListing(tx);
             updateTrxListing(tx);
+            updateTx(tx);
         },
         updateInfo: (_, {info}) => {
             updateGlobalInfo(info);
@@ -376,6 +398,7 @@ const routes = [
     {path: '/', component: Home},
     {path: '/mempool', component: Mempool},
     {path: '/blocks', component: Blocks},
+    {path: '/transactions', component: Transactions},
     {path: '/tip', component: Tip},
     {path: '/block/:id', component: Block},
     {path: '/tx/:id', component: Transaction}
