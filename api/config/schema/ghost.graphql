@@ -183,12 +183,17 @@ enum TransactionType {
 
 type VoutAddr {
   address: String!
-  vout: [TxOut]
+  spentTxId: String
+  type: TransactionType
+  value: Float
+  valueSat: Float
 }
 
 type VinAddr {
   address: String!
-  vout: [TxIn]
+  type: TransactionType
+  value: Float
+  valueSat: Float
 }
 
 type Transaction {
@@ -227,15 +232,17 @@ type Transaction {
 }
 type Address {
   id: ID!
+  nbTx: Int
   address: String!
   balance: Float
+  totalRewarded: Float
+  totalFees: Float
   totalReceived: Float
+  rewardSize: Int
+  rewardAvgSize: Float
   totalSent: Float
-  nbTx: Int
-  txVariations: [PercentileDataPoint]
-  rewards: [PercentileDataPoint]
-  fees: [PercentileDataPoint]
-  transactions: [Transaction]
+  rewardAvgTime: String
+  transactions(offset: Int! = 0, limit: Int! = 5): [Transaction]
 }
 
 type Reward {
@@ -245,11 +252,19 @@ type Reward {
   valueSat: Float
 }
 
+type Veteran {
+  address: String!
+  balance: Float
+  percent: Float
+  share: Float
+}
+
 ### QUERIES
 type Query {
   info: BlockChainInfo
   block(id: String!): Block
   blocks(offset: String! = "+", limit: Int! = 6): [Block]
+  veterans: [Veteran]
   transaction(id: String!): Transaction
   transactions(offset: String! = "+", limit: Int! = 12): [Transaction]
   mempool(offset: Int! = 0, limit: Int! = 15): [Transaction]

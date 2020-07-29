@@ -16,21 +16,6 @@
             <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
                     <div style="width: 100%; margin-bottom: 5px"><b>Transaction coins</b></div>
-                    <md-card class="md-primary" style="text-align: center; margin: auto">
-                        <md-card-header>
-                            <md-card-header-text>
-                                <div class="md-title">
-                                    <div v-if="transaction.type === 'blind' || transaction.type === 'anon'  || transaction.type === 'mixed_private'">
-                                        - hidden -
-                                    </div>
-                                    <div v-else>
-                                        {{ outTransfer }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
-                                    </div>
-                                </div>
-                                <div class="md-subhead"># Total transferred</div>
-                            </md-card-header-text>
-                        </md-card-header>
-                    </md-card>
                     <div v-if="transaction.type === 'reward'">
                         <md-card class="md-primary" style="text-align: center; margin: auto">
                             <md-card-header>
@@ -41,7 +26,27 @@
                             </md-card-header>
                         </md-card>
                     </div>
-                    <div v-else>
+                    <md-card class="md-primary" style="text-align: center; margin: auto">
+                        <md-card-header>
+                            <md-card-header-text>
+                                <div class="md-title">
+                                    <div v-if="transaction.type === 'reward'">
+                                        {{ inTransfer }}
+                                        <div class="md-subhead"># Stake coins</div>
+                                    </div>
+                                    <div v-else-if="transaction.outSat === 0">
+                                        - hidden -
+                                        <div class="md-subhead"># Total transferred</div>
+                                    </div>
+                                    <div v-else>
+                                        {{ outTransfer }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                        <div class="md-subhead"># Total transferred</div>
+                                    </div>
+                                </div>
+                            </md-card-header-text>
+                        </md-card-header>
+                    </md-card>
+                    <div v-if="transaction.type !== 'reward'">
                         <md-card class="md-primary" style="text-align: center; margin: auto">
                             <md-card-header>
                                 <md-card-header-text>
@@ -82,7 +87,7 @@
                     <div style="width: 100%; margin-bottom: 5px"><b>Summary</b></div>
                     <div class="md-layout md-gutter">
                         <div class="md-layout-item">
-                            <md-card style="text-align: center; margin: auto; border: 1px dashed white">
+                            <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
                                 <md-card-header>
                                     <md-card-header-text v-if="transaction.blockhash">
                                         <div class="md-title" style="font-size: 22px">{{ creation }}</div>
@@ -96,7 +101,7 @@
                             </md-card>
                         </div>
                         <div class="md-layout-item">
-                            <md-card style="text-align: center; margin: auto; border: 1px dashed white">
+                            <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
                                 <md-card-header>
                                     <md-card-header-text v-if="transaction.blockhash">
                                         <div class="md-title">{{ confirmations }}</div>
@@ -110,7 +115,7 @@
                             </md-card>
                         </div>
                         <div class="md-layout-item">
-                            <md-card style="text-align: center; margin: auto; border: 1px dashed white">
+                            <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
                                 <md-card-header>
                                     <md-card-header-text>
                                         <div class="md-title">
@@ -149,18 +154,17 @@
                             </md-card>
                         </div>
                     </div>
-                    <br/>
-                    <div style="width: 100%; margin-bottom: 5px"><b>Targets</b></div>
-                    <md-list v-for="(outElem, index) in vout" :key="`out-${index}`" style="background-color: #101010">
+                    <div style="width: 100%; margin-bottom: 5px"><b>Sources</b></div>
+                    <md-list v-for="(inData, index) in transaction.vinPerAddresses" :key="`in-${index}`" style="background-color: #101010">
                         <md-list-item>
                             <!-- ICON -->
-                            <div v-if="outElem.__typename === 'TxOutData'">
-                                <md-icon class="md-primary">perm_data_setting</md-icon>
+                            <div v-if="inData.type === 'coinbase'">
+                                <md-icon class="md-primary">memory</md-icon>
                             </div>
-                            <div v-else-if="outElem.__typename === 'TxOutBlind'">
+                            <div v-else-if="inData.type === 'blind'">
                                 <md-icon class="md-primary">masks</md-icon>
                             </div>
-                            <div v-else-if="outElem.__typename === 'TxOutAnon'">
+                            <div v-else-if="inData.type === 'anon'">
                                 <md-icon class="md-primary">security</md-icon>
                             </div>
                             <div v-else>
@@ -168,22 +172,63 @@
                             </div>
                             <!-- Address -->
                             <span style="margin-left: 35px" class="md-list-item-text">
-                                <div v-if="outElem.__typename === 'TxOutData'">Data</div>
-                                <div v-else-if="outElem.__typename === 'TxOutBlind'">
-                                    <router-link :to="`/address/${outElem.scriptPubKey.addresses[0]}`">{{ outElem.scriptPubKey.addresses[0] }}</router-link>
+                                <div v-if="inData.type === 'coinbase'">
+                                    {{ inData.address.substring(0, 32)}}...
                                 </div>
-                                <div v-else-if="outElem.__typename === 'TxOutAnon'">Anonymous</div>
+                                <div v-else-if="inData.type === 'blind'">
+                                    <router-link :to="`/address/${inData.address}`">{{ inData.address }}</router-link>
+                                </div>
+                                <div v-else-if="inData.type === 'anon'">Anonymous / Ring {{ inData.address }}</div>
                                 <div v-else>
-                                    <router-link :to="`/address/${outElem.scriptPubKey.addresses[0]}`">{{ outElem.scriptPubKey.addresses[0] }}</router-link>
+                                    <router-link :to="`/address/${inData.address}`">{{ inData.address }}</router-link>
                                 </div>
                             </span>
                             <!-- Coin -->
-                            <div v-if="outElem.__typename === 'TxOutData'">
-                                <md-button disabled style="width: 200px;" class="md-raised md-primary">-</md-button>
+                            <div v-if="inData.type === 'coinbase'">
+                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Coinbase</md-button>
                             </div>
-                            <div v-else-if="outElem.__typename === 'TxOutBlind'">
-                                <div v-if="outElem.spentTxId">
-                                    <md-button @click="$router.push(`/tx/${outElem.spentTxId}`)"
+                            <div v-else-if="inData.type === 'blind'">
+                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Blinded</md-button>
+                            </div>
+                            <div v-else-if="inData.type === 'anon'">
+                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Anonymous</md-button>
+                            </div>
+                            <div v-else>
+                                <md-button disabled style="width: 200px; background-color: #008C00; color: white" class="md-raised md-primary">
+                                    {{ inData.valueSat / 1e8 }}
+                                    <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                </md-button>
+                            </div>
+                        </md-list-item>
+                    </md-list>
+                    <br/>
+                    <div style="width: 100%; margin-bottom: 5px"><b>Targets</b></div>
+                    <md-list v-for="(outData, index) in transaction.voutPerAddresses" :key="`out-${index}`" style="background-color: #101010">
+                        <md-list-item>
+                            <!-- ICON -->
+                            <div v-if="outData.type === 'blind'">
+                                <md-icon class="md-primary">masks</md-icon>
+                            </div>
+                            <div v-else-if="outData.type === 'anon'">
+                                <md-icon class="md-primary">security</md-icon>
+                            </div>
+                            <div v-else>
+                                <md-icon class="md-primary">multiple_stop</md-icon>
+                            </div>
+                            <!-- Address -->
+                            <span style="margin-left: 35px" class="md-list-item-text">
+                                <div v-if="outData.type === 'blind'">
+                                    <router-link :to="`/address/${outData.address}`">{{ outData.address }}</router-link>
+                                </div>
+                                <div v-else-if="outData.type === 'anon'">Anonymous</div>
+                                <div v-else>
+                                    <router-link :to="`/address/${outData.address}`">{{ outData.address }}</router-link>
+                                </div>
+                            </span>
+                            <!-- Coin -->
+                            <div v-if="outData.type === 'blind'">
+                                <div v-if="outData.spentTxId">
+                                    <md-button @click="$router.push(`/tx/${outData.spentTxId}`)"
                                                style="width: 200px; background-color: #a94442" class="md-raised md-primary">Blinded (S)
                                     </md-button>
                                 </div>
@@ -191,70 +236,22 @@
                                     <md-button disabled style="width: 200px;" class="md-raised md-primary">Blinded</md-button>
                                 </div>
                             </div>
-                            <div v-else-if="outElem.__typename === 'TxOutAnon'">
+                            <div v-else-if="outData.type === 'anon'">
                                 <md-button disabled style="width: 200px;" class="md-raised md-primary">Anonymous</md-button>
                             </div>
                             <div v-else>
-                                <div v-if="outElem.spentTxId">
-                                    <md-button @click="$router.push(`/tx/${outElem.spentTxId}`)"
-                                               style="width: 200px; background-color: #a94442" class="md-raised md-primary">{{ outElem.valueSat / 1e8 }} (S)
+                                <div v-if="outData.spentTxId">
+                                    <md-button @click="$router.push(`/tx/${outData.spentTxId}`)"
+                                               style="width: 200px; background-color: #a94442" class="md-raised md-primary">{{ outData.valueSat / 1e8 }} (S)
                                         <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
                                     </md-button>
                                 </div>
                                 <div v-else>
                                     <md-button disabled style="width: 200px; background-color: #008C00; color: white"
-                                               class="md-raised md-primary">{{ outElem.valueSat / 1e8 }}
+                                               class="md-raised md-primary">{{ outData.valueSat / 1e8 }}
                                         <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
                                     </md-button>
                                 </div>
-                            </div>
-                        </md-list-item>
-                    </md-list>
-                    <br/>
-                    <div style="width: 100%; margin-bottom: 5px"><b>Sources</b></div>
-                    <md-list v-for="(inElem, index) in transaction.vin" :key="`in-${index}`" style="background-color: #101010">
-                        <md-list-item>
-                            <!-- ICON -->
-                            <div v-if="inElem.__typename === 'TxInCoinbase'">
-                                <md-icon class="md-primary">memory</md-icon>
-                            </div>
-                            <div v-else-if="inElem.__typename === 'TxInBlind'">
-                                <md-icon class="md-primary">masks</md-icon>
-                            </div>
-                            <div v-else-if="inElem.__typename === 'TxInAnon'">
-                                <md-icon class="md-primary">security</md-icon>
-                            </div>
-                            <div v-else>
-                                <md-icon class="md-primary">multiple_stop</md-icon>
-                            </div>
-                            <!-- Address -->
-                            <span style="margin-left: 35px" class="md-list-item-text">
-                                <div v-if="inElem.__typename === 'TxInCoinbase'">
-
-                                </div>
-                                <div v-else-if="inElem.__typename === 'TxInBlind'">
-                                    <router-link :to="`/address/${inElem.address}`">{{ inElem.address }}</router-link>
-                                </div>
-                                <div v-else-if="inElem.__typename === 'TxInAnon'">Anonymous</div>
-                                <div v-else>
-                                    <router-link :to="`/address/${inElem.address}`">{{ inElem.address }}</router-link>
-                                </div>
-                            </span>
-                            <!-- Coin -->
-                            <div v-if="inElem.__typename === 'TxInCoinbase'">
-
-                            </div>
-                            <div v-else-if="inElem.__typename === 'TxInBlind'">
-                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Blinded</md-button>
-                            </div>
-                            <div v-else-if="inElem.__typename === 'TxInAnon'">
-                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Anonymous</md-button>
-                            </div>
-                            <div v-else>
-                                <md-button disabled style="width: 200px; background-color: #008C00; color: white" class="md-raised md-primary">
-                                    {{ inElem.valueSat / 1e8 }}
-                                    <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
-                                </md-button>
                             </div>
                         </md-list-item>
                     </md-list>
@@ -267,7 +264,6 @@
 <script>
     import {GetTx, ReadInfo} from "../main";
     import moment from "moment";
-    import * as R from "ramda";
 
     export default {
         name: 'Transaction',
@@ -279,16 +275,14 @@
                 transaction: {
                     blockhash: '',
                     blockheight: 0,
-                    vout: []
+                    voutPerAddresses: [],
+                    vinPerAddresses: []
                 }
             }
         },
         computed: {
             confirmations() {
                 return this.info.height - this.transaction.blockheight + 1;
-            },
-            vout() {
-                return R.filter(t => t.__typename !== 'TxOutData', this.transaction.vout);
             },
             fee() {
                 return (this.transaction.feeSat / 1e8);

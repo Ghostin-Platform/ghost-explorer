@@ -1,16 +1,24 @@
 import * as R from 'ramda';
-import { Promise } from 'bluebird';
-import {
-  getEnrichedBlockByHash,
-  getEnrichedBlockByHeight,
-  getNetworkInfo,
-  getTransaction,
-  GROUP_CONCURRENCY,
-} from '../database/ghost';
-import { rpcCall } from '../config/utils';
+import moment from 'moment';
+import { getEnrichedBlockByHash, getEnrichedBlockByHeight, getNetworkInfo, TYPE_REWARD } from '../database/ghost';
+import { httpGet } from '../config/utils';
 import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
+import { elAddressTransactions } from '../database/elasticSearch';
 
 export const info = async () => getNetworkInfo();
+
+export const veterans = async () => {
+  const data = await httpGet('https://gvr.mml2.net/balances/get/richlist', 'richlist');
+  if (data) {
+    return data.map((t) => ({
+      address: t.address,
+      balance: t.balance,
+      percent: t.yourPercent,
+      share: t.yourShare,
+    }));
+  }
+  return [];
+};
 
 export const getBlockById = (id) => {
   // eslint-disable-next-line no-restricted-globals
@@ -36,64 +44,79 @@ export const getTransactions = async (offset, limit) => {
   }, rawData);
 };
 
-export const getAddressById = async (id) => {
-  const transactions = await rpcCall('getaddresstxids', [id]);
-  // const resolvedTxs = await Promise.all(R.map((tx) => getTransaction(tx), R.take(3, transactions)));
-  const resolvedTxs = await Promise.map(transactions, (txId) => getTransaction(txId), {
-    concurrency: GROUP_CONCURRENCY,
-  });
-  const rewards = [];
-  const fees = [];
-  const txVariations = [];
-  for (let index = 0; index < resolvedTxs.length; index += 1) {
-    const operations = [];
-    const transaction = resolvedTxs[index];
-    const { vin, vout, type, variation, blocktime } = transaction;
-    if (type === 'reward') rewards.push({ date: blocktime, value: variation });
-    for (let indexIn = 0; indexIn < vin.length; indexIn += 1) {
-      const flowIn = vin[indexIn];
-      const { address, valueSat } = flowIn;
-      if (id === address) {
-        operations.push({ date: blocktime, value: -valueSat });
+const computeAddrRewards = (id, transactions) => {
+  const rewards = R.filter((tx) => tx.type === TYPE_REWARD && tx.vinAddresses.includes(id), transactions);
+  const rewardsNumber = rewards.length;
+  const rewardsSum = R.sum(R.map((r) => r.variation, rewards));
+  const rewardsTime = R.map((t) => moment.unix(t.time), transactions);
+  const rewardsDuration = [];
+  if (rewardsTime.length > 1) {
+    for (let index = 0; index < rewardsTime.length; index += 1) {
+      const rTime = rewardsTime[index];
+      const nexIndex = index + 1;
+      if (nexIndex < rewardsTime.length) {
+        const cTime = rewardsTime[nexIndex];
+        const duration = moment.duration(cTime.diff(rTime)).as('seconds');
+        rewardsDuration.push(duration);
       }
     }
-    if (operations.length > 0 && type !== 'reward') {
-      fees.push({ date: blocktime, value: variation });
-    }
-    for (let indexOut = 0; indexOut < vout.length; indexOut += 1) {
-      const flowOut = vout[indexOut];
-      const { scriptPubKey, valueSat } = flowOut;
-      if (flowOut.type !== 'data') {
-        const outAddress = R.head(scriptPubKey.addresses);
-        if (outAddress === id) {
-          operations.push({ date: blocktime, value: valueSat });
-        }
-      }
-    }
-    const datedOperations = R.groupWith((a, b) => a.date === b.date, operations);
-    const amountVariation = R.map(
-      (vars) => ({
-        date: blocktime,
-        value: R.sum(R.map((s) => s.value, vars)),
-      }),
-      datedOperations
-    );
-    txVariations.push(...amountVariation);
   }
-  const nbTx = transactions.length;
-  const totalReceived = R.sum(R.filter((t) => t.value > 0, txVariations).map((s) => s.value));
-  const totalSent = R.sum(R.filter((t) => t.value < 0, txVariations).map((s) => s.value));
-  const balance = totalReceived + totalSent;
+  const avgTimeBetweenRewards =
+    rewardsDuration.length > 0 ? moment.duration(R.sum(rewardsDuration) / rewardsNumber, 'seconds').humanize() : null;
+  const avgRewardsAmount = rewardsSum / rewardsNumber;
+  return {
+    size: rewardsNumber,
+    sum: rewardsSum,
+    avg_size: avgRewardsAmount,
+    avg_time: avgTimeBetweenRewards,
+  };
+};
+const computeAddrBalance = (id, transactions) => {
+  // Received
+  const sentTransactions = R.filter((tx) => tx.vinAddresses.includes(id), transactions);
+  const sentTxsTest = R.map((tx) => {
+    const inTx = R.find((vtx) => vtx.address === id, tx.vinPerAddresses);
+    const sameOut = R.filter((vtx) => vtx.address === id, tx.voutPerAddresses);
+    const sumOutSameAddr = R.sum(R.map((x) => x.valueSat || 0, sameOut));
+    const rewardCompensation = tx.type === TYPE_REWARD ? tx.variation : 0;
+    return sumOutSameAddr - inTx.valueSat - rewardCompensation;
+  }, sentTransactions);
+  const totalSentTest = R.sum(sentTxsTest);
+  // Sent
+  const receivedTransactions = R.filter(
+    (tx) => tx.voutAddresses.includes(id) && !tx.vinAddresses.includes(id),
+    transactions
+  );
+  const receivedTxsTest = R.map((tx) => {
+    const outTx = R.find((vtx) => vtx.address === id, tx.voutPerAddresses);
+    const sameIn = R.filter((vtx) => vtx.address === id, tx.vinPerAddresses);
+    const sumInSameAddr = R.sum(R.map((x) => x.valueSat || 0, sameIn));
+    return outTx.valueSat - sumInSameAddr;
+  }, receivedTransactions);
+  const totalReceivedTest = R.sum(receivedTxsTest);
+  // Compute fees
+  const totalFees = R.sum(R.map((o) => o.feeSat, sentTransactions));
+  return {
+    totalReceived: totalReceivedTest,
+    totalSent: -totalSentTest,
+    totalFees,
+  };
+};
+export const getAddressById = async (id) => {
+  const { transactions, size } = await elAddressTransactions(id);
+  const rewardStatistic = computeAddrRewards(id, transactions);
+  const balance = computeAddrBalance(id, transactions);
   return {
     id,
     address: id,
-    balance,
-    totalReceived,
-    totalSent,
-    nbTx,
-    rewards,
-    fees,
-    txVariations,
-    transactions: resolvedTxs,
+    nbTx: size,
+    totalFees: balance.totalFees,
+    totalReceived: balance.totalReceived,
+    totalSent: balance.totalSent,
+    totalRewarded: rewardStatistic.sum,
+    rewardSize: rewardStatistic.size,
+    rewardAvgSize: rewardStatistic.avg_size,
+    rewardAvgTime: rewardStatistic.avg_time,
+    balance: balance.totalReceived + rewardStatistic.sum - balance.totalSent,
   };
 };

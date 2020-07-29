@@ -67,7 +67,7 @@
                                  <span v-else>
                                      Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                                  </span>
-                                 <span style="margin-right: 10px">
+                                 <span style="font-size: 12px">
                                     Received @ {{ tx.received }}
                                 </span>
                              </span>

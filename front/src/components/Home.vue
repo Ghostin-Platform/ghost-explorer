@@ -23,8 +23,8 @@
                                     <md-icon>{{trendingClass}}</md-icon>
                                     {{ info.market.usd }} <span style="font-size: 12px;">({{ info.market.usd_24h_change.toFixed(2) }}%) $US</span>
                                 </div>
-                                <div class="md-subhead"> Circulating supply: <b>{{ supply }}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
-                                <div class="md-subhead"> Market cap: <b>{{ marketCap }}</b> $US</div>
+                                <div class="md-subhead"> Circulating supply: {{ supply }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
+                                <div class="md-subhead"> Market cap: {{ marketCap }} $US</div>
                             </md-card-header-text>
                         </md-card-header>
                     </md-card>
@@ -272,7 +272,7 @@
         mounted() {
             const self = this;
             setInterval(function () {
-                self.$data.now = moment().add(self.info.timeoffset, 'seconds')
+                self.$data.now = moment().subtract(self.info.timeoffset, 'seconds')
             }, 5000)
         },
         apollo: {

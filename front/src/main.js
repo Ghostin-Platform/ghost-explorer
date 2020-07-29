@@ -24,6 +24,7 @@ import Address from "./components/Address";
 import Support from "./components/Support";
 
 // region configuration
+export const VETERAN_AMOUNT = 20000;
 const graphqlApi = 'http://localhost:4000/graphql';
 export const sseApi = 'http://localhost:4000/events';
 Vue.config.productionTip = false
@@ -73,6 +74,35 @@ export const GetPool = gql`query GetPool($offset: Int!, $limit: Int!) {
         transferSat
     }
 }`
+export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
+    address(id: $id) {
+        id
+        totalReceived
+        totalRewarded
+        totalSent
+        rewardSize
+        rewardAvgTime
+        rewardAvgSize
+        totalFees
+        balance
+        nbTx
+        transactions(offset: $txOffset, limit: $txLimit) {
+            id
+            type
+            txid
+            voutSize
+            voutAddressesSize
+            hash
+            time
+            blockheight
+            feeSat
+            inSat
+            outSat
+            transferSat
+            variation
+        }
+    }
+}`
 export const GetTx = gql`query GetTx($id: String!) {
     transaction(id: $id) {
         id
@@ -89,35 +119,18 @@ export const GetTx = gql`query GetTx($id: String!) {
         locktime
         blockheight
         type
-        vin {
-            __typename
-            ...on TxInStandard {
-                address
-                valueSat
-            }
-            ...on TxInBlind {
-                address
-                ring_size
-            }
-            ...on TxInAnon {
-                ring_size
-            }
+        vinPerAddresses {
+            address
+            type
+            value
+            valueSat
         }
-        vout {
-            __typename
-            ... on TxOutStandard {
-                valueSat
-                spentTxId
-                scriptPubKey {
-                    addresses
-                }
-            }
-            ... on TxOutBlind {
-                spentTxId
-                scriptPubKey {
-                    addresses
-                }
-            }
+        voutPerAddresses {
+            address
+            type
+            value
+            valueSat
+            spentTxId
         }
     }
 }`

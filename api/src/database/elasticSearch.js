@@ -81,11 +81,6 @@ export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
                     type: 'date',
                     format: 'epoch_second',
                   },
-                  locktime: {
-                    type: 'date',
-                    format: 'epoch_second',
-                    ignore_malformed: true,
-                  },
                 },
               },
             },
@@ -111,14 +106,40 @@ export const elDeleteIndexes = async (indexesToDelete = PLATFORM_INDICES) => {
   );
 };
 
+export const elAddressTransactions = async (addressId) => {
+  const query = {
+    index: INDEX_TRX,
+    size: MAX_WINDOW_SIZE,
+    body: {
+      query: {
+        bool: {
+          should: [{ term: { 'vinAddresses.keyword': addressId } }, { term: { 'voutAddresses.keyword': addressId } }],
+          minimum_should_match: 1,
+        },
+      },
+      sort: [{ time: 'asc' }],
+    },
+  };
+  const data = await el.search(query);
+  if (data && data.body.hits) {
+    const { hits } = data.body.hits;
+    const transactions = R.map((h) => h._source, hits);
+    return { size: data.body.hits.total.value, transactions };
+  }
+  return [];
+};
+
 export const elIndex = async (indexName, documentBody, refresh = true) => {
   await el
-    .index({
+    .update({
       index: indexName,
       id: documentBody.id,
       refresh,
       timeout: '60m',
-      body: documentBody,
+      body: {
+        doc: documentBody,
+        doc_as_upsert: true,
+      },
     })
     .catch((err) => {
       throw DatabaseError('Error indexing elastic', { error: err, body: documentBody });

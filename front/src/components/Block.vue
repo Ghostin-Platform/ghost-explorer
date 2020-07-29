@@ -72,7 +72,7 @@
                     <div style="width: 100%; margin-bottom: 5px"><b>Summary</b></div>
                     <div class="md-layout md-gutter">
                         <div class="md-layout-item">
-                            <md-card style="text-align: center; margin: auto; border: 1px dashed white">
+                            <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
                                 <md-card-header>
                                     <md-card-header-text>
                                         <div class="md-title" style="font-size: 22px">{{ creation }}</div>
@@ -82,7 +82,7 @@
                             </md-card>
                         </div>
                         <div class="md-layout-item">
-                            <md-card style="text-align: center; margin: auto; border: 1px dashed white">
+                            <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
                                 <md-card-header>
                                     <md-card-header-text>
                                         <div class="md-title">{{ confirmations }}</div>
@@ -92,7 +92,7 @@
                             </md-card>
                         </div>
                         <div class="md-layout-item">
-                            <md-card style="text-align: center; margin: auto; border: 1px dashed white">
+                            <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
                                 <md-card-header>
                                     <md-card-header-text>
                                         <div class="md-title">{{ block.version }}</div>
@@ -102,7 +102,6 @@
                             </md-card>
                         </div>
                     </div>
-                    <br/>
                     <div style="width: 100%; margin-bottom: 5px"><b>Hashes</b></div>
                     <md-list class="md-double-line" style="background-color: #101010">
                         <md-list-item>

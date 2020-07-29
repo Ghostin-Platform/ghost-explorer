@@ -1,7 +1,7 @@
-import { getAddressById, getBlockById, getBlocks, getTransactions, info } from '../domain/info';
+import { getAddressById, getBlockById, getBlocks, getTransactions, info, veterans } from '../domain/info';
 import { fetch } from '../database/redis';
 import {
-  CURRENT_PROCESSING_BLOCK,
+  CURRENT_PROCESSING_BLOCK, getAddressTransactions,
   getBlockTransactions,
   getPooledTransactions,
   getTransaction,
@@ -18,6 +18,7 @@ const infoResolver = {
   Query: {
     info: () => info(),
     block: (_, { id }) => getBlockById(id),
+    veterans: () => veterans(),
     blocks: (_, { offset, limit }) => getBlocks(offset, limit),
     transaction: (_, { id }) => getTransaction(id),
     transactions: (_, { offset, limit }) => getTransactions(offset, limit),
@@ -36,6 +37,9 @@ const infoResolver = {
   Transaction: {
     block: (tx) => getBlockById(tx.blockhash),
     confirmations: (tx) => fetch(CURRENT_PROCESSING_BLOCK).then((height) => 1 + (height - tx.height)),
+  },
+  Address: {
+    transactions: (address, { offset, limit }) => getAddressTransactions(address.id, offset, limit),
   },
   TxIn: {
     __resolveType: (obj) => {

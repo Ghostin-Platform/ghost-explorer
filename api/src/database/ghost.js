@@ -3,9 +3,9 @@ import { Promise } from 'bluebird';
 import { getCoinMarket, rpcCall } from '../config/utils';
 import { blockStreamId, fetch } from './redis';
 
-export const ONE_DAY_OF_BLOCKS = 720;
+// export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
-export const BLOCK_MATURITY = 100;
+// export const BLOCK_MATURITY = 100;
 export const CURRENT_PROCESSING_BLOCK = 'processing.current.block';
 export const GROUP_CONCURRENCY = 25; // Number of query in //
 
@@ -63,7 +63,7 @@ export const getBlockByHash = async (hash) => {
   return rpcCall('getblock', [hash]);
 };
 
-const TYPE_REWARD = 'reward';
+export const TYPE_REWARD = 'reward';
 const TYPE_COINBASE = 'coinbase';
 const TYPE_BLIND = 'blind';
 const TYPE_ANON = 'anon';
@@ -72,6 +72,7 @@ const TYPE_DATA = 'data';
 const TYPE_MIXED_PRIVATE = 'mixed_private';
 const TYPE_MIXED_STANDARD = 'mixed_standard';
 
+const nbType = (type, parts) => R.filter((v) => v.type === type, parts).length;
 const computeTrxType = (rawTransaction) => {
   // eslint-disable-next-line no-bitwise
   const isReward = ((rawTransaction.version >> 8) & 0xff) === 2;
@@ -79,13 +80,14 @@ const computeTrxType = (rawTransaction) => {
   if (isReward) return TYPE_REWARD;
   if (isNewCoins) return TYPE_COINBASE;
   const txOuts = R.filter((tx) => tx.type !== TYPE_DATA, rawTransaction.vout);
-  const countVout = txOuts.length;
-  const countBlind = R.filter((v) => v.type === TYPE_BLIND, txOuts).length;
-  const countAnon = R.filter((v) => v.type === TYPE_ANON, txOuts).length;
-  const countStandard = R.filter((v) => v.type === TYPE_STANDARD, txOuts).length;
-  if (countVout === countBlind) return TYPE_BLIND;
-  if (countVout === countAnon) return TYPE_ANON;
-  if (countVout === countStandard) return TYPE_STANDARD;
+  const txIns = R.filter((tx) => tx.type !== TYPE_DATA, rawTransaction.vin);
+  const countBlind = nbType(TYPE_BLIND, txIns) + nbType(TYPE_BLIND, txOuts);
+  const countAnon = nbType(TYPE_ANON, txIns) + nbType(TYPE_ANON, txOuts);
+  const countStandard = nbType(TYPE_STANDARD, txIns) + nbType(TYPE_STANDARD, txOuts);
+  const countPart = txIns.length + txOuts.length;
+  if (countPart === countBlind) return TYPE_BLIND;
+  if (countPart === countAnon) return TYPE_ANON;
+  if (countPart === countStandard) return TYPE_STANDARD;
   if (countStandard === 0) return TYPE_MIXED_PRIVATE;
   return TYPE_MIXED_STANDARD;
 };
@@ -94,19 +96,29 @@ const computeVinPerAddr = (rawTransaction) => {
   const addresses = new Map();
   for (let index = 0; index < rawTransaction.vin.length; index += 1) {
     const rawVin = rawTransaction.vin[index];
-    if (rawVin.address) {
-      const current = addresses.get(rawVin.address);
+    const inAddr = rawVin.address || rawVin.ring_row_0 || rawVin.coinbase;
+    if (inAddr) {
+      const current = addresses.get(inAddr);
       if (current) {
         current.push(rawVin);
       } else {
-        addresses.set(rawVin.address, [rawVin]);
+        addresses.set(inAddr, [rawVin]);
       }
     }
   }
   const vinPerAddresses = [];
   // eslint-disable-next-line no-restricted-syntax
   for (const [key, value] of addresses.entries()) {
-    vinPerAddresses.push({ address: key, vin: value });
+    // value, valueSat, type
+    const valueSum = R.sum(R.map((v) => v.value, value));
+    const valueSatSum = R.sum(R.map((v) => v.valueSat, value));
+    const vinSummary = {
+      address: key,
+      type: R.head(value).type || TYPE_COINBASE,
+      value: valueSum,
+      valueSat: valueSatSum,
+    };
+    vinPerAddresses.push(vinSummary);
   }
   return vinPerAddresses;
 };
@@ -114,22 +126,32 @@ const computeVoutPerAddr = (rawTransaction) => {
   const addresses = new Map();
   for (let index = 0; index < rawTransaction.vout.length; index += 1) {
     const rawVout = rawTransaction.vout[index];
-    if (rawVout.scriptPubKey) {
-      for (let adr = 0; adr < rawVout.scriptPubKey.addresses.length; adr += 1) {
-        const address = rawVout.scriptPubKey.addresses[adr];
-        const current = addresses.get(address);
-        if (current) {
-          current.push(rawVout);
-        } else {
-          addresses.set(address, [rawVout]);
-        }
+    let outAddrs = rawVout.pubkey ? [rawVout.pubkey] : [];
+    if (rawVout.scriptPubKey) outAddrs = rawVout.scriptPubKey.addresses;
+    for (let adr = 0; adr < outAddrs.length; adr += 1) {
+      const address = outAddrs[adr];
+      const current = addresses.get(address);
+      if (current) {
+        current.push(rawVout);
+      } else {
+        addresses.set(address, [rawVout]);
       }
     }
   }
   const voutPerAddresses = [];
   // eslint-disable-next-line no-restricted-syntax
   for (const [key, value] of addresses.entries()) {
-    voutPerAddresses.push({ address: key, vout: value });
+    // value, valueSat, type
+    const valueSum = R.sum(R.map((v) => v.value, value));
+    const valueSatSum = R.sum(R.map((v) => v.valueSat, value));
+    const voutSummary = {
+      address: key,
+      type: R.head(value).type,
+      spentTxId: R.head(value).spentTxId,
+      value: valueSum,
+      valueSat: valueSatSum,
+    };
+    voutPerAddresses.push(voutSummary);
   }
   return voutPerAddresses;
 };
@@ -156,12 +178,12 @@ export const getTransaction = (txId) =>
       feeSat = dataOut.length === 0 ? variation : toSat(R.sum(R.map((o) => o.ct_fee || 0, dataOut)));
     }
     // Compute spent amount (coins changing address)
-    const vinAddresses = R.map((v) => v.address, rawTx.vin);
+    const vinPerAddresses = computeVinPerAddr(rawTx);
+    const vinAddresses = R.map((v) => v.address, vinPerAddresses);
     const outDiff = R.filter((r) => !vinAddresses.includes(R.head(r.scriptPubKey?.addresses ?? [])), rawTx.vout);
     // vout per addresses
     const voutPerAddresses = computeVoutPerAddr(rawTx);
     const voutAddresses = R.map((v) => v.address, voutPerAddresses);
-    const vinPerAddresses = computeVinPerAddr(rawTx);
     const transferSat = R.sum(R.map((s) => s.valueSat || 0, outDiff));
     return Object.assign(rawTx, {
       __typename: 'Transaction',
@@ -180,7 +202,7 @@ export const getTransaction = (txId) =>
       voutAddresses,
       voutPerAddresses,
       voutAddressesSize: voutAddresses.length,
-      voutSize: R.filter((tx) => tx.type !== TYPE_DATA, rawTx.vout).length,
+      voutSize: rawTx.vout.length,
       // Sat computation
       variation,
       feeSat,
@@ -191,6 +213,12 @@ export const getTransaction = (txId) =>
 export const getBlockTransactions = (block, offset = 0, limit = 5) => {
   const { tx } = block;
   const limitedTxs = R.take(limit, tx.slice(offset));
+  return Promise.map(limitedTxs, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
+};
+
+export const getAddressTransactions = async (id, offset = 0, limit = 5) => {
+  const transactions = await rpcCall('getaddresstxids', [id]);
+  const limitedTxs = R.take(limit, transactions.reverse().slice(offset));
   return Promise.map(limitedTxs, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
 };
 

@@ -10,17 +10,12 @@
                                 <img alt="Vue logo" src="./assets/logo.png" width="32">
                                 <span style="font-family: 'Sen', sans-serif; margin-left: 10px; font-size: 18px" class="md-title">ghostin</span>
                             </div>
-                            <div class="md-layout-item md-size-15" style="padding-top: 6px">
-                                <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/`">blockchain explorer</router-link>
+                            <div class="md-layout-item md-size-10" style="padding-top: 6px">
+                                <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/`">ghostscan</router-link>
                             </div>
                             <div class="md-layout-item md-size-10" style="padding-top: 6px">
                                 <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/support`">support us</router-link>
                             </div>
-                            <!--
-                            <div class="md-layout-item md-size-10">
-                                <md-button @click.native="$router.push({ path: '/cold'})" style="margin: 0 !important;">Cold staking pool</md-button>
-                            </div>
-                            -->
                             <div v-if="$apollo.loading">
                                 <md-progress-spinner :md-diameter="30" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner>
                             </div>
