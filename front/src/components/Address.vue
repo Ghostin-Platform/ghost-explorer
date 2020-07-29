@@ -81,7 +81,7 @@
                     <md-card class="md-primary" style="text-align: center; margin: auto">
                         <md-card-header>
                             <md-card-header-text>
-                                <div class="md-title">{{ address.rewardAvgTime }}</div>
+                                <div class="md-title">{{ address.rewardSize > 1 ? address.rewardAvgTime : '-' }}</div>
                                 <div class="md-subhead"># Avg time between rewards</div>
                             </md-card-header-text>
                         </md-card-header>
@@ -89,7 +89,7 @@
                     <md-card class="md-primary" style="text-align: center; margin: auto">
                         <md-card-header>
                             <md-card-header-text>
-                                <div class="md-title">{{ rewardAvgSize }}</div>
+                                <div class="md-title">{{ address.rewardSize > 0 ? rewardAvgSize : '-' }}</div>
                                 <div class="md-subhead"># Avg reward size</div>
                             </md-card-header-text>
                         </md-card-header>
@@ -112,9 +112,9 @@
                         <md-card-header>
                             <md-card-header-text>
                                 <div class="md-title">
-                                    <qrcode value="GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61" :options="{ width: 200 }"></qrcode>
+                                    <qrcode value="GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61" :options="{ width: 150, color: { dark: '#ffffff', light:'#000000' } }"></qrcode>
                                 </div>
-                                <div class="md-subhead">Scran the QR Code</div>
+                                <div class="md-subhead" style="margin-top: 10px">Scran the QR Code</div>
                             </md-card-header-text>
                         </md-card-header>
                     </md-card>

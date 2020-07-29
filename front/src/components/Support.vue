@@ -16,7 +16,7 @@
             <div class="md-layout-item">
                 ghostin (in for initiative) is a collection of software that aim to help the Ghost blockain community.
                 Starting with a next generation explorer. And lot more to come. <span style="font-size: 16px; padding-top: 4px"><router-link :to="`/support`">Please Tip us</router-link></span><br/>
-                <qrcode value="GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61" :options="{ width: 200 }"></qrcode>
+                <qrcode value="GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61" :options="{ width: 200, color: { dark: '#ffffff', light:'#000000' } }"></qrcode>
             </div>
         </div>
     </div>
