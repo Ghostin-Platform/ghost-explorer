@@ -43,8 +43,8 @@ const createSeeMiddleware = () => {
       clearInterval(intervalId);
     });
     res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
       Connection: 'keep-alive',
+      'Content-Type': 'text/event-stream',
       'Access-Control-Allow-Origin': '*',
       'Cache-Control': 'no-cache, no-transform', // no-transform is required for dev proxy
     });

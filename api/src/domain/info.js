@@ -1,7 +1,6 @@
 import * as R from 'ramda';
 import moment from 'moment';
 import {
-  getAddressPooledTransactions,
   getEnrichedBlockByHash,
   getEnrichedBlockByHeight,
   getNetworkInfo,
@@ -18,7 +17,7 @@ export const test = async () => {
   t.id = 'test';
   t.txid = 'test';
   t.blockhash = null;
-  await broadcast(EVENT_MEMPOOL_ADDED, t);
+  await broadcast(EVENT_MEMPOOL_ADDED, [t]);
   return t.id;
 };
 
