@@ -102,29 +102,29 @@ const mapStreamToJS = ([id, data]) => {
   return result;
 };
 
-export const fetchLatestEventId = async (streamKey) => {
-  const client = await getClient();
-  const res = await client.call('XREVRANGE', streamKey, '+', '-', 'COUNT', 1);
-  if (res.length > 0) return res[0][0];
-  return undefined;
-};
+// export const fetchLatestEventId = async (streamKey) => {
+//   const client = await getClient();
+//   const res = await client.call('XREVRANGE', streamKey, '+', '-', 'COUNT', 1);
+//   if (res.length > 0) return res[0][0];
+//   return undefined;
+// };
 
 export const streamRange = async (streamKey, offset, limit) => {
   const client = await getClient();
   return client.call('XREVRANGE', streamKey, offset, '-', 'COUNT', limit);
 };
 
-export const listenStream = async (streamKey, from, dataKey, callback) => {
+export const listenStream = async (streamKey, from, batchSize, callback) => {
   const client = await getClient();
   let lastProcessedEventId = from;
   const processStep = () => {
-    return client.xread('COUNT', 1, 'STREAMS', streamKey, lastProcessedEventId).then(async (streamResult) => {
+    return client.xread('COUNT', batchSize, 'STREAMS', streamKey, lastProcessedEventId).then(async (streamResult) => {
       if (streamResult) {
         const [, results] = R.head(streamResult);
-        const data = R.head(R.map((r) => mapStreamToJS(r), results));
-        const { eventId } = data;
+        const data = R.map((r) => mapStreamToJS(r), results);
+        const { eventId } = R.last(data);
         lastProcessedEventId = eventId;
-        await callback(eventId, data[dataKey]);
+        await callback(eventId, data);
       }
       return true;
     });

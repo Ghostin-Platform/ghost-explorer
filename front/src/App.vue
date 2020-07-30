@@ -41,7 +41,6 @@
 </template>
 
 <script>
-    import moment from "moment";
     import {
         clientAddMempoolMutation, clientDelMempoolMutation,
         clientInfoUpdateMutation,
@@ -55,7 +54,6 @@
     export default {
         name: 'App',
         mounted() {
-            const self = this;
             // Start SSE Listener
             const updateData = (mutation, key, message) =>
                 this.$apollo.mutate({ mutation, variables: {[key]: JSON.parse(message) } });
@@ -80,10 +78,6 @@
             }).catch(err => {
                 console.error('Failed to connect to server', err);
             });
-            // Now listener
-            setInterval(function () {
-                self.$data.now = moment()
-            }, 60000)
         },
         beforeDestroy() {
             if (msgServer) msgServer.close();

@@ -12,9 +12,13 @@ import {
 import initBlockListener from './database/zeromq';
 import { broadcast, EVENT_MEMPOOL_ADDED, EVENT_MEMPOOL_REMOVED, EVENT_UPDATE_INFO } from './seeMiddleware';
 import { elCreateIndexes, elIsAlive } from './database/elasticSearch';
-import { indexingBlockProcessor, indexingTrxProcessor } from './processor/indexingProcessor';
+import {
+  CURRENT_INDEXING_BLOCK,
+  CURRENT_INDEXING_TRX,
+  indexingBlockProcessor,
+  indexingTrxProcessor,
+} from './processor/indexingProcessor';
 import listenMempool from './processor/mempoolProcessor';
-import { broadcastBlockProcessor, broadcastTrxProcessor } from './processor/broadcastProcessor';
 
 // Check every dependencies
 const checkSystemDependencies = async () => {
@@ -37,10 +41,7 @@ const processBlockData = async (block) => {
   await write(CURRENT_PROCESSING_BLOCK, height);
 };
 
-const initializePlatform = async (newPlatform) => {
-  if (newPlatform) {
-    await clear(CURRENT_PROCESSING_BLOCK);
-  }
+const initializePlatform = async () => {
   // Get current situation
   const currentBlock = await fetch(CURRENT_PROCESSING_BLOCK);
   const chainBlockHeight = await getChainHeight();
@@ -61,15 +62,16 @@ const initializePlatform = async (newPlatform) => {
   const initLastBlock = await fetch(CURRENT_PROCESSING_BLOCK);
   const currentHeight = await getChainHeight();
   if (initLastBlock < currentHeight) {
-    await initializePlatform(false);
+    await initializePlatform();
   }
 };
 
-const initStreamProcessors = async () => {
+const initIndexingProcessors = async (reindex) => {
+  if (reindex) {
+    await Promise.all([clear(CURRENT_INDEXING_BLOCK), clear(CURRENT_INDEXING_TRX)]);
+  }
   await indexingBlockProcessor();
   await indexingTrxProcessor();
-  await broadcastBlockProcessor();
-  await broadcastTrxProcessor();
 };
 
 const platformInit = async (reindex = false) => {
@@ -77,23 +79,14 @@ const platformInit = async (reindex = false) => {
     // Check deps
     await checkSystemDependencies();
     await elCreateIndexes();
-    await initStreamProcessors();
+    await initIndexingProcessors(reindex);
     // Start the platform
-    const newPlatform = (await fetch(CURRENT_PROCESSING_BLOCK)) === undefined;
-    initializePlatform(newPlatform || reindex).then(async () => {
+    initializePlatform().then(async () => {
       // Listen directly new block with zeroMQ
       await listenMempool(async (added, removed) => {
         getNetworkInfo().then((info) => broadcast(EVENT_UPDATE_INFO, info));
-        for (let addIndex = 0; addIndex < added.length; addIndex += 1) {
-          const addedTx = added[addIndex];
-          // noinspection ES6MissingAwait
-          // elIndex(INDEX_TRX, addedTx); // Index trx directly to save t
-          broadcast(EVENT_MEMPOOL_ADDED, addedTx);
-        }
-        for (let delIndex = 0; delIndex < removed.length; delIndex += 1) {
-          const delTx = removed[delIndex];
-          broadcast(EVENT_MEMPOOL_REMOVED, delTx);
-        }
+        if (added.length > 0) broadcast(EVENT_MEMPOOL_ADDED, added);
+        if (removed.length > 0) broadcast(EVENT_MEMPOOL_REMOVED, removed);
       });
       await initBlockListener(async (block) => {
         const enrichedBlock = await enrichBlock(block);

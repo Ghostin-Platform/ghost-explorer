@@ -3,7 +3,6 @@ import * as R from 'ramda';
 import { getRawPooledTransactions, getTransaction } from '../database/ghost';
 
 let lastPoolData = [];
-export const poolTxs = new Map();
 const listenMempool = async (callback) => {
   const processStep = async () => {
     const pooledTxs = await getRawPooledTransactions().then((data) => Object.keys(data));

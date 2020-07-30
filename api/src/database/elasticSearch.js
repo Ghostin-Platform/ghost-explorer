@@ -133,6 +133,21 @@ export const elAddressTransactions = async (addressId) => {
   return [];
 };
 
+export const elBulk = async (indexName, documents, refresh = true) => {
+  const body = documents.flatMap((d) => [
+    { update: { _id: d.id, _index: indexName, retry_on_conflict: 3 } },
+    { doc: d, doc_as_upsert: true },
+  ]);
+  return el
+    .bulk({
+      body,
+      refresh,
+    })
+    .catch((e) => {
+      throw e;
+    });
+};
+
 export const elIndex = async (indexName, documentBody, refresh = true) => {
   await el
     .update({

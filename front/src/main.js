@@ -183,8 +183,9 @@ export const GetBlock = gql`query GetBlock($id: String!, $txOffset: Int!, $txLim
             voutAddressesSize
             hash
             time
-            size
+            blockhash
             blockheight
+            size
             feeSat
             inSat
             outSat
@@ -212,9 +213,9 @@ export const ReadTxs = gql`query GetTxs($offset: String!, $limit: Int!) {
         type
         txid
         hash
-        time
         size
         offset
+        time
         blockheight
         blockhash
         feeSat
@@ -229,22 +230,22 @@ export const clientInfoUpdateMutation = gql`
     }
 `;
 export const clientNewBlockMutation = gql`
-    mutation($block: Block!) {
+    mutation($block: [Block!]) {
         newBlock(block: $block) @client
     }
 `;
 export const clientAddMempoolMutation = gql`
-    mutation($tx: Transaction!) {
+    mutation($tx: [Transaction!]) {
         addMempool(tx: $tx) @client
     }
 `;
 export const clientDelMempoolMutation = gql`
-    mutation($tx: String!) {
+    mutation($tx: [String!]) {
         delMempool(tx: $tx) @client
     }
 `;
 export const clientNewTxMutation = gql`
-    mutation($tx: Transaction!) {
+    mutation($tx: [Transaction!]) {
         newTransaction(tx: $tx) @client
     }
 `;
@@ -270,29 +271,29 @@ const updateGlobalInfo = (info) => {
     }
 }
 // blocks
-const updateHomeBlocksListing = (block) => {
+const updateHomeBlocksListing = (newBlocks) => {
     // Update the block list on the home
     try {
         const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: 6}});
         // Update the number of confirmations for all other blocks
-        const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
+        let blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
         // Add the new block on top
-        blocks.unshift(block);
-        blocks.pop();
+        blocks.unshift(...newBlocks);
+        blocks = blocks.slice(0, 6);
         const data = {blocks};
         cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: 6}, data});
     } catch (e) {
         // Nothing to do
     }
 }
-const updateBlocksListing = (block) => {
+const updateBlocksListing = (newBlocks) => {
     // Update the block list on the home
     try {
         const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}});
         // Update the number of confirmations for all other blocks
         const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
         // Add the new block on top
-        blocks.unshift(block);
+        blocks.unshift(...newBlocks);
         const data = {blocks};
         cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}, data});
     } catch (e) {
@@ -300,40 +301,47 @@ const updateBlocksListing = (block) => {
     }
 }
 // Transactions
-const updateTx = (tx) => {
+const updateTx = (newTxs) => {
     // Update the tx height if exists
-    try {
-        apolloClient.writeFragment({
-            id: `Transaction:${tx.id}`,
-            fragment: gql`
-                fragment UpdateTx on Transaction {
-                    time
-                    blockheight
-                    blockhash
-                }
-            `,
-            data: {
-                __typename: 'Transaction',
-                time: tx.time,
-                blockhash: tx.blockhash,
-                blockheight: tx.blockheight,
-            },
-        });
-    } catch (e) {
-        // Nothing to do
+    for (const tx of newTxs) {
+        try {
+            apolloClient.writeFragment({
+                id: `Transaction:${tx.id}`,
+                fragment: gql`
+                    fragment UpdateTx on Transaction {
+                        time
+                        blockheight
+                        blockhash
+                    }
+                `,
+                data: {
+                    __typename: 'Transaction',
+                    time: tx.time,
+                    blockhash: tx.blockhash,
+                    blockheight: tx.blockheight,
+                },
+            });
+        } catch (e) {
+            // Nothing to do
+        }
     }
 }
-const updateMempoolAddress = (tx) => {
-    const impactedAddresses = R.uniq([...tx.vinAddresses, ...tx.voutAddresses]);
-    console.log(impactedAddresses);
+const updateMempoolAddress = (newTxs) => {
+    // Get all impactedAddresses
+    const allAddrs = [];
+    for (const newTx of newTxs) {
+        allAddrs.push(...newTx.vinAddresses, ...newTx.voutAddresses);
+    }
+    const impactedAddresses = R.uniq(allAddrs);
     for (let index = 0; index < impactedAddresses.length; index += 1) {
         const impactedAddress = impactedAddresses[index];
+        const txs = R.filter(tx => [...tx.vinAddresses, ...tx.voutAddresses].includes(impactedAddress), newTxs);
         // Update the block list on the home
         try {
             const oldData = cache.readQuery({query: GetAddressPool, variables: { id: impactedAddress }});
             const transactions = oldData.addressMempool;
             // Add the new block on top
-            transactions.unshift(tx);
+            transactions.unshift(...txs);
             const addressMempool = transactions;
             const data = { addressMempool };
             cache.writeQuery({query: GetAddressPool, variables: { id: impactedAddress }, data});
@@ -342,25 +350,25 @@ const updateMempoolAddress = (tx) => {
         }
     }
 }
-const updateHomeTrxListing = (tx) => {
+const updateHomeTrxListing = (newTxs) => {
     // Update the home trx listing
     try {
         const data = cache.readQuery({query: ReadTxs, variables: {offset: "+", limit: 12}});
-        data.transactions.unshift(tx);
-        data.transactions.pop();
+        data.transactions.unshift(...newTxs);
+        data.transactions = data.transactions.slice(0, 12);
         cache.writeQuery({query: ReadTxs, variables: {offset: "+", limit: 12}, data});
     } catch (e) {
         // Nothing to do
     }
 }
-const updateTrxListing = (tx) => {
+const updateTrxListing = (newTxs) => {
     // Update the block list on the home
     try {
         const oldData = cache.readQuery({query: ReadTxs, variables: {offset: "+", limit: 50}});
         // Update the number of confirmations for all other blocks
         const transactions = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.transactions);
         // Add the new block on top
-        transactions.unshift(tx);
+        transactions.unshift(...newTxs);
         const data = {transactions};
         cache.writeQuery({query: ReadTxs, variables: {offset: "+", limit: 50}, data});
     } catch (e) {
@@ -368,16 +376,16 @@ const updateTrxListing = (tx) => {
     }
 }
 // Pool
-const updateMempoolListing = (tx, removal) => {
+const updateMempoolListing = (newTxs, removal) => {
     // Update the block list on the home
     try {
         const oldData = cache.readQuery({query: GetPool, variables: {offset: 0, limit: 50}});
         let mempool;
         if (removal) {
-            mempool = R.filter(d => d.txid !== tx, oldData.mempool);
+            mempool = R.filter(d => !newTxs.includes(d.txid), oldData.mempool);
         } else {
             mempool = oldData.mempool;
-            mempool.unshift(tx);
+            mempool.unshift(...newTxs);
         }
         const data = {mempool};
         cache.writeQuery({query: GetPool, variables: {offset: 0, limit: 50}, data});
@@ -385,23 +393,25 @@ const updateMempoolListing = (tx, removal) => {
         // Nothing to do
     }
 }
-const updateBlockNextHash = (block) => {
+const updateBlockNextHash = (newBlocks) => {
     // Update the next hash
-    try {
-        apolloClient.writeFragment({
-            id: `Block:${block.previousblockhash}`,
-            fragment: gql`
-                fragment UpdateBlock on Block {
-                    nextblockhash
-                }
-            `,
-            data: {
-                __typename: 'Block',
-                nextblockhash: block.hash,
-            },
-        });
-    } catch (e) {
-        // Nothing to do
+    for (const block of newBlocks) {
+        try {
+            apolloClient.writeFragment({
+                id: `Block:${block.previousblockhash}`,
+                fragment: gql`
+                    fragment UpdateBlock on Block {
+                        nextblockhash
+                    }
+                `,
+                data: {
+                    __typename: 'Block',
+                    nextblockhash: block.hash,
+                },
+            });
+        } catch (e) {
+            // Nothing to do
+        }
     }
 }
 

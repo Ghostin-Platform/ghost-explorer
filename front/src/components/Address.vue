@@ -392,18 +392,17 @@
             const self = this;
             const currentAddress = self.$route.params.id;
             // Listen for new transaction from global SSE
-            eventBus.$on('new_transaction', (tx) => {
-                const impactedAddresses = R.uniq([...tx.vinAddresses, ...tx.voutAddresses]);
+            eventBus.$on('new_transaction', (newTxs) => {
+                const allAddrs = [];
+                for (const newTx of newTxs) {
+                    allAddrs.push(...newTx.vinAddresses, ...newTx.voutAddresses);
+                }
+                const impactedAddresses = R.uniq(allAddrs);
                 if (impactedAddresses.includes(currentAddress)) {
-                    self.$toasted.show("New transaction available, refreshing in 5 seconds", {
-                        position: "top-center",
-                        duration : 5000,
-                        closeOnSwipe: false,
-                        onComplete: function() {
-                            self.$apollo.queries.addressMempool.refetch();
-                            self.$apollo.queries.address.refetch();
-                        }
-                    });
+                    // Refresh mempool
+                    self.$apollo.queries.addressMempool.refetch();
+                    // Refresh address
+                    self.$apollo.queries.address.refetch();
                 }
             });
         },
