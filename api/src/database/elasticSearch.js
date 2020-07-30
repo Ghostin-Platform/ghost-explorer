@@ -73,6 +73,10 @@ export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
                     type: 'date',
                     format: 'epoch_second',
                   },
+                  pooltime: {
+                    type: 'date',
+                    format: 'epoch_second',
+                  },
                   mediantime: {
                     type: 'date',
                     format: 'epoch_second',

@@ -3,11 +3,10 @@ import * as R from 'ramda';
 import { getRawPooledTransactions, getTransaction } from '../database/ghost';
 
 let lastPoolData = [];
+export const poolTxs = new Map();
 const listenMempool = async (callback) => {
   const processStep = async () => {
-    const txs = await getRawPooledTransactions();
-    const pooledTxs = Object.keys(txs);
-    // console.log(`Checking pool`, pooledTxs);
+    const pooledTxs = await getRawPooledTransactions().then((data) => Object.keys(data));
     if (!R.equals(lastPoolData.sort(), pooledTxs.sort())) {
       // Find removed
       const removed = [];
@@ -39,7 +38,7 @@ const listenMempool = async (callback) => {
   };
   const processingLoop = async () => {
     while (true) {
-      await wait(500);
+      await wait(100);
       await processStep();
     }
   };

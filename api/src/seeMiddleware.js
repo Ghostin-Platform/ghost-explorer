@@ -7,9 +7,6 @@ export const EVENT_MEMPOOL_ADDED = 'new_mempool';
 export const EVENT_MEMPOOL_REMOVED = 'del_mempool';
 
 export const EVENT_UPDATE_INFO = 'update_info';
-export const EVENT_UPDATE_DFFICULTY = 'update_difficulty';
-export const EVENT_UPDATE_STAKEWEIGHT = 'update_stakeWeight';
-export const EVENT_UPDATE_TXACTIVITY = 'update_txActivity';
 
 let clients = [];
 const createSeeMiddleware = () => {

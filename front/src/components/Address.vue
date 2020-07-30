@@ -63,6 +63,67 @@
                     </md-card>
                 </div>
             </div>
+            <md-card class="md-primary" style="margin: auto; background-color: #101010;">
+                <md-card-header>
+                    <md-card-header-text>
+                        <md-icon>memory</md-icon>
+                        <span style="margin-left: 10px;">Next blocks may contains <b style="color: #448aff">{{ addressMempool.length }}</b> transactions for this address</span>
+                        <span style="float: right"><md-progress-spinner :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
+                    </md-card-header-text>
+                </md-card-header>
+            </md-card>
+            <md-list v-for="tx in displayAddressMempool" :key="tx.txid" style="background-color: #101010">
+                <md-list-item :to="`/tx/${tx.txid}`">
+                    <div v-if="tx.type === 'reward'">
+                        <md-icon class="md-primary">card_giftcard</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'coinbase'">
+                        <md-icon class="md-primary">memory</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'blind'">
+                        <md-icon class="md-primary">masks</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'anon'">
+                        <md-icon class="md-primary">security</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'mixed_private'">
+                        <md-icon class="md-primary">camera</md-icon>
+                    </div>
+                    <div v-else-if="tx.type === 'mixed_standard'">
+                        <md-icon class="md-primary">local_police</md-icon>
+                    </div>
+                    <div v-else>
+                        <md-icon class="md-primary">multiple_stop</md-icon>
+                    </div>
+                    <span style="margin-left: 35px" class="md-list-item-text">
+                                 <span v-if="tx.type === 'reward'">
+                                     Reward of {{ reward }} Ghost (from {{ tx.satIn }} stake) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                 </span>
+                                 <span v-else-if="tx.type === 'coinbase'">
+                                     New coin of {{ tx.out }} Ghost to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                 </span>
+                                 <span v-else-if="tx.type === 'blind'">
+                                     Blinded ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                 </span>
+                                 <span v-else-if="tx.type === 'anon'">
+                                     Anonymous ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
+                                 </span>
+                                 <span v-else-if="tx.type === 'mixed_private'">
+                                     Mixed blind/anon ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                 </span>
+                                 <span v-else-if="tx.type === 'mixed_standard'">
+                                     Mixed standard/private of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                 </span>
+                                 <span v-else>
+                                     Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                 </span>
+                                 <span style="font-size: 12px">
+                                    Received @ {{ tx.received }}
+                                </span>
+                             </span>
+                    <md-button disabled class="md-raised md-primary" style="background-color: #a94442; color: white">Unconfirmed</md-button>
+                </md-list-item>
+            </md-list>
             <md-divider style="margin-top: 10px; margin-bottom: 20px"></md-divider>
             <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
@@ -170,7 +231,8 @@
                                     Received @ {{ tx.received }}
                                 </span>
                             </span>
-                            <md-button disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ tx.confirmations }} Confirmations</md-button>
+                            <md-button v-if="tx.blockhash" disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ tx.confirmations }} Confirmations</md-button>
+                            <md-button v-else disabled class="md-raised md-primary" style="background-color: #a94442; color: white">Unconfirmed</md-button>
                         </md-list-item>
                     </md-list>
                     <infinite-loading @infinite="infiniteHandler">
@@ -184,19 +246,28 @@
 </template>
 
 <script>
-    import {GetAddress, ReadInfo, VETERAN_AMOUNT} from "../main";
+    import {
+        GetAddress,
+        ReadInfo,
+        VETERAN_AMOUNT,
+        ADDR_PAGINATION_COUNT,
+        GetAddressPool,
+        eventBus
+    } from "../main";
     import moment from "moment";
+    import * as R from "ramda";
 
-    const PAGINATION_COUNT = 20;
     export default {
         name: 'Address',
         data() {
             return {
-                page: PAGINATION_COUNT,
+                page: ADDR_PAGINATION_COUNT,
                 info: {
                     height: 0
                 },
+                addressMempool: [],
                 address: {
+                    id: "",
                     totalReceived: 0,
                     totalSent: 0,
                     totalFees: 0,
@@ -213,7 +284,7 @@
                 const variables = {
                     id: this.$route.params.id,
                     txOffset: this.page,
-                    txLimit: PAGINATION_COUNT,
+                    txLimit: ADDR_PAGINATION_COUNT,
                 };
                 this.$apollo.queries.address.fetchMore({
                     variables,
@@ -237,7 +308,7 @@
                 return this.address.balance / 1e8 >= VETERAN_AMOUNT;
             },
             isInactive() {
-                return this.address.balance == 0;
+                return this.address.balance === 0;
             },
             addressStatusStyle() {
                 let style = "text-align: center; margin: auto;";
@@ -284,6 +355,17 @@
                     return Object.assign(tx, {received, transfer, out, satIn, fee, confirmations})
                 })
             },
+            displayAddressMempool() {
+                return this.addressMempool.map(tx => {
+                    const received = moment.unix(tx.time).format('LLL');
+                    const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
+                    const satIn = tx.inSat > 0 ? (tx.inSat / 1e8).toFixed(4) : 0;
+                    const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(4) : 0;
+                    const fee = tx.feeSat > 0 ? (tx.feeSat / 1e8).toFixed(6) : 0;
+                    const confirmations = 0;
+                    return Object.assign(tx, {received, transfer, out, satIn, fee, confirmations})
+                })
+            },
         },
         apollo: {
             address: {
@@ -292,11 +374,38 @@
                     return {
                         id: this.$route.params.id,
                         txOffset: 0,
-                        txLimit: PAGINATION_COUNT,
+                        txLimit: ADDR_PAGINATION_COUNT,
                     }
                 }
             },
+            addressMempool: {
+                query: () => GetAddressPool,
+                variables() {
+                    return {
+                        id: this.$route.params.id,
+                    }
+                },
+            },
             info: () => ReadInfo,
+        },
+        mounted() {
+            const self = this;
+            const currentAddress = self.$route.params.id;
+            // Listen for new transaction from global SSE
+            eventBus.$on('new_transaction', (tx) => {
+                const impactedAddresses = R.uniq([...tx.vinAddresses, ...tx.voutAddresses]);
+                if (impactedAddresses.includes(currentAddress)) {
+                    self.$toasted.show("New transaction available, refreshing in 5 seconds", {
+                        position: "top-center",
+                        duration : 5000,
+                        closeOnSwipe: false,
+                        onComplete: function() {
+                            self.$apollo.queries.addressMempool.refetch();
+                            self.$apollo.queries.address.refetch();
+                        }
+                    });
+                }
+            });
         },
     }
 </script>

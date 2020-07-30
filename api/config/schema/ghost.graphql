@@ -261,6 +261,7 @@ type Veteran {
 
 ### QUERIES
 type Query {
+  test: String
   info: BlockChainInfo
   block(id: String!): Block
   blocks(offset: String! = "+", limit: Int! = 6): [Block]
@@ -269,6 +270,7 @@ type Query {
   transactions(offset: String! = "+", limit: Int! = 12): [Transaction]
   mempool(offset: Int! = 0, limit: Int! = 15): [Transaction]
   address(id: String!): Address
+  addressMempool(id: String!): [Transaction]
   # Stats
   difficulty: StatPercentile
   seriesDifficulty: [PercentileDataPoint]

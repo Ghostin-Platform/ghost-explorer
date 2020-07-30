@@ -1,9 +1,26 @@
 import * as R from 'ramda';
 import moment from 'moment';
-import { getEnrichedBlockByHash, getEnrichedBlockByHeight, getNetworkInfo, TYPE_REWARD } from '../database/ghost';
+import {
+  getAddressPooledTransactions,
+  getEnrichedBlockByHash,
+  getEnrichedBlockByHeight,
+  getNetworkInfo,
+  getTransaction,
+  TYPE_REWARD,
+} from '../database/ghost';
 import { httpGet } from '../config/utils';
 import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
 import { elAddressTransactions } from '../database/elasticSearch';
+import { broadcast, EVENT_MEMPOOL_ADDED } from '../seeMiddleware';
+
+export const test = async () => {
+  const t = await getTransaction('7360d012db628526dffec8efc4092882d0d7b39449f6a929751561ceb99f5986');
+  t.id = 'test';
+  t.txid = 'test';
+  t.blockhash = null;
+  await broadcast(EVENT_MEMPOOL_ADDED, t);
+  return t.id;
+};
 
 export const info = async () => getNetworkInfo();
 

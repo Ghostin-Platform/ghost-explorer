@@ -1,5 +1,4 @@
 /* eslint-disable no-await-in-loop */
-import * as R from 'ramda';
 import { logger } from './config/conf';
 import { write, fetch, clear, redisIsAlive, storeBlock, storeTransaction } from './database/redis';
 import { getChainHeight } from './config/utils';
@@ -11,17 +10,11 @@ import {
   getNetworkInfo,
 } from './database/ghost';
 import initBlockListener from './database/zeromq';
-import {
-  broadcast,
-  EVENT_MEMPOOL_ADDED,
-  EVENT_MEMPOOL_REMOVED,
-  EVENT_NEW_BLOCK,
-  EVENT_NEW_TX,
-  EVENT_UPDATE_INFO,
-} from './seeMiddleware';
+import { broadcast, EVENT_MEMPOOL_ADDED, EVENT_MEMPOOL_REMOVED, EVENT_UPDATE_INFO } from './seeMiddleware';
 import { elCreateIndexes, elIsAlive } from './database/elasticSearch';
-import { indexingBlockProcessor, indexingTrxProcessor } from './processor/statisticProcessor';
+import { indexingBlockProcessor, indexingTrxProcessor } from './processor/indexingProcessor';
 import listenMempool from './processor/mempoolProcessor';
+import { broadcastBlockProcessor, broadcastTrxProcessor } from './processor/broadcastProcessor';
 
 // Check every dependencies
 const checkSystemDependencies = async () => {
@@ -42,7 +35,6 @@ const processBlockData = async (block) => {
     await storeTransaction(index, transaction);
   }
   await write(CURRENT_PROCESSING_BLOCK, height);
-  return { block, transactions };
 };
 
 const initializePlatform = async (newPlatform) => {
@@ -76,6 +68,8 @@ const initializePlatform = async (newPlatform) => {
 const initStreamProcessors = async () => {
   await indexingBlockProcessor();
   await indexingTrxProcessor();
+  await broadcastBlockProcessor();
+  await broadcastTrxProcessor();
 };
 
 const platformInit = async (reindex = false) => {
@@ -89,19 +83,21 @@ const platformInit = async (reindex = false) => {
     initializePlatform(newPlatform || reindex).then(async () => {
       // Listen directly new block with zeroMQ
       await listenMempool(async (added, removed) => {
-        const networkInfo = await getNetworkInfo();
-        broadcast(EVENT_UPDATE_INFO, networkInfo);
-        if (added.length > 0) R.map((a) => broadcast(EVENT_MEMPOOL_ADDED, a), added);
-        if (removed.length > 0) R.map((a) => broadcast(EVENT_MEMPOOL_REMOVED, a), removed);
+        getNetworkInfo().then((info) => broadcast(EVENT_UPDATE_INFO, info));
+        for (let addIndex = 0; addIndex < added.length; addIndex += 1) {
+          const addedTx = added[addIndex];
+          // noinspection ES6MissingAwait
+          // elIndex(INDEX_TRX, addedTx); // Index trx directly to save t
+          broadcast(EVENT_MEMPOOL_ADDED, addedTx);
+        }
+        for (let delIndex = 0; delIndex < removed.length; delIndex += 1) {
+          const delTx = removed[delIndex];
+          broadcast(EVENT_MEMPOOL_REMOVED, delTx);
+        }
       });
       await initBlockListener(async (block) => {
         const enrichedBlock = await enrichBlock(block);
-        const { transactions } = await processBlockData(enrichedBlock);
-        // Broadcasting
-        const networkInfo = await getNetworkInfo();
-        broadcast(EVENT_UPDATE_INFO, networkInfo);
-        broadcast(EVENT_NEW_BLOCK, enrichedBlock);
-        R.map((tx) => broadcast(EVENT_NEW_TX, tx), transactions);
+        await processBlockData(enrichedBlock);
       });
     });
   } catch (e) {

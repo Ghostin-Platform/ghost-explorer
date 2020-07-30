@@ -47,7 +47,8 @@
         clientInfoUpdateMutation,
         clientNewBlockMutation,
         clientNewTxMutation,
-        sseApi
+        sseApi,
+        eventBus
     } from "./main";
 
     let msgServer;
@@ -64,6 +65,7 @@
                     updateData(clientNewBlockMutation, 'block', message);
                 });
                 sse.subscribe('new_transaction', (message) => {
+                    eventBus.$emit('new_transaction', JSON.parse(message));
                     updateData(clientNewTxMutation, 'tx', message);
                 });
                 sse.subscribe('update_info', (message) => {

@@ -27,7 +27,8 @@
     "vue-infinite-loading": "^2.4.5",
     "vue-material": "^1.0.0-beta-14",
     "vue-router": "^3.3.4",
-    "vue-sse": "^1.0.2"
+    "vue-sse": "^1.0.2",
+    "vue-toasted": "^1.1.28"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.4.0",

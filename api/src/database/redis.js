@@ -102,6 +102,13 @@ const mapStreamToJS = ([id, data]) => {
   return result;
 };
 
+export const fetchLatestEventId = async (streamKey) => {
+  const client = await getClient();
+  const res = await client.call('XREVRANGE', streamKey, '+', '-', 'COUNT', 1);
+  if (res.length > 0) return res[0][0];
+  return undefined;
+};
+
 export const streamRange = async (streamKey, offset, limit) => {
   const client = await getClient();
   return client.call('XREVRANGE', streamKey, offset, '-', 'COUNT', limit);

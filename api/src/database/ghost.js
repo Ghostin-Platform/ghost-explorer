@@ -190,6 +190,7 @@ export const getTransaction = (txId) =>
       id: rawTx.txid,
       type,
       time: rawTx.time || poolInfo.time,
+      pooltime: poolInfo && poolInfo.time,
       blockheight: rawTx.height,
       // vin
       inSat,
@@ -210,13 +211,13 @@ export const getTransaction = (txId) =>
     });
   });
 
-export const getBlockTransactions = (block, offset = 0, limit = 5) => {
+export const getBlockTransactions = (block, offset = 0, limit = 10) => {
   const { tx } = block;
   const limitedTxs = R.take(limit, tx.slice(offset));
   return Promise.map(limitedTxs, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
 };
 
-export const getAddressTransactions = async (id, offset = 0, limit = 5) => {
+export const getAddressTransactions = async (id, offset = 0, limit = 10) => {
   const transactions = await rpcCall('getaddresstxids', [id]);
   const limitedTxs = R.take(limit, transactions.reverse().slice(offset));
   return Promise.map(limitedTxs, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
@@ -225,12 +226,28 @@ export const getAddressTransactions = async (id, offset = 0, limit = 5) => {
 export const getPooledTransactions = async (offset = 0, limit = 5) => {
   const poolTx = await getRawPooledTransactions();
   const poolTxIds = Object.keys(poolTx);
-  const limitedTxs = R.take(limit, poolTxIds.slice(offset));
+  const limitedTxs = limit <= 0 ? poolTxIds : R.take(limit, poolTxIds.slice(offset));
   return Promise.map(
     limitedTxs,
     async (txId) => {
       const tx = await getTransaction(txId);
       return Object.assign(tx, poolTx[tx.id]);
+    },
+    { concurrency: GROUP_CONCURRENCY }
+  );
+};
+
+export const getAddressPooledTransactions = async (id) => {
+  const allTx = await getRawPooledTransactions();
+  const allTxs = Object.keys(allTx).map((k) => ({ txid: k, ...allTx[k] }));
+  const addrTx = await rpcCall('getaddressmempool', [id]);
+  const addrTxs = R.uniq(R.map((tx) => tx.txid, addrTx));
+  const limitedTxs = R.filter((x) => addrTxs.includes(x.txid), allTxs);
+  return Promise.map(
+    limitedTxs,
+    async (lTx) => {
+      const tx = await getTransaction(lTx.txid);
+      return Object.assign(tx, lTx);
     },
     { concurrency: GROUP_CONCURRENCY }
   );

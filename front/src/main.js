@@ -22,12 +22,14 @@ import Mempool from "./components/Mempool";
 import Transactions from "./components/Transactions";
 import Address from "./components/Address";
 import Support from "./components/Support";
+import Toasted from 'vue-toasted';
 
 // region configuration
 export const VETERAN_AMOUNT = 20000;
 const graphqlApi = 'http://localhost:4000/graphql';
 export const sseApi = 'http://localhost:4000/events';
 Vue.config.productionTip = false
+Vue.use(Toasted)
 Vue.use(VueApollo)
 Vue.use(VueSSE)
 Vue.use(VueMaterial)
@@ -74,6 +76,22 @@ export const GetPool = gql`query GetPool($offset: Int!, $limit: Int!) {
         transferSat
     }
 }`
+export const GetAddressPool = gql`query GetAddressPool($id: String!) {
+    addressMempool(id: $id) {
+        id
+        type
+        txid
+        voutSize
+        voutAddressesSize
+        hash
+        time
+        size
+        feeSat
+        inSat
+        outSat
+        transferSat
+    }
+}`
 export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
     address(id: $id) {
         id
@@ -88,6 +106,7 @@ export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $t
         nbTx
         transactions(offset: $txOffset, limit: $txLimit) {
             id
+            blockhash
             type
             txid
             voutSize
@@ -103,6 +122,8 @@ export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $t
         }
     }
 }`
+
+export const ADDR_PAGINATION_COUNT = 20;
 export const GetTx = gql`query GetTx($id: String!) {
     transaction(id: $id) {
         id
@@ -119,6 +140,8 @@ export const GetTx = gql`query GetTx($id: String!) {
         locktime
         blockheight
         type
+        vinAddresses
+        voutAddresses
         vinPerAddresses {
             address
             type
@@ -300,6 +323,25 @@ const updateTx = (tx) => {
         // Nothing to do
     }
 }
+const updateMempoolAddress = (tx) => {
+    const impactedAddresses = R.uniq([...tx.vinAddresses, ...tx.voutAddresses]);
+    console.log(impactedAddresses);
+    for (let index = 0; index < impactedAddresses.length; index += 1) {
+        const impactedAddress = impactedAddresses[index];
+        // Update the block list on the home
+        try {
+            const oldData = cache.readQuery({query: GetAddressPool, variables: { id: impactedAddress }});
+            const transactions = oldData.addressMempool;
+            // Add the new block on top
+            transactions.unshift(tx);
+            const addressMempool = transactions;
+            const data = { addressMempool };
+            cache.writeQuery({query: GetAddressPool, variables: { id: impactedAddress }, data});
+        } catch (e) {
+            // Nothing to do
+        }
+    }
+}
 const updateHomeTrxListing = (tx) => {
     // Update the home trx listing
     try {
@@ -372,6 +414,7 @@ const resolvers = {
         },
         addMempool: (_, {tx}) => {
             updateMempoolListing(tx, false);
+            updateMempoolAddress(tx);
         },
         delMempool: (_, {tx}) => {
             updateMempoolListing(tx, true);
@@ -442,6 +485,7 @@ Vue.mixin({
 //    })
 //})
 
+export const eventBus = new Vue();
 new Vue({
     el: '#app',
     router,
