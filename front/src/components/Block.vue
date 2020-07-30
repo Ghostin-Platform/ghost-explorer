@@ -102,9 +102,9 @@
                             </md-card>
                         </div>
                     </div>
-                    <div style="width: 100%; margin-bottom: 5px"><b>Hashes</b></div>
-                    <md-list class="md-double-line" style="background-color: #101010">
-                        <md-list-item>
+                    <div style="width: 100%;"><b>Hashes</b></div>
+                    <md-list class="md-double-line">
+                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
                             <md-icon>vpn_key</md-icon>
                             <div class="md-list-item-text">
                                 <span>{{ block.hash }}</span>
@@ -114,7 +114,7 @@
                                 <md-icon>content_copy</md-icon>
                             </md-button>
                         </md-list-item>
-                        <md-list-item>
+                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
                             <md-icon>undo</md-icon>
                             <div class="md-list-item-text">
                                 <span v-if="block.previousblockhash"><router-link :to="`/block/${block.previousblockhash}`">{{ block.previousblockhash }}</router-link></span>
@@ -130,7 +130,7 @@
                                 <md-icon>content_copy</md-icon>
                             </md-button>
                         </md-list-item>
-                        <md-list-item>
+                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
                             <md-icon>redo</md-icon>
                             <div class="md-list-item-text">
                                 <span v-if="block.nextblockhash"><router-link :to="`/block/${block.nextblockhash}`">{{ block.nextblockhash }}</router-link></span>
@@ -146,7 +146,7 @@
                                 <md-icon>content_copy</md-icon>
                             </md-button>
                         </md-list-item>
-                        <md-list-item>
+                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
                             <md-icon>account_tree</md-icon>
                             <div class="md-list-item-text">
                                 <span>{{ block.merkleroot }}</span>
@@ -156,7 +156,7 @@
                                 <md-icon>content_copy</md-icon>
                             </md-button>
                         </md-list-item>
-                        <md-list-item>
+                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
                             <md-icon>fingerprint</md-icon>
                             <div class="md-list-item-text">
                                 <span>{{ block.witnessmerkleroot }}</span>
@@ -167,9 +167,8 @@
                             </md-button>
                         </md-list-item>
                     </md-list>
-                    <br/>
                     <div style="width: 100%; margin-bottom: 5px"><b>{{ block.txSize }} Transactions</b></div>
-                    <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010">
+                    <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px">
                         <md-list-item :to="`/tx/${tx.txid}`">
                             <div v-if="tx.type === 'reward'">
                                 <md-icon class="md-primary">card_giftcard</md-icon>

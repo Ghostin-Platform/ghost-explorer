@@ -22,7 +22,7 @@
                             </md-card-header-text>
                         </md-card-header>
                     </md-card>
-                    <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010">
+                    <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px">
                         <md-list-item :to="`/tx/${tx.txid}`">
                             <div v-if="tx.type === 'reward'">
                                 <md-icon class="md-primary">card_giftcard</md-icon>

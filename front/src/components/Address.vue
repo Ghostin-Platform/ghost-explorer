@@ -96,31 +96,31 @@
                         <md-icon class="md-primary">multiple_stop</md-icon>
                     </div>
                     <span style="margin-left: 35px" class="md-list-item-text">
-                                 <span v-if="tx.type === 'reward'">
-                                     Reward of {{ reward }} Ghost (from {{ tx.satIn }} stake) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                 </span>
-                                 <span v-else-if="tx.type === 'coinbase'">
-                                     New coin of {{ tx.out }} Ghost to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                 </span>
-                                 <span v-else-if="tx.type === 'blind'">
-                                     Blinded ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                 </span>
-                                 <span v-else-if="tx.type === 'anon'">
-                                     Anonymous ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
-                                 </span>
-                                 <span v-else-if="tx.type === 'mixed_private'">
-                                     Mixed blind/anon ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                 </span>
-                                 <span v-else-if="tx.type === 'mixed_standard'">
-                                     Mixed standard/private of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                 </span>
-                                 <span v-else>
-                                     Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                 </span>
-                                 <span style="font-size: 12px">
-                                    Received @ {{ tx.received }}
-                                </span>
-                             </span>
+                        <span v-if="tx.type === 'reward'">
+                            Reward of {{ reward }} Ghost (from {{ tx.satIn }} stake) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                        </span>
+                        <span v-else-if="tx.type === 'coinbase'">
+                            New coin of {{ tx.out }} Ghost to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                        </span>
+                        <span v-else-if="tx.type === 'blind'">
+                            Blinded ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                        </span>
+                        <span v-else-if="tx.type === 'anon'">
+                            Anonymous ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
+                        </span>
+                        <span v-else-if="tx.type === 'mixed_private'">
+                            Mixed blind/anon ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                        </span>
+                        <span v-else-if="tx.type === 'mixed_standard'">
+                            Mixed standard/private of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                        </span>
+                        <span v-else>
+                            Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                        </span>
+                        <span style="font-size: 12px">
+                           Received @ {{ tx.received }}
+                       </span>
+                    </span>
                     <md-button disabled class="md-raised md-primary" style="background-color: #a94442; color: white">Unconfirmed</md-button>
                 </md-list-item>
             </md-list>
@@ -182,7 +182,7 @@
                 </div>
                 <div class="md-layout-item">
                     <div style="width: 100%; margin-bottom: 5px"><b>{{ address.nbTx }} Transactions</b></div>
-                    <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010">
+                    <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px">
                         <md-list-item :to="`/tx/${tx.txid}`">
                             <div v-if="tx.type === 'reward'">
                                 <md-icon class="md-primary">card_giftcard</md-icon>
@@ -320,29 +320,24 @@
                 return (this.address.rewardAvgSize / 1e8).toFixed(4);
             },
             received() {
-                const r = (this.address.totalReceived / 1e8).toFixed(4);
                 const formatter = new Intl.NumberFormat('en-US');
-                return formatter.format(r)
+                return formatter.format(this.address.totalReceived / 1e8)
             },
             sent() {
-                const r = (this.address.totalSent / 1e8).toFixed(4);
                 const formatter = new Intl.NumberFormat('en-US');
-                return formatter.format(r)
+                return formatter.format(this.address.totalSent / 1e8)
             },
             fees() {
-                const r = (this.address.totalFees / 1e8).toFixed(4);
                 const formatter = new Intl.NumberFormat('en-US');
-                return formatter.format(r)
+                return formatter.format(this.address.totalFees / 1e8)
             },
             rewards() {
-                const r = (this.address.totalRewarded / 1e8).toFixed(4);
                 const formatter = new Intl.NumberFormat('en-US');
-                return formatter.format(r)
+                return formatter.format(this.address.totalRewarded / 1e8)
             },
             balance() {
-                const r = (this.address.balance / 1e8).toFixed(4);
                 const formatter = new Intl.NumberFormat('en-US');
-                return formatter.format(r)
+                return formatter.format(this.address.balance / 1e8)
             },
             displayTxs() {
                 return this.address.transactions.map(tx => {
