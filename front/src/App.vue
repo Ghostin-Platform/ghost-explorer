@@ -6,18 +6,21 @@
                     <div class="md-layout-item md-size-15"></div>
                     <div class="md-layout-item">
                         <div class="md-layout-item md-layout md-gutter">
-                            <div class="md-layout-item md-size-10" style="padding-left: 0">
-                                <img alt="Vue logo" src="./assets/logo.png" width="32">
-                                <span style="font-family: 'Sen', sans-serif; margin-left: 10px; font-size: 18px" class="md-title">ghostin</span>
+                            <div class="md-layout-item md-size-15" style="padding-left: 0">
+                                <img alt="Vue logo" src="./assets/logo.png" style="float: left;" width="44">
+                                <div style="font-family: 'Sen', sans-serif; float: left; margin-left: 15px; padding-top: 8px; font-size: 32px;" class="md-title">ghostin</div>
                             </div>
-                            <div class="md-layout-item md-size-10" style="padding-top: 6px">
-                                <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/`">ghostscan</router-link>
+                            <div class="md-layout-item md-size-10">
+                                <md-button v-on:click="$router.push('/')" style="font-family: 'Sen', sans-serif;">ghostscan</md-button>
                             </div>
-                            <div class="md-layout-item md-size-10" style="padding-top: 6px">
-                                <router-link style="font-family: 'Sen', sans-serif; font-size: 16px;" :to="`/support`">support us</router-link>
+                            <div class="md-layout-item md-size-40">
+                                <md-button v-on:click="$router.push('/support')" style="font-family: 'Sen', sans-serif;">support us</md-button>
                             </div>
-                            <div v-if="$apollo.loading">
-                                <md-progress-spinner :md-diameter="30" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner>
+                            <div class="md-layout-item" style="padding-right: 0">
+                                <md-field class="md-autocomplete md-autocomplete-box" style="padding: 0; margin: 0" md-clearable md-inline>
+                                    <label>Search...</label>
+                                    <md-input style="padding-top: 16px; margin-right: 12px" v-on:keyup.enter="searchlistener" v-model="search"></md-input>
+                                </md-field>
                             </div>
                         </div>
                     </div>
@@ -78,6 +81,16 @@
             }).catch(err => {
                 console.error('Failed to connect to server', err);
             });
+        },
+        data() {
+            return {
+                search: ''
+            }
+        },
+        methods: {
+            searchlistener() {
+                console.log(this.search)
+            }
         },
         beforeDestroy() {
             if (msgServer) msgServer.close();

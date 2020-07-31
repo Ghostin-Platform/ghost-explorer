@@ -7,7 +7,7 @@ import {
   getTransaction,
   TYPE_REWARD,
 } from '../database/ghost';
-import { httpGet } from '../config/utils';
+import { httpGet, rpcCall } from '../config/utils';
 import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
 import { elAddressTransactions } from '../database/elasticSearch';
 import { broadcast, EVENT_MEMPOOL_ADDED } from '../seeMiddleware';
@@ -118,14 +118,16 @@ const computeAddrBalance = (id, transactions) => {
     totalFees,
   };
 };
-export const getAddressById = async (id) => {
-  const { transactions, size } = await elAddressTransactions(id);
+export const getAddressById = async (id, blockheight = 0) => {
+  const { transactions } = await elAddressTransactions(id);
+  const query = { addresses: [id], start: 0, end: blockheight };
+  const txIds = await rpcCall('getaddresstxids', [query]);
   const rewardStatistic = computeAddrRewards(id, transactions);
   const balance = computeAddrBalance(id, transactions);
   return {
+    __typename: 'Address',
     id,
-    address: id,
-    nbTx: size,
+    nbTx: txIds.length,
     totalFees: balance.totalFees,
     totalReceived: balance.totalReceived,
     totalSent: balance.totalSent,

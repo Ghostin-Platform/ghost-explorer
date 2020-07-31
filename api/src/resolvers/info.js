@@ -11,6 +11,7 @@ import {
 import {
   currentDayStakeWeight,
   currentDayTxTypeVentilation,
+  elSearch,
   monthlyDifficulty,
   monthlyStakeWeight,
   monthlyTxCount,
@@ -20,13 +21,14 @@ const infoResolver = {
   Query: {
     test: () => test(),
     info: () => info(),
+    search: (_, { term }) => elSearch(term),
     block: (_, { id }) => getBlockById(id),
     veterans: () => veterans(),
     blocks: (_, { offset, limit }) => getBlocks(offset, limit),
     transaction: (_, { id }) => getTransaction(id),
     transactions: (_, { offset, limit }) => getTransactions(offset, limit),
     mempool: (_, { offset, limit }) => getPooledTransactions(offset, limit),
-    address: (_, { id }) => getAddressById(id),
+    address: (_, { id, until }) => getAddressById(id, until),
     addressMempool: (_, { id }) => getAddressPooledTransactions(id),
     stakeWeight: () => currentDayStakeWeight(),
     seriesStakeWeight: () => monthlyStakeWeight(),
@@ -44,6 +46,12 @@ const infoResolver = {
   },
   Address: {
     transactions: (address, { offset, limit }) => getAddressTransactions(address.id, offset, limit),
+  },
+  SearchData: {
+    __resolveType: (obj) => {
+      // eslint-disable-next-line no-underscore-dangle
+      return obj.__typename;
+    },
   },
   TxIn: {
     __resolveType: (obj) => {

@@ -11,6 +11,9 @@
                 <span v-if="transaction.blockhash"><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Block <span style="font-size: 16px"><router-link :to="`/block/${transaction.blockhash}`">#{{ transaction.blockheight }}</router-link></span></span>
                 <span v-else><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon><router-link :to="`/mempool`">Pending</router-link></span>
                 <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Transaction <span style="font-size: 16px">#{{ transaction.txid }}</span>
+                <div style="float: right; font-size: 14px">
+                    <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+                </div>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
             <div class="md-layout md-gutter">

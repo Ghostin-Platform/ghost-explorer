@@ -9,6 +9,9 @@
             <h3>
                 <router-link :to="`/`">Home</router-link>
                 <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Address #{{address.id}}
+                <div style="float: right; font-size: 14px">
+                    <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+                </div>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
             <div class="md-layout md-gutter">
@@ -67,12 +70,12 @@
                 <md-card-header>
                     <md-card-header-text>
                         <md-icon>memory</md-icon>
-                        <span style="margin-left: 10px;">Next blocks may contains <b style="color: #448aff">{{ addressMempool.length }}</b> transactions for this address</span>
+                        <span style="margin-left: 10px;">Next blocks may contains <b style="color: #448aff">{{ addressMempool.length }}</b> transactions for this address and potentially a reward</span>
                         <span style="float: right"><md-progress-spinner :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
                     </md-card-header-text>
                 </md-card-header>
             </md-card>
-            <md-list v-for="tx in displayAddressMempool" :key="tx.txid" style="background-color: #101010">
+            <md-list v-for="tx in displayAddressMempool" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px">
                 <md-list-item :to="`/tx/${tx.txid}`">
                     <div v-if="tx.type === 'reward'">
                         <md-icon class="md-primary">card_giftcard</md-icon>
@@ -263,15 +266,19 @@
             return {
                 page: ADDR_PAGINATION_COUNT,
                 info: {
-                    height: 0
+                    height: 0,
+                    sync_percent: 0
                 },
                 addressMempool: [],
                 address: {
                     id: "",
+                    totalFees: 0,
                     totalReceived: 0,
                     totalSent: 0,
-                    totalFees: 0,
                     totalRewarded: 0,
+                    rewardSize: 0,
+                    rewardAvgSize: 0,
+                    rewardAvgTime: 0,
                     transactions: []
                 }
             }

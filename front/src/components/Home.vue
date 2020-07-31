@@ -32,7 +32,7 @@
                         <md-card-header>
                             <md-card-header-text>
                                 <div class="md-title">{{ displayStakeWeight }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
-                                <div class="md-subhead">Current staking network weight</div>
+                                <div class="md-subhead">Current staking network weight ({{ stakeWeightPercent }}%)</div>
                             </md-card-header-text>
                         </md-card-header>
                     </md-card>
@@ -75,7 +75,7 @@
                             <md-card-header>
                                 <md-card-header-text>
                                     <md-icon>memory</md-icon>
-                                    <span style="margin-left: 10px;">Next blocks may contains <b>{{ info.pooledTxCount }}</b> transactions in addition to the reward tx</span>
+                                    <span style="margin-left: 10px;">Next blocks may contains <b>{{ info.pooledTxCount }}</b> transactions in addition to the reward</span>
                                 </md-card-header-text>
                             </md-card-header>
                         </md-card>
@@ -218,6 +218,10 @@
             displayStakeWeight() {
                 const formatter = new Intl.NumberFormat('en-US');
                 return formatter.format(this.info.stake_weight / 1e8)
+            },
+            stakeWeightPercent() {
+                const formatter = new Intl.NumberFormat('en-US');
+                return formatter.format(this.info.stake_weight / 1e8 * 100 / this.info.moneysupply)
             },
             coinVarClass() {
                 return this.info.market.usd_24h_change > 0

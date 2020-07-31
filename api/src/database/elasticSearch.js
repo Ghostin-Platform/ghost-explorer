@@ -7,8 +7,9 @@ import { ConfigurationError, DatabaseError } from '../config/errors';
 
 const MAX_WINDOW_SIZE = 50000;
 export const INDEX_BLOCK = 'ghost_block';
+export const INDEX_ADDRESS = 'ghost_address';
 export const INDEX_TRX = 'ghost_trx';
-export const PLATFORM_INDICES = [INDEX_BLOCK, INDEX_TRX];
+export const PLATFORM_INDICES = [INDEX_BLOCK, INDEX_TRX, INDEX_ADDRESS];
 
 export const el = new Client({ node: conf.get('elasticsearch:url') });
 
@@ -27,6 +28,17 @@ export const elIsAlive = async () => {
         throw ConfigurationError('ElasticSearch seems down');
       }
     );
+};
+
+export const elSearch = async (term) => {
+  const searchItems = await el.search({
+    index: PLATFORM_INDICES,
+    body: {
+      size: 25,
+      query: { query_string: { query: term } },
+    },
+  });
+  return R.map((t) => t._source, searchItems.body.hits.hits);
 };
 
 export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
@@ -138,14 +150,10 @@ export const elBulk = async (indexName, documents, refresh = true) => {
     { update: { _id: d.id, _index: indexName, retry_on_conflict: 3 } },
     { doc: d, doc_as_upsert: true },
   ]);
-  return el
-    .bulk({
-      body,
-      refresh,
-    })
-    .catch((e) => {
-      throw e;
-    });
+  return el.bulk({
+    body,
+    refresh,
+  });
 };
 
 export const elIndex = async (indexName, documentBody, refresh = true) => {

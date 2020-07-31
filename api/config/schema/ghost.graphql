@@ -98,6 +98,7 @@ type Block {
   rewardTx: Transaction
   rewardSat: Float
   confirmations: Int!
+  participants: [String]
   transactions(offset: Int! = 0, limit: Int! = 5): [Transaction]
 }
 
@@ -215,6 +216,7 @@ type Transaction {
   variation: Float
   feeSat: Float
   transferSat: Float
+  participants: [String]
   # vin
   inSat: Float
   vin: [TxIn]
@@ -233,7 +235,6 @@ type Transaction {
 type Address {
   id: ID!
   nbTx: Int
-  address: String!
   balance: Float
   totalRewarded: Float
   totalFees: Float
@@ -259,17 +260,19 @@ type Veteran {
   share: Float
 }
 
+union SearchData = Block | Transaction | Address
 ### QUERIES
 type Query {
   test: String
   info: BlockChainInfo
+  search(term: String!): [SearchData]
   block(id: String!): Block
   blocks(offset: String! = "+", limit: Int! = 6): [Block]
   veterans: [Veteran]
   transaction(id: String!): Transaction
   transactions(offset: String! = "+", limit: Int! = 12): [Transaction]
   mempool(offset: Int! = 0, limit: Int! = 15): [Transaction]
-  address(id: String!): Address
+  address(id: String!, until: Int): Address
   addressMempool(id: String!): [Transaction]
   # Stats
   difficulty: StatPercentile

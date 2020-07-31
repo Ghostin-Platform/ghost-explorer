@@ -92,6 +92,16 @@ const computeTrxType = (rawTransaction) => {
   return TYPE_MIXED_STANDARD;
 };
 
+const computePublicAddr = (rawTransaction) => {
+  // vin
+  const withVinPubAddr = R.filter((r) => r.address, rawTransaction.vin);
+  const vinPub = R.map((addr) => addr.address, withVinPubAddr);
+  // vout
+  const withVoutPubAddr = R.filter((r) => r.scriptPubKey, rawTransaction.vout);
+  const voutPub = R.flatten(R.map((addr) => addr.scriptPubKey.addresses, withVoutPubAddr));
+  // total
+  return R.uniq([...vinPub, ...voutPub]);
+};
 const computeVinPerAddr = (rawTransaction) => {
   const addresses = new Map();
   for (let index = 0; index < rawTransaction.vin.length; index += 1) {
@@ -192,6 +202,7 @@ export const getTransaction = (txId) =>
       time: rawTx.time || poolInfo.time,
       pooltime: poolInfo && poolInfo.time,
       blockheight: rawTx.height,
+      participants: computePublicAddr(rawTx),
       // vin
       inSat,
       vinAddresses,
@@ -295,6 +306,7 @@ export const enrichBlock = async (block) => {
     txSize: block.nTx,
     rewardTx,
     rewardSat: rewardTx ? rewardTx.variation : 0,
+    participants: R.uniq(R.flatten(R.map((txp) => txp.participants, transactions))),
   };
 };
 

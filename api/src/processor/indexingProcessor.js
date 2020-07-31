@@ -1,9 +1,11 @@
 import * as R from 'ramda';
+import { Promise } from 'bluebird';
 import { STREAM_BLOCK_KEY, listenStream, STREAM_TRANSACTION_KEY, write } from '../database/redis';
 import streamFromResolver from './processorUtils';
-import { elBulk, INDEX_BLOCK, INDEX_TRX } from '../database/elasticSearch';
-import { getNetworkInfo } from '../database/ghost';
+import { elBulk, INDEX_ADDRESS, INDEX_BLOCK, INDEX_TRX } from '../database/elasticSearch';
+import { getNetworkInfo, GROUP_CONCURRENCY } from '../database/ghost';
 import { broadcast, EVENT_NEW_BLOCK, EVENT_NEW_TX, EVENT_UPDATE_INFO } from '../seeMiddleware';
+import { getAddressById } from '../domain/info';
 
 // region indexing
 const INDEXING_BATCH_SIZE = 100;
@@ -35,7 +37,24 @@ export const indexingTrxProcessor = async () => {
     const lastTx = R.last(txs);
     await write(CURRENT_INDEXING_TRX, lastTx.eventId);
     // Broadcast the result
-    return broadcast(EVENT_NEW_TX, rawTxs);
+    await broadcast(EVENT_NEW_TX, rawTxs);
+    // Index public participants
+    // for (const tx of txs) {
+    //   const { blockheight } = tx;
+    //   const ptx = R.uniq(tx.participants);
+    //   for (const addrId of ptx) {
+    //     return getAddressById(addrId, blockheight);
+    //   }
+    // }
+    const pubAddresses = R.uniq(R.flatten(R.map((b) => b.participants, rawTxs)));
+    const addresses = await Promise.map(
+      pubAddresses,
+      (p) => {
+        return getAddressById(p);
+      },
+      { concurrency: GROUP_CONCURRENCY }
+    );
+    return elBulk(INDEX_ADDRESS, addresses);
   });
 };
 // endregion

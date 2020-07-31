@@ -36,8 +36,8 @@ const createSeeMiddleware = () => {
     };
     // Prevent connection timeout
     const intervalId = setInterval(() => {
-      res.write(`:\n\n`);
-    }, 30000);
+      client.sendEvent('ping', new Date());
+    }, 10000);
     req.on('close', () => {
       clients = clients.filter((c) => c.id !== clientId);
       clearInterval(intervalId);

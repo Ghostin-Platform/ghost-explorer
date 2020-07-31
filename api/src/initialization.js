@@ -78,6 +78,7 @@ const platformInit = async (reindex = false) => {
   try {
     // Check deps
     await checkSystemDependencies();
+    // await elDeleteIndexes();
     await elCreateIndexes();
     await initIndexingProcessors(reindex);
     // Start the platform

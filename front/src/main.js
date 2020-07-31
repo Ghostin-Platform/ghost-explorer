@@ -291,9 +291,10 @@ const updateBlocksListing = (newBlocks) => {
     try {
         const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}});
         // Update the number of confirmations for all other blocks
-        const blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
+        let blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
         // Add the new block on top
         blocks.unshift(...newBlocks);
+        blocks = blocks.slice(0, blocks.length - newBlocks.length);
         const data = {blocks};
         cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: 50}, data});
     } catch (e) {
@@ -366,9 +367,10 @@ const updateTrxListing = (newTxs) => {
     try {
         const oldData = cache.readQuery({query: ReadTxs, variables: {offset: "+", limit: 50}});
         // Update the number of confirmations for all other blocks
-        const transactions = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.transactions);
+        let transactions = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.transactions);
         // Add the new block on top
         transactions.unshift(...newTxs);
+        transactions = transactions.slice(0, transactions.length - newTxs.length);
         const data = {transactions};
         cache.writeQuery({query: ReadTxs, variables: {offset: "+", limit: 50}, data});
     } catch (e) {
