@@ -19,7 +19,7 @@
                         <md-card-header-text style="font-size: 18px; line-height: 30px">
                             <md-icon>assistant</md-icon>
                             &nbsp;<b>ghostin</b> (in for initiative) to discover the blockchain ecosystem by creating a platform that will help the Ghost<br/>
-                            <div style="margin-left: 29px">blockain community, starting with a next generation explorer. And lot more to come.</div>
+                            <div style="margin-left: 29px">blockain community, starting with a next generation explorer and lot more to come.</div>
                             <div style="margin-left: 29px; margin-top: 8px">
                                 If you want to support us you can:
                             </div>

@@ -36,8 +36,6 @@ export const indexingTrxProcessor = async () => {
     // Get last block to save last indexing state.
     const lastTx = R.last(txs);
     await write(CURRENT_INDEXING_TRX, lastTx.eventId);
-    // Broadcast the result
-    await broadcast(EVENT_NEW_TX, rawTxs);
     // Index address history
     const addressToIndex = [];
     for (let index = 0; index < rawTxs.length; index += 1) {
@@ -49,7 +47,9 @@ export const indexingTrxProcessor = async () => {
     }
     const opts = { concurrency: GROUP_CONCURRENCY };
     const addresses = await Promise.map(addressToIndex, (ad) => getAddressById(ad.participant, ad.blockheight), opts);
-    return elBulk(INDEX_ADDRESS, addresses);
+    await elBulk(INDEX_ADDRESS, addresses);
+    // Broadcast the result
+    return broadcast(EVENT_NEW_TX, rawTxs);
   });
 };
 // endregion

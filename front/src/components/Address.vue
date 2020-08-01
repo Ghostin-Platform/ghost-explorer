@@ -311,12 +311,6 @@
             isInactive() {
                 return this.address.balance === 0;
             },
-            addressStatusStyle() {
-                let style = "text-align: center; margin: auto;";
-                if(this.isVeteran) return style + "background-color: #008C00"
-                if(this.isInactive) return style + "background-color: #a94442;"
-                return style;
-            },
             rewardAvgSize() {
                 return (this.address.rewardAvgSize / 1e8).toFixed(4);
             },

@@ -11,7 +11,7 @@ const initBlockListener = (callback) => {
     const blockHash = message.toString('hex');
     const block = await getBlockByHash(blockHash);
     logger.info(`[Ghost Explorer] Processing block: ${block.height}`);
-    callback(block);
+    await callback(block);
   });
 };
 

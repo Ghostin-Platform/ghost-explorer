@@ -91,7 +91,7 @@ const platformInit = async (reindex = false) => {
       });
       await initBlockListener(async (block) => {
         const enrichedBlock = await enrichBlock(block);
-        await processBlockData(enrichedBlock);
+        return processBlockData(enrichedBlock);
       });
     });
   } catch (e) {
