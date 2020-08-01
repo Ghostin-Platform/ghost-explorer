@@ -84,6 +84,14 @@ export const GetAddressPool = gql`query GetAddressPool($id: String!) {
         txid
         voutSize
         voutAddressesSize
+        voutPerAddresses {
+            address
+            valueSat
+        }
+        vinPerAddresses {
+            address
+            valueSat
+        }
         hash
         time
         size
@@ -112,7 +120,16 @@ export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $t
             type
             txid
             voutSize
+            vinAddresses
+            vinPerAddresses {
+                address
+                valueSat
+            }
             voutAddressesSize
+            voutPerAddresses {
+                address
+                valueSat
+            }
             hash
             time
             blockheight

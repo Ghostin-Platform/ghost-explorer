@@ -158,8 +158,8 @@
                         </div>
                     </div>
                     <div style="width: 100%; margin-bottom: 5px"><b>Sources</b></div>
-                    <md-list v-for="(inData, index) in transaction.vinPerAddresses" :key="`in-${index}`" style="background-color: #101010">
-                        <md-list-item>
+                    <md-list>
+                        <md-list-item v-for="(inData, index) in transaction.vinPerAddresses" :key="`in-${index}`" style="background-color: #101010; margin-bottom: 4px">
                             <!-- ICON -->
                             <div v-if="inData.type === 'coinbase'">
                                 <md-icon class="md-primary">memory</md-icon>
@@ -171,10 +171,10 @@
                                 <md-icon class="md-primary">security</md-icon>
                             </div>
                             <div v-else>
-                                <md-icon class="md-primary">multiple_stop</md-icon>
+                                <md-icon class="md-primary">input</md-icon>
                             </div>
                             <!-- Address -->
-                            <span style="margin-left: 35px" class="md-list-item-text">
+                            <span style="margin-left: 25px" class="md-list-item-text">
                                 <div v-if="inData.type === 'coinbase'">
                                     {{ inData.address.substring(0, 32)}}...
                                 </div>
@@ -197,17 +197,15 @@
                                 <md-button disabled style="width: 200px;" class="md-raised md-primary">Anonymous</md-button>
                             </div>
                             <div v-else>
-                                <md-button disabled style="width: 200px; background-color: #008C00; color: white" class="md-raised md-primary">
-                                    {{ inData.valueSat / 1e8 }}
-                                    <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
-                                </md-button>
+                                <span style="color: #008C00">
+                                    <b>{{ inData.valueSat / 1e8 }}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                </span>
                             </div>
                         </md-list-item>
                     </md-list>
-                    <br/>
                     <div style="width: 100%; margin-bottom: 5px"><b>Targets</b></div>
-                    <md-list v-for="(outData, index) in transaction.voutPerAddresses" :key="`out-${index}`" style="background-color: #101010">
-                        <md-list-item>
+                    <md-list>
+                        <md-list-item v-for="(outData, index) in transaction.voutPerAddresses" :key="`out-${index}`" style="background-color: #101010; margin-bottom: 4px">
                             <!-- ICON -->
                             <div v-if="outData.type === 'blind'">
                                 <md-icon class="md-primary">masks</md-icon>
@@ -216,10 +214,10 @@
                                 <md-icon class="md-primary">security</md-icon>
                             </div>
                             <div v-else>
-                                <md-icon class="md-primary">multiple_stop</md-icon>
+                                <md-icon class="md-primary">launch</md-icon>
                             </div>
                             <!-- Address -->
-                            <span style="margin-left: 35px" class="md-list-item-text">
+                            <span style="margin-left: 25px" class="md-list-item-text">
                                 <div v-if="outData.type === 'blind'">
                                     <router-link :to="`/address/${outData.address}`">{{ outData.address }}</router-link>
                                 </div>
@@ -244,16 +242,12 @@
                             </div>
                             <div v-else>
                                 <div v-if="outData.spentTxId">
-                                    <md-button @click="$router.push(`/tx/${outData.spentTxId}`)"
-                                               style="width: 200px; background-color: #a94442" class="md-raised md-primary">{{ outData.valueSat / 1e8 }} (S)
-                                        <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
-                                    </md-button>
+                                    <span @click="$router.push(`/tx/${outData.spentTxId}`)" style="color: #a94442; cursor: pointer">
+                                        <b>{{ outData.valueSat / 1e8 }} (S)</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                    </span>
                                 </div>
                                 <div v-else>
-                                    <md-button disabled style="width: 200px; background-color: #008C00; color: white"
-                                               class="md-raised md-primary">{{ outData.valueSat / 1e8 }}
-                                        <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
-                                    </md-button>
+                                    <span disabled style="color: #008C00;"><b>{{ outData.valueSat / 1e8 }}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></span>
                                 </div>
                             </div>
                         </md-list-item>

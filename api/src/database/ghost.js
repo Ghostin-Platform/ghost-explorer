@@ -123,6 +123,7 @@ const computeVinPerAddr = (rawTransaction) => {
     const valueSum = R.sum(R.map((v) => v.value, value));
     const valueSatSum = R.sum(R.map((v) => v.valueSat, value));
     const vinSummary = {
+      __typename: 'VinAddr',
       address: key,
       type: R.head(value).type || TYPE_COINBASE,
       value: valueSum,
@@ -155,6 +156,7 @@ const computeVoutPerAddr = (rawTransaction) => {
     const valueSum = R.sum(R.map((v) => v.value, value));
     const valueSatSum = R.sum(R.map((v) => v.valueSat, value));
     const voutSummary = {
+      __typename: 'VoutAddr',
       address: key,
       type: R.head(value).type,
       spentTxId: R.head(value).spentTxId,
