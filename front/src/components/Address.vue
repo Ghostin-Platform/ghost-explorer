@@ -8,7 +8,7 @@
         <div>
             <h3>
                 <router-link :to="`/`">Home</router-link>
-                <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Address #{{address.id}}
+                <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Address #{{address.address}}
                 <div style="float: right; font-size: 14px">
                     <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
                 </div>
@@ -130,17 +130,18 @@
             <md-divider style="margin-top: 10px; margin-bottom: 20px"></md-divider>
             <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
-                    <div style="width: 100%; margin-bottom: 5px"><b>Address status</b></div>
-                    <md-card class="md-primary" :style="addressStatusStyle">
-                        <md-card-header>
-                            <md-card-header-text>
-                                <div v-if="isVeteran" class="md-title">VETERAN</div>
-                                <div v-else-if="isInactive" class="md-title">ON HOLD</div>
-                                <div v-else class="md-title">SUPPORTER</div>
-                                <div class="md-subhead">Status</div>
-                            </md-card-header-text>
-                        </md-card-header>
-                    </md-card>
+                    <div v-if="seriesAddressBalance.length > 1" style="margin-bottom: 8px">
+                        <div style="width: 100%; margin-bottom: 5px">
+                            <b>Balance evolution
+                                <!--
+                                <span v-if="isVeteran">veteran</span>
+                                <span v-else-if="isInactive">on hold</span>
+                                <span v-else>supporter</span>
+                                -->
+                            </b>
+                        </div>
+                        <TimeBarChart :chartData="balanceChartData" style="max-height: 92px"></TimeBarChart>
+                    </div>
                     <div style="width: 100%; margin-bottom: 5px"><b>Reward statistics</b></div>
                     <md-card class="md-primary" style="text-align: center; margin: auto">
                         <md-card-header>
@@ -163,8 +164,8 @@
                         <md-card-header>
                             <md-card-header-text>
                                 <div class="md-title">
-                                    {{ address.id.substring(0, 15)}}...
-                                    <md-button @click="copy(address.id)" class="md-icon-button md-list-action">
+                                    {{ address.address.substring(0, 15)}}...
+                                    <md-button @click="copy(address.address)" class="md-icon-button md-list-action">
                                         <md-icon>content_copy</md-icon>
                                     </md-button>
                                 </div>
@@ -176,7 +177,7 @@
                         <md-card-header>
                             <md-card-header-text>
                                 <div class="md-title">
-                                    <qrcode value="GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61" :options="{ width: 150, color: { dark: '#ffffff', light:'#000000' } }"></qrcode>
+                                    <qrcode :value=address.address :options="{ width: 150, color: { dark: '#ffffff', light:'#000000' } }"></qrcode>
                                 </div>
                                 <div class="md-subhead" style="margin-top: 10px">Scran the QR Code</div>
                             </md-card-header-text>
@@ -259,9 +260,12 @@
     } from "../main";
     import moment from "moment";
     import * as R from "ramda";
+    import gql from "graphql-tag";
+    import TimeBarChart from "./charts/TimeBarChart";
 
     export default {
         name: 'Address',
+        components: {TimeBarChart},
         data() {
             return {
                 page: ADDR_PAGINATION_COUNT,
@@ -272,6 +276,7 @@
                 addressMempool: [],
                 address: {
                     id: "",
+                    address: "-",
                     totalFees: 0,
                     totalReceived: 0,
                     totalSent: 0,
@@ -280,7 +285,8 @@
                     rewardAvgSize: 0,
                     rewardAvgTime: 0,
                     transactions: []
-                }
+                },
+                seriesAddressBalance: []
             }
         },
         methods: {
@@ -311,6 +317,10 @@
             },
         },
         computed: {
+            balanceChartData() {
+                const datasets = [{ data: this.seriesAddressBalance.map(d => ({ x: new Date(d.time * 1000), y: d.value / 1e8 }) )}]
+                return { datasets };
+            },
             isVeteran() {
                 return this.address.balance / 1e8 >= VETERAN_AMOUNT;
             },
@@ -332,7 +342,7 @@
             },
             sent() {
                 const formatter = new Intl.NumberFormat('en-US');
-                return formatter.format(this.address.totalSent / 1e8)
+                return formatter.format(Math.abs(this.address.totalSent / 1e8))
             },
             fees() {
                 const formatter = new Intl.NumberFormat('en-US');
@@ -377,6 +387,19 @@
                         id: this.$route.params.id,
                         txOffset: 0,
                         txLimit: ADDR_PAGINATION_COUNT,
+                    }
+                }
+            },
+            seriesAddressBalance: {
+                query: () => gql`query SeriesAddress($id: String!)  {
+                  seriesAddressBalance(id: $id) {
+                    time
+                    value
+                  }
+                }`,
+                variables() {
+                    return {
+                        id: this.$route.params.id,
                     }
                 }
             },

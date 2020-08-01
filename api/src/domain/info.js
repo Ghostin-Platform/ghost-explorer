@@ -7,7 +7,7 @@ import {
   getTransaction,
   TYPE_REWARD,
 } from '../database/ghost';
-import { httpGet, rpcCall } from '../config/utils';
+import { httpGet } from '../config/utils';
 import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
 import { elAddressTransactions } from '../database/elasticSearch';
 import { broadcast, EVENT_MEMPOOL_ADDED } from '../seeMiddleware';
@@ -87,6 +87,7 @@ const computeAddrRewards = (id, transactions) => {
     avg_time: avgTimeBetweenRewards,
   };
 };
+
 const computeAddrBalance = (id, transactions) => {
   // Received
   const sentTransactions = R.filter((tx) => tx.vinAddresses.includes(id), transactions);
@@ -119,15 +120,17 @@ const computeAddrBalance = (id, transactions) => {
   };
 };
 export const getAddressById = async (id, blockheight = 0) => {
-  const { transactions } = await elAddressTransactions(id);
-  const query = { addresses: [id], start: 0, end: blockheight };
-  const txIds = await rpcCall('getaddresstxids', [query]);
+  const { transactions, size } = await elAddressTransactions(id, 0, null, blockheight);
+  const latestTx = R.head(transactions);
   const rewardStatistic = computeAddrRewards(id, transactions);
   const balance = computeAddrBalance(id, transactions);
   return {
     __typename: 'Address',
-    id,
-    nbTx: txIds.length,
+    id: `${id}-${latestTx.id}`,
+    txid: latestTx.id,
+    time: latestTx.time,
+    address: id,
+    nbTx: size,
     totalFees: balance.totalFees,
     totalReceived: balance.totalReceived,
     totalSent: balance.totalSent,

@@ -234,6 +234,7 @@ type Transaction {
 }
 type Address {
   id: ID!
+  address: String!
   nbTx: Int
   balance: Float
   totalRewarded: Float
@@ -260,19 +261,23 @@ type Veteran {
   share: Float
 }
 
-union SearchData = Block | Transaction | Address
+type SearchData {
+  addresses: [String]
+  blocks: [String]
+  transactions: [String]
+}
 ### QUERIES
 type Query {
   test: String
   info: BlockChainInfo
-  search(term: String!): [SearchData]
+  search(term: String!): SearchData
   block(id: String!): Block
   blocks(offset: String! = "+", limit: Int! = 6): [Block]
   veterans: [Veteran]
   transaction(id: String!): Transaction
   transactions(offset: String! = "+", limit: Int! = 12): [Transaction]
   mempool(offset: Int! = 0, limit: Int! = 15): [Transaction]
-  address(id: String!, until: Int): Address
+  address(id: String!): Address
   addressMempool(id: String!): [Transaction]
   # Stats
   difficulty: StatPercentile
@@ -281,4 +286,6 @@ type Query {
   seriesStakeWeight: [PercentileDataPoint]
   seriesTxCount: [TimeDataPoint]
   txTypeVentilation: [DataPoint]
+  # Address stat
+  seriesAddressBalance(id: String!): [TimeDataPoint]
 }

@@ -30,15 +30,58 @@ export const elIsAlive = async () => {
     );
 };
 
-export const elSearch = async (term) => {
+export const escape = (query) => {
+  return `*${query.replace(/([+|\-*()~={}/[\]:?\\])/g, '\\$1')}*`;
+};
+const addressSearch = async (term) => {
+  try {
+    const searchItems = await el.search({
+      index: INDEX_ADDRESS,
+      body: {
+        query: { query_string: { query: escape(term) } },
+        aggs: {
+          uniq: {
+            terms: { field: 'address.keyword', size: 5 },
+          },
+        },
+      },
+    });
+    const { buckets } = searchItems.body.aggregations.uniq;
+    return R.map((t) => t.key, buckets);
+  } catch (e) {
+    return [];
+  }
+};
+
+const blockSearch = async (term) => {
   const searchItems = await el.search({
-    index: PLATFORM_INDICES,
+    index: INDEX_BLOCK,
+    size: 5,
     body: {
-      size: 25,
-      query: { query_string: { query: term } },
+      query: { multi_match: { query: escape(term), fields: ['id^3', '*'] } },
     },
   });
-  return R.map((t) => t._source, searchItems.body.hits.hits);
+  const { hits } = searchItems.body.hits;
+  return R.map((t) => t._source.id, hits);
+};
+
+const txSearch = async (term) => {
+  const searchItems = await el.search({
+    index: INDEX_TRX,
+    size: 5,
+    body: {
+      query: { multi_match: { query: escape(term), fields: ['id^3', '*'] } },
+    },
+  });
+  const { hits } = searchItems.body.hits;
+  return R.map((t) => t._source.id, hits);
+};
+
+export const elSearch = async (term) => {
+  const addrPromise = addressSearch(term);
+  const blockPromise = blockSearch(term);
+  const txPromise = txSearch(term);
+  return { addresses: addrPromise, blocks: blockPromise, transactions: txPromise };
 };
 
 export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
@@ -122,18 +165,51 @@ export const elDeleteIndexes = async (indexesToDelete = PLATFORM_INDICES) => {
   );
 };
 
-export const elAddressTransactions = async (addressId) => {
+export const elGetAddressBalance = async (id) => {
   const query = {
-    index: INDEX_TRX,
-    size: MAX_WINDOW_SIZE,
+    index: INDEX_ADDRESS,
+    size: 1,
     body: {
       query: {
         bool: {
-          should: [{ term: { 'vinAddresses.keyword': addressId } }, { term: { 'voutAddresses.keyword': addressId } }],
-          minimum_should_match: 1,
+          must: [{ match_phrase: { address: id } }],
         },
       },
-      sort: [{ time: 'asc' }],
+      sort: [{ time: 'desc' }],
+    },
+  };
+  const data = await el.search(query);
+  if (data && data.body.hits) {
+    const { hits } = data.body.hits;
+    const addresses = R.map((h) => h._source, hits);
+    return R.head(addresses);
+  }
+  return [];
+};
+
+export const elAddressTransactions = async (addressId, from = 0, size = null, blockheight = 0) => {
+  const mustQuery = [{ match_phrase: { participants: addressId } }];
+  if (blockheight > 0) {
+    mustQuery.push({
+      range: {
+        blockheight: {
+          gte: 0,
+          lte: blockheight,
+        },
+      },
+    });
+  }
+  const query = {
+    index: INDEX_TRX,
+    from,
+    size: size || MAX_WINDOW_SIZE,
+    body: {
+      query: {
+        bool: {
+          must: mustQuery,
+        },
+      },
+      sort: [{ time: 'desc' }],
     },
   };
   const data = await el.search(query);
@@ -463,6 +539,57 @@ export const monthlyDifficulty = () => {
           max: b.max_difficulty.value,
           size: b.doc_count,
         },
+      }),
+      buckets
+    );
+  });
+};
+
+export const seriesAddressBalance = (id) => {
+  const start = moment().subtract(1, 'year').unix();
+  const query = {
+    index: INDEX_ADDRESS,
+    _source_excludes: '*', // Dont need to get anything
+    body: {
+      query: {
+        bool: {
+          must: [
+            { match_phrase: { address: id } },
+            {
+              range: {
+                time: {
+                  gte: start,
+                },
+              },
+            },
+          ],
+        },
+      },
+      sort: [{ time: 'desc' }],
+      aggs: {
+        balance: {
+          date_histogram: {
+            field: 'time',
+            min_doc_count: 1,
+            calendar_interval: 'day',
+          },
+          aggs: {
+            balance: {
+              max: {
+                field: `balance`,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  return el.search(query).then((data) => {
+    const { buckets } = data.body.aggregations.balance;
+    return R.map(
+      (b) => ({
+        time: b.key / 1000,
+        value: b.balance.value,
       }),
       buckets
     );

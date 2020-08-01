@@ -23,6 +23,7 @@ import Transactions from "./components/Transactions";
 import Address from "./components/Address";
 import Support from "./components/Support";
 import Toasted from 'vue-toasted';
+import Search from "./components/Search";
 
 // region configuration
 export const VETERAN_AMOUNT = 20000;
@@ -95,6 +96,7 @@ export const GetAddressPool = gql`query GetAddressPool($id: String!) {
 export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
     address(id: $id) {
         id
+        address
         totalReceived
         totalRewarded
         totalSent
@@ -471,7 +473,8 @@ const routes = [
     {path: '/support', component: Support},
     {path: '/block/:id', component: Block},
     {path: '/tx/:id', component: Transaction},
-    {path: '/address/:id', component: Address}
+    {path: '/address/:id', component: Address},
+    {path: '/search', component: Search}
 ]
 const router = new VueRouter({
     routes,

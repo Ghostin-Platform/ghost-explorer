@@ -4,8 +4,8 @@
 
     const resolveLabel = (value) => {
         if (value === 'reward') return "Reward"
-        if (value === 'mixed_private') return "Mixed blind"
-        if (value === 'mixed_standard') return "Mixed standard"
+        if (value === 'mixed_private') return "Mix Private"
+        if (value === 'mixed_standard') return "Mix Standard"
         if (value === 'standard') return "Standard"
         if (value === 'anon') return "Anon"
         if (value === 'blind') return "blinded"

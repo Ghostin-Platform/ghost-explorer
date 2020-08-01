@@ -251,7 +251,7 @@ export const getPooledTransactions = async (offset = 0, limit = 5) => {
 export const getAddressPooledTransactions = async (id) => {
   const allTx = await getRawPooledTransactions();
   const allTxs = Object.keys(allTx).map((k) => ({ txid: k, ...allTx[k] }));
-  const addrTx = await rpcCall('getaddressmempool', [id]);
+  const addrTx = (await rpcCall('getaddressmempool', [id])) || [];
   const addrTxs = R.uniq(R.map((tx) => tx.txid, addrTx));
   const limitedTxs = R.filter((x) => addrTxs.includes(x.txid), allTxs);
   return Promise.map(

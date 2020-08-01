@@ -1,9 +1,8 @@
-import { getAddressById, getBlockById, getBlocks, getTransactions, info, test, veterans } from '../domain/info';
+import { getBlockById, getBlocks, getTransactions, info, test, veterans } from '../domain/info';
 import { fetch } from '../database/redis';
 import {
   CURRENT_PROCESSING_BLOCK,
   getAddressPooledTransactions,
-  getAddressTransactions,
   getBlockTransactions,
   getPooledTransactions,
   getTransaction,
@@ -11,10 +10,13 @@ import {
 import {
   currentDayStakeWeight,
   currentDayTxTypeVentilation,
+  elAddressTransactions,
+  elGetAddressBalance,
   elSearch,
   monthlyDifficulty,
   monthlyStakeWeight,
   monthlyTxCount,
+  seriesAddressBalance,
 } from '../database/elasticSearch';
 
 const infoResolver = {
@@ -28,13 +30,14 @@ const infoResolver = {
     transaction: (_, { id }) => getTransaction(id),
     transactions: (_, { offset, limit }) => getTransactions(offset, limit),
     mempool: (_, { offset, limit }) => getPooledTransactions(offset, limit),
-    address: (_, { id, until }) => getAddressById(id, until),
+    address: (_, { id }) => elGetAddressBalance(id),
     addressMempool: (_, { id }) => getAddressPooledTransactions(id),
     stakeWeight: () => currentDayStakeWeight(),
     seriesStakeWeight: () => monthlyStakeWeight(),
     seriesDifficulty: () => monthlyDifficulty(),
     seriesTxCount: () => monthlyTxCount(),
     txTypeVentilation: () => currentDayTxTypeVentilation(),
+    seriesAddressBalance: (_, { id }) => seriesAddressBalance(id),
   },
   Block: {
     transactions: (block, { offset, limit }) => getBlockTransactions(block, offset, limit),
@@ -45,7 +48,8 @@ const infoResolver = {
     confirmations: (tx) => fetch(CURRENT_PROCESSING_BLOCK).then((height) => 1 + (height - tx.height)),
   },
   Address: {
-    transactions: (address, { offset, limit }) => getAddressTransactions(address.id, offset, limit),
+    transactions: (address, { offset, limit }) =>
+      elAddressTransactions(address.address, offset, limit, 0).then((data) => data.transactions),
   },
   SearchData: {
     __resolveType: (obj) => {

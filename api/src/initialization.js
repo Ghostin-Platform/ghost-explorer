@@ -11,7 +11,7 @@ import {
 } from './database/ghost';
 import initBlockListener from './database/zeromq';
 import { broadcast, EVENT_MEMPOOL_ADDED, EVENT_MEMPOOL_REMOVED, EVENT_UPDATE_INFO } from './seeMiddleware';
-import { elCreateIndexes, elIsAlive } from './database/elasticSearch';
+import { elCreateIndexes, elDeleteIndexes, elIsAlive } from './database/elasticSearch';
 import {
   CURRENT_INDEXING_BLOCK,
   CURRENT_INDEXING_TRX,

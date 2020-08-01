@@ -38,22 +38,17 @@ export const indexingTrxProcessor = async () => {
     await write(CURRENT_INDEXING_TRX, lastTx.eventId);
     // Broadcast the result
     await broadcast(EVENT_NEW_TX, rawTxs);
-    // Index public participants
-    // for (const tx of txs) {
-    //   const { blockheight } = tx;
-    //   const ptx = R.uniq(tx.participants);
-    //   for (const addrId of ptx) {
-    //     return getAddressById(addrId, blockheight);
-    //   }
-    // }
-    const pubAddresses = R.uniq(R.flatten(R.map((b) => b.participants, rawTxs)));
-    const addresses = await Promise.map(
-      pubAddresses,
-      (p) => {
-        return getAddressById(p);
-      },
-      { concurrency: GROUP_CONCURRENCY }
-    );
+    // Index address history
+    const addressToIndex = [];
+    for (let index = 0; index < rawTxs.length; index += 1) {
+      const rawTx = rawTxs[index];
+      for (let partIndex = 0; partIndex < rawTx.participants.length; partIndex += 1) {
+        const participant = rawTx.participants[partIndex];
+        addressToIndex.push({ participant, blockheight: rawTx.blockheight });
+      }
+    }
+    const opts = { concurrency: GROUP_CONCURRENCY };
+    const addresses = await Promise.map(addressToIndex, (ad) => getAddressById(ad.participant, ad.blockheight), opts);
     return elBulk(INDEX_ADDRESS, addresses);
   });
 };

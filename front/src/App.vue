@@ -84,12 +84,12 @@
         },
         data() {
             return {
-                search: ''
+                search: this.$route.query.term
             }
         },
         methods: {
             searchlistener() {
-                console.log(this.search)
+                this.$router.push('/search?term=' + encodeURIComponent(this.search))
             }
         },
         beforeDestroy() {
