@@ -188,13 +188,19 @@
                             </span>
                             <!-- Coin -->
                             <div v-if="inData.type === 'coinbase'">
-                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Coinbase</md-button>
+                                <span style="color: #008C00">
+                                    <b>Generated</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                </span>
                             </div>
                             <div v-else-if="inData.type === 'blind'">
-                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Blinded</md-button>
+                                <span style="color: #9E9E9E">
+                                    <b>Blinded</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                </span>
                             </div>
                             <div v-else-if="inData.type === 'anon'">
-                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Anonymous</md-button>
+                                <span style="color: #9E9E9E">
+                                    <b>Blinded</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                </span>
                             </div>
                             <div v-else>
                                 <span style="color: #008C00">
@@ -229,16 +235,20 @@
                             <!-- Coin -->
                             <div v-if="outData.type === 'blind'">
                                 <div v-if="outData.spentTxId">
-                                    <md-button @click="$router.push(`/tx/${outData.spentTxId}`)"
-                                               style="width: 200px; background-color: #a94442" class="md-raised md-primary">Blinded (S)
-                                    </md-button>
+                                    <span style="color: #a94442">
+                                        <b>Blinded (s)</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                    </span>
                                 </div>
                                 <div v-else>
-                                    <md-button disabled style="width: 200px;" class="md-raised md-primary">Blinded</md-button>
+                                <span style="color: #9E9E9E">
+                                    <b>Blinded</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                </span>
                                 </div>
                             </div>
                             <div v-else-if="outData.type === 'anon'">
-                                <md-button disabled style="width: 200px;" class="md-raised md-primary">Anonymous</md-button>
+                                <span style="color: #9E9E9E">
+                                    <b>Blinded</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                </span>
                             </div>
                             <div v-else>
                                 <div v-if="outData.spentTxId">

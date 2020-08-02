@@ -244,7 +244,7 @@
         // Ins
         const ins = R.filter(x => x.address.toLowerCase() === self.$route.params.id.toLowerCase(), tx.vinPerAddresses);
         const localAddrInSat = R.sum(R.map(x => x.valueSat, ins));
-        return ((localAddrOutSat - localAddrInSat) / 1e8).toFixed(6);
+        return ((localAddrOutSat - localAddrInSat) / 1e8).toFixed(2);
     }
 
     export default {
