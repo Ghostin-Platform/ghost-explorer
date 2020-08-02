@@ -6,6 +6,7 @@
             </div>
         </div>
         <div>
+          <div v-if="block">
             <h3>
                 <router-link :to="`/`">Home</router-link><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Block #{{ block.height }}
                 <div style="float: right; font-size: 14px">
@@ -226,6 +227,28 @@
                     </infinite-loading>
                 </div>
             </div>
+          </div>
+          <div v-else>
+            <h3>
+              <router-link :to="`/`">Home</router-link><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Block not found
+              <div style="float: right; font-size: 14px">
+                <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+              </div>
+            </h3>
+            <md-divider style="margin-bottom: 20px"></md-divider>
+            <md-list>
+              <md-list-item style="background-color: #101010; margin-bottom: 4px">
+                <div>
+                  <md-icon class="md-primary">error</md-icon>
+                </div>
+                <span style="margin-left: 25px" class="md-list-item-text">
+                    <div>
+                      <span>Block not found,</span> <router-link style="font-size: 16px" :to="`/search?term=${this.$route.params.id}`">search for approaching id</router-link>
+                    </div>
+                  </span>
+              </md-list-item>
+            </md-list>
+          </div>
         </div>
     </div>
 </template>
@@ -240,10 +263,16 @@
             return {
                 page: PAGINATION_COUNT,
                 info: {
-                    height: 0
+                    height: 0,
+                    sync_percent: 0,
+                    timeoffset: 0,
+                    connections: 0
                 },
                 block: {
                     height: 0,
+                    rewardSat: 0,
+                    feeSat: 0,
+                    outSat: 0,
                     transactions: []
                 }
             }

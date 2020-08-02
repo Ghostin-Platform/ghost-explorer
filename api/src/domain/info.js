@@ -7,7 +7,7 @@ import {
   getTransaction,
   TYPE_REWARD,
 } from '../database/ghost';
-import { httpGet } from '../config/utils';
+import { getCoinMarket, httpGet } from '../config/utils';
 import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
 import { elAddressTransactions } from '../database/elasticSearch';
 import { broadcast, EVENT_MEMPOOL_ADDED } from '../seeMiddleware';
@@ -22,6 +22,11 @@ export const test = async () => {
 };
 
 export const info = async () => getNetworkInfo();
+
+export const coinMarket = async () => {
+  const coin = await getCoinMarket();
+  return Object.assign(coin, { __typename: 'MarketInfo' });
+};
 
 export const veterans = async () => {
   const data = await httpGet('https://gvr.mml2.net/balances/get/richlist', 'richlist');
@@ -128,6 +133,7 @@ export const getAddressById = async (id, blockheight = 0) => {
     __typename: 'Address',
     id: `${id}-${latestTx.id}`,
     txid: latestTx.id,
+    txtype: latestTx.type,
     time: latestTx.time,
     address: id,
     nbTx: size,

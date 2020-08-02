@@ -52,13 +52,16 @@ export const ReadInfo = gql`query {
         sync_height
         sync_percent
         moneysupply
-        market {
-            usd
-            usd_market_cap
-            usd_24h_vol
-            usd_24h_change
-            last_updated_at
-        }
+    }
+}`
+
+export const ReadMarket = gql`query {
+    market {
+        usd
+        usd_market_cap
+        usd_24h_vol
+        usd_24h_change
+        last_updated_at
     }
 }`
 export const GetPool = gql`query GetPool($offset: Int!, $limit: Int!) {
@@ -121,10 +124,12 @@ export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $t
             txid
             voutSize
             vinAddresses
+            vinAddressesSize
             vinPerAddresses {
                 address
                 valueSat
             }
+            voutAddresses
             voutAddressesSize
             voutPerAddresses {
                 address

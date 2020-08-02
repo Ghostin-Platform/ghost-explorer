@@ -17,16 +17,15 @@ export const getPooledTransactionsCount = () =>
   getRawPooledTransactions(false).then(async (pooledTx) => pooledTx.length);
 
 export const getNetworkInfo = async () => {
-  const coinMarketPromise = getCoinMarket();
+  // const coinMarketPromise = getCoinMarket();
   const networkInfoPromise = rpcCall('getnetworkinfo');
   const stackInfoPromise = rpcCall('getstakinginfo');
   const blockchainInfoPromise = rpcCall('getblockchaininfo');
   const pooledTxCountPromise = getPooledTransactionsCount();
-  const [networkInfo, stackInfo, blockchainInfo, coinMarket, pooledTxCount] = await Promise.all([
+  const [networkInfo, stackInfo, blockchainInfo, pooledTxCount] = await Promise.all([
     networkInfoPromise,
     stackInfoPromise,
     blockchainInfoPromise,
-    coinMarketPromise,
     pooledTxCountPromise,
   ]);
   const currentBlock = await fetch(CURRENT_PROCESSING_BLOCK);
@@ -41,7 +40,7 @@ export const getNetworkInfo = async () => {
     sync_percent: syncPercent,
     pooledTxCount,
     // Extra info
-    market: Object.assign(coinMarket, { __typename: 'MarketInfo' }),
+    // market: Object.assign(coinMarket, { __typename: 'MarketInfo' }),
     connections: networkInfo.connections,
     timeoffset: networkInfo.timeoffset,
     node_version: networkInfo.subversion,

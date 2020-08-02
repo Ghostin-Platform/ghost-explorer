@@ -5,13 +5,15 @@ import ConstraintDirective from 'graphql-constraint-directive';
 import AuthDirectives, { AUTH_DIRECTIVE } from './authDirective';
 import typeDefs from '../../config/schema/ghost.graphql';
 import infoResolver from '../resolvers/info';
+import addressResolver from '../resolvers/address';
+import txResolver from '../resolvers/transaction';
 
 const createSchema = () => {
   const globalResolvers = {
     DateTime: GraphQLDateTime,
   };
 
-  const resolvers = mergeResolvers([globalResolvers, infoResolver]);
+  const resolvers = mergeResolvers([globalResolvers, infoResolver, addressResolver, txResolver]);
 
   return makeExecutableSchema({
     typeDefs,

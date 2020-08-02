@@ -39,6 +39,7 @@ const processBlockData = async (block) => {
     await storeTransaction(index, transaction);
   }
   await write(CURRENT_PROCESSING_BLOCK, height);
+  logger.info(`[Ghost Explorer] block ${block.height} processed`);
 };
 
 const initializePlatform = async () => {

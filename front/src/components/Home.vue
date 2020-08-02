@@ -21,7 +21,7 @@
                             <md-card-header-text>
                                 <div class="md-title">
                                     <md-icon>{{trendingClass}}</md-icon>
-                                    {{ info.market.usd }} <span style="font-size: 12px;">({{ info.market.usd_24h_change.toFixed(2) }}%) $US</span>
+                                    {{ market.usd }} <span style="font-size: 12px;">({{ market.usd_24h_change.toFixed(2) }}%) $US</span>
                                 </div>
                                 <div class="md-subhead"> Circulating supply: {{ supply }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
                                 <div class="md-subhead"> Market cap: {{ marketCap }} $US</div>
@@ -41,10 +41,13 @@
                             <md-card-header-text>
                                 <div class="md-title">{{ displayDifficulty }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
                                 <div class="md-subhead">Last block staking difficulty</div>
-                                <TimeSparkChart :chartData="difficultyChartData"  style="height: 60px; margin-top: 5px"></TimeSparkChart>
+                                <TimeSparkChart :chartData="difficultyChartData" style="height: 78px; margin-top: 5px"></TimeSparkChart>
                             </md-card-header-text>
                         </md-card-header>
                     </md-card>
+                    <div style="width: 100%; margin-top: 20px; margin-bottom: 5px">
+                      <b>Transactions statistics</b>
+                    </div>
                     <md-card class="md-primary" style="text-align: center; margin: auto">
                         <md-card-header>
                             <md-card-header-text>
@@ -59,8 +62,8 @@
                             <md-card-header-text>
                                 <div class="md-title">{{ this.seriesTxCount.length > 0 ? this.seriesTxCount[this.seriesTxCount.length - 1].value : 0 }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">txs</span></div>
                                 <div class="md-subhead">Current day #Transactions</div>
-                                <TimeSparkChart :chartData="txChartData" style="height: 60px; margin-top: 5px"></TimeSparkChart>
-                                <RadarChart :chartData="txRadarData"></RadarChart>
+                                <TimeSparkChart :chartData="txChartData" style="height: 60px; margin-top: 5px; margin-bottom: 5px"></TimeSparkChart>
+                                <RadarChart style="height: 297px" :chartData="txRadarData"></RadarChart>
                             </md-card-header-text>
                         </md-card-header>
                     </md-card>
@@ -164,11 +167,11 @@
 </template>
 
 <script>
-    import {
-        ReadBlocks,
-        ReadInfo,
-        ReadTxs,
-    } from "../main";
+import {
+  ReadBlocks,
+  ReadInfo, ReadMarket,
+  ReadTxs,
+} from "../main";
     import moment from 'moment';
     import gql from "graphql-tag";
     import TimeSparkChart from "./charts/TimeSparkChart";
@@ -179,6 +182,7 @@
         return { datasets };
     }
 
+    let timeRefresh;
     export default {
         name: 'Home',
         components: {RadarChart, TimeSparkChart},
@@ -189,7 +193,7 @@
             },
             marketCap() {
                 const formatter = new Intl.NumberFormat('en-US');
-                return formatter.format(this.info.moneysupply * this.info.market.usd)
+                return formatter.format(this.info.moneysupply * this.market.usd)
             },
             displayBlocks() {
                 return this.blocks.map(b => {
@@ -224,12 +228,12 @@
                 return formatter.format(this.info.stake_weight / 1e8 * 100 / this.info.moneysupply)
             },
             coinVarClass() {
-                return this.info.market.usd_24h_change > 0
+                return this.market.usd_24h_change > 0
                     ? 'text-align: center; margin: auto; background-color: rgb(0, 140, 0)'
                     : 'text-align: center; margin: auto; background-color: #ff5252';
             },
             trendingClass() {
-                return this.info.market.usd_24h_change >= 0 ? 'trending_up' : 'trending_down';
+                return this.market.usd_24h_change >= 0 ? 'trending_up' : 'trending_down';
             },
             stakeWeightChartData() {
                 return buildSparkDataset(this.seriesStakeWeight, true);
@@ -257,10 +261,10 @@
                     height: 0,
                     sync_height: 0,
                     sync_percent: 0,
-                    market: {
-                        usd: 0,
-                        usd_24h_change: 0,
-                    }
+                },
+                market: {
+                  usd: 0,
+                  usd_24h_change: 0,
                 },
                 blocks: [],
                 transactions: [],
@@ -275,12 +279,18 @@
         },
         mounted() {
             const self = this;
-            setInterval(function () {
+            timeRefresh = setInterval(function () {
                 self.$data.now = moment().subtract(self.info.timeoffset, 'seconds')
             }, 5000)
+            // Refresh market
+            self.$apollo.queries.market.refetch();
+        },
+        beforeDestroy() {
+          clearInterval(timeRefresh);
         },
         apollo: {
             info: () => ReadInfo,
+            market: () => ReadMarket,
             stakeWeight: () => gql`query {
                 stakeWeight {
                     min

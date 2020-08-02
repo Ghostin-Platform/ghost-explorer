@@ -46,7 +46,6 @@ type BlockChainInfo {
   difficulty: Float
   stake_weight: Float
   moneysupply: Float
-  market: MarketInfo
 }
 
 type PercentileDataPoint {
@@ -270,6 +269,7 @@ type SearchData {
 type Query {
   test: String
   info: BlockChainInfo
+  market: MarketInfo
   search(term: String!): SearchData
   block(id: String!): Block
   blocks(offset: String! = "+", limit: Int! = 6): [Block]
