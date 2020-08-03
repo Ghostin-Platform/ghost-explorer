@@ -108,6 +108,7 @@
                 this.$apollo.queries.transactions.fetchMore({
                     variables,
                     updateQuery: (previousResult, { fetchMoreResult }) => {
+                        if (!fetchMoreResult.transactions) return;
                         const newTxs = fetchMoreResult.transactions
                         if (newTxs.length > 0) {
                             this.offset = newTxs[newTxs.length - 1].offset;

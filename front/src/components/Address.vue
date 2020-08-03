@@ -70,8 +70,12 @@
               <md-card class="md-primary" style="margin: auto; background-color: #101010;">
                 <md-card-header>
                   <md-card-header-text>
-                    <md-icon>memory</md-icon>
-                    <span style="margin-left: 10px;">Next blocks may contains <b style="color: #448aff">{{ addressMempool.length }}</b> transactions for this address and potentially a reward</span>
+                    <md-icon v-if="addressMempool.length === 0" style="color: #448aff">memory</md-icon>
+                    <md-icon v-else style="color: #008C00">memory</md-icon>
+                    <span style="margin-left: 10px;">Next blocks may contains
+                      <b v-if="addressMempool.length === 0" style="color: #448aff">{{ addressMempool.length }}</b>
+                      <b v-else style="color: #008C00">{{ addressMempool.length }}</b>
+                      transactions for this address and potentially a reward</span>
                     <span style="float: right"><md-progress-spinner :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
                   </md-card-header-text>
                 </md-card-header>
@@ -114,15 +118,9 @@
                 <div class="md-layout-item md-size-30">
                   <div v-if="seriesAddressBalance.length > 1" style="margin-bottom: 8px">
                     <div style="width: 100%; margin-bottom: 5px">
-                      <b>Balance evolution
-                        <!--
-                        <span v-if="isVeteran">veteran</span>
-                        <span v-else-if="isInactive">on hold</span>
-                        <span v-else>supporter</span>
-                        -->
-                      </b>
+                      <b>Balance evolution</b>
                     </div>
-                    <TimeBarChart :chartData="balanceChartData" style="max-height: 92px"></TimeBarChart>
+                    <TimeBalanceChart :chartData="balanceChartData" style="height: 92px"></TimeBalanceChart>
                   </div>
                   <div style="width: 100%; margin-bottom: 5px"><b>Reward statistics</b></div>
                   <md-card class="md-primary" style="text-align: center; margin: auto">
@@ -218,7 +216,14 @@
                               </span>
                           </span>
                       </span>
-                      <span class="md-raised md-primary" style="color: #008C00;"><b>{{ tx.confirmations }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">confirmations</span></b></span>
+                      <span class="md-raised md-primary" style="color: #008C00;">
+                        <span v-if="tx.confirmations < 12" style="color: #D15600">
+                          <b>{{ tx.confirmations }}/12 <span style="font-size: 12px; font-family: 'Sen', sans-serif">confirmations</span></b>
+                        </span>
+                        <span v-else>
+                          <b>{{ tx.confirmations }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">confirmations</span></b>
+                        </span>
+                      </span>
                     </md-list-item>
                   </md-list>
                   <md-list v-else>
@@ -269,7 +274,7 @@
     import moment from "moment";
     import * as R from "ramda";
     import gql from "graphql-tag";
-    import TimeBarChart from "./charts/TimeBarChart";
+    import TimeBalanceChart from "./charts/TimeBalanceChart";
 
     const computeTransferValue = (self, tx) => {
         //Outs
@@ -281,15 +286,18 @@
         return ((localAddrOutSat - localAddrInSat) / 1e8).toFixed(2);
     }
 
+    let eventHandler;
     export default {
         name: 'Address',
-        components: {TimeBarChart},
+        components: {TimeBalanceChart},
         data() {
             return {
                 page: ADDR_PAGINATION_COUNT,
                 info: {
-                    height: 0,
-                    sync_percent: 0
+                  height: 0,
+                  sync_percent: 0,
+                  timeoffset: 0,
+                  connections: 0
                 },
                 addressMempool: [],
                 address: {
@@ -420,24 +428,25 @@
             info: () => ReadInfo,
         },
         mounted() {
-            const self = this;
-            const currentAddress = self.$route.params.id;
-            // Listen for new transaction from global SSE
-            eventBus.$on('new_transaction', (newTxs) => {
-                const allAddrs = [];
-                for (const newTx of newTxs) {
-                    allAddrs.push(...newTx.vinAddresses, ...newTx.voutAddresses);
-                }
-                const impactedAddresses = R.uniq(allAddrs);
-                console.log('compare', impactedAddresses, currentAddress, impactedAddresses.includes(currentAddress));
-                if (impactedAddresses.includes(currentAddress)) {
-                    console.log('go refresh !')
-                    // Refresh mempool
-                    self.$apollo.queries.addressMempool.refetch();
-                    // Refresh address
-                    self.$apollo.queries.address.refetch();
-                }
-            });
+          const self = this;
+          const currentAddress = self.$route.params.id;
+          eventHandler = function(newTxs) {
+            const allAddrs = [];
+            for (const newTx of newTxs) {
+              allAddrs.push(...newTx.participants);
+            }
+            const impactedAddresses = R.uniq(allAddrs);
+            if (impactedAddresses.includes(currentAddress)) {
+              // Refresh mempool
+              self.$apollo.queries.addressMempool.refetch();
+              // Refresh address
+              self.$apollo.queries.address.refetch();
+            }
+          }
+          eventBus.$on('new_transaction', eventHandler);
+        },
+        beforeDestroy() {
+          eventBus.$off('new_transaction', eventHandler);
         },
     }
 </script>

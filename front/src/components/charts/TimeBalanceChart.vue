@@ -11,7 +11,7 @@
                 maintainAspectRatio: false,
                 elements: {
                     point:{
-                        radius: 0,
+                        radius: 2,
                         backgroundColor: "#ffffff"
                     },
                     line: {

@@ -108,7 +108,8 @@
                               <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
                                   <md-card-header>
                                       <md-card-header-text v-if="transaction.blockhash">
-                                          <div class="md-title">{{ confirmations }}</div>
+                                          <div v-if="confirmations < 12" class="md-title" style="color: #D15600">{{ confirmations }}/12</div>
+                                          <div v-else class="md-title" style="color: rgb(0, 140, 0)">{{ confirmations }}</div>
                                           <div class="md-subhead"># Confirmations</div>
                                       </md-card-header-text>
                                       <md-card-header-text v-else>

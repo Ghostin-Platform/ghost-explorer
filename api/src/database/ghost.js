@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import { Promise } from 'bluebird';
-import { getCoinMarket, rpcCall } from '../config/utils';
+import { rpcCall } from '../config/utils';
 import { blockStreamId, fetch } from './redis';
 
 // export const ONE_DAY_OF_BLOCKS = 720;

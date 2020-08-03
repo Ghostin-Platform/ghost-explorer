@@ -119,6 +119,7 @@
                 this.$apollo.queries.address.fetchMore({
                     variables,
                     updateQuery: (previousResult, { fetchMoreResult }) => {
+                        if (!fetchMoreResult.address) return;
                         const newTxs = fetchMoreResult.address.transactions
                         if (newTxs.length > 0) {
                             this.page += newTxs.length;

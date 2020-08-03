@@ -7,8 +7,10 @@
         </div>
         <div>
             <h3>
-                <router-link :to="`/`">Home</router-link>
-                <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Pending transactions
+                <router-link :to="`/`">Home</router-link><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Pending transactions
+                <div style="float: right; font-size: 14px">
+                  <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+                </div>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
             <div class="md-layout md-gutter">
@@ -95,7 +97,10 @@
             return {
                 page: PAGINATION_COUNT,
                 info: {
-                    height: 0
+                  height: 0,
+                  sync_percent: 0,
+                  timeoffset: 0,
+                  connections: 0
                 },
                 mempool: []
             }
@@ -109,6 +114,7 @@
                 this.$apollo.queries.mempool.fetchMore({
                     variables,
                     updateQuery: (previousResult, {fetchMoreResult}) => {
+                        if (!fetchMoreResult.mempool) return;
                         const newPool = fetchMoreResult.mempool
                         if (newPool.length > 0) {
                             this.page += newPool.length;

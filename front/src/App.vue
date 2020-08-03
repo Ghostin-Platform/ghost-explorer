@@ -1,7 +1,7 @@
 <template>
-    <div class="page-container" style="overflow-y: scroll">
-        <md-content style="height: 100vh;">
-            <div style=" position: sticky; top: 0; z-index: 9999">
+    <div class="page-container">
+        <md-content>
+            <div style="position: fixed; top: 0; width: 100%; z-index: 9999">
                 <div class="md-layout" style="background-color: #000000; padding-top: 15px; padding-bottom: 15px;">
                     <div class="md-layout-item md-size-15"></div>
                     <div class="md-layout-item">
@@ -27,7 +27,7 @@
                     <div class="md-layout-item md-size-15"></div>
                 </div>
             </div>
-            <div class="md-layout" style="padding-bottom: 25px; background-color: #080808; min-height: calc(100vh - 145px)">
+            <div class="md-layout" style="margin-top: 75px; padding-bottom: 25px; background-color: #080808; min-height: calc(100vh - 145px)">
                 <div class="md-layout-item md-size-15"></div>
                 <div class="md-layout-item">
                     <router-view></router-view>
@@ -63,6 +63,7 @@
             this.$sse(sseApi, {format: 'plain'}).then(sse => {
                 msgServer = sse;
                 sse.subscribe('new_block', (message) => {
+                    eventBus.$emit('new_block', JSON.parse(message));
                     updateData(clientNewBlockMutation, 'block', message);
                 });
                 sse.subscribe('new_transaction', (message) => {
@@ -93,6 +94,7 @@
             }
         },
         beforeDestroy() {
+            console.log('APP DESTROY')
             if (msgServer) msgServer.close();
         },
     }

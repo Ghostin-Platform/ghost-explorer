@@ -250,6 +250,7 @@ type Reward {
   date: DateTime
   address: String
   blockHash: String
+  blockheight: Int
   valueSat: Float
 }
 
@@ -265,6 +266,7 @@ type SearchData {
   blocks: [String]
   transactions: [String]
 }
+
 ### QUERIES
 type Query {
   test: String
@@ -275,16 +277,18 @@ type Query {
   blocks(offset: String! = "+", limit: Int! = 6): [Block]
   veterans: [Veteran]
   transaction(id: String!): Transaction
-  transactions(offset: String! = "+", limit: Int! = 12): [Transaction]
+  transactions(offset: String! = "+", limit: Int! = 10): [Transaction]
   mempool(offset: Int! = 0, limit: Int! = 15): [Transaction]
   address(id: String!): Address
   addressMempool(id: String!): [Transaction]
+  rewards: [Reward]
   # Stats
   difficulty: StatPercentile
   seriesDifficulty: [PercentileDataPoint]
   stakeWeight: StatPercentile
   seriesStakeWeight: [PercentileDataPoint]
   seriesTxCount: [TimeDataPoint]
+  seriesMonthlyStakers: [TimeDataPoint]
   txTypeVentilation: [DataPoint]
   # Address stat
   seriesAddressBalance(id: String!): [TimeDataPoint]

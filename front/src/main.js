@@ -104,6 +104,8 @@ export const GetAddressPool = gql`query GetAddressPool($id: String!) {
         transferSat
     }
 }`
+
+export const ADDR_PAGINATION_COUNT = 20;
 export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
     address(id: $id) {
         id
@@ -147,7 +149,6 @@ export const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $t
     }
 }`
 
-export const ADDR_PAGINATION_COUNT = 20;
 export const GetTx = gql`query GetTx($id: String!) {
     transaction(id: $id) {
         id
@@ -217,6 +218,8 @@ export const GetBlock = gql`query GetBlock($id: String!, $txOffset: Int!, $txLim
         }
     }
 }`
+
+export const BLOCKS_PAGINATION_COUNT = 6;
 export const ReadBlocks = gql`query GetBlocks($offset: String!, $limit: Int!) {
     blocks(offset: $offset, limit: $limit) {
         id
@@ -231,6 +234,7 @@ export const ReadBlocks = gql`query GetBlocks($offset: String!, $limit: Int!) {
         transferSat
     }
 }`
+export const TX_PAGINATION_COUNT = 10;
 export const ReadTxs = gql`query GetTxs($offset: String!, $limit: Int!) {
     transactions(offset: $offset, limit: $limit) {
         id
@@ -298,14 +302,14 @@ const updateGlobalInfo = (info) => {
 const updateHomeBlocksListing = (newBlocks) => {
     // Update the block list on the home
     try {
-        const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: 6}});
+        const oldData = cache.readQuery({query: ReadBlocks, variables: {offset: "+", limit: BLOCKS_PAGINATION_COUNT}});
         // Update the number of confirmations for all other blocks
         let blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
         // Add the new block on top
         blocks.unshift(...newBlocks);
-        blocks = blocks.slice(0, 6);
+        blocks = blocks.slice(0, BLOCKS_PAGINATION_COUNT);
         const data = {blocks};
-        cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: 6}, data});
+        cache.writeQuery({query: ReadBlocks, variables: {offset: "+", limit: BLOCKS_PAGINATION_COUNT}, data});
     } catch (e) {
         // Nothing to do
     }
@@ -378,10 +382,10 @@ const updateMempoolAddress = (newTxs) => {
 const updateHomeTrxListing = (newTxs) => {
     // Update the home trx listing
     try {
-        const data = cache.readQuery({query: ReadTxs, variables: {offset: "+", limit: 12}});
+        const data = cache.readQuery({query: ReadTxs, variables: {offset: "+", limit: TX_PAGINATION_COUNT}});
         data.transactions.unshift(...newTxs);
-        data.transactions = data.transactions.slice(0, 12);
-        cache.writeQuery({query: ReadTxs, variables: {offset: "+", limit: 12}, data});
+        data.transactions = data.transactions.slice(0, TX_PAGINATION_COUNT);
+        cache.writeQuery({query: ReadTxs, variables: {offset: "+", limit: TX_PAGINATION_COUNT}, data});
     } catch (e) {
         // Nothing to do
     }
@@ -499,6 +503,9 @@ const routes = [
     {path: '/search', component: Search}
 ]
 const router = new VueRouter({
+    scrollBehavior () {
+        return { x: 0, y: 0 }
+    },
     routes,
     linkActiveClass
 })

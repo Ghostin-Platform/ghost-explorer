@@ -86,6 +86,7 @@
                 this.$apollo.queries.blocks.fetchMore({
                     variables,
                     updateQuery: (previousResult, { fetchMoreResult }) => {
+                      if (!fetchMoreResult.blocks) return;
                         const newBlocks = fetchMoreResult.blocks
                         if (newBlocks.length > 0) {
                             this.offset = newBlocks[newBlocks.length - 1].offset;

@@ -218,7 +218,8 @@
                                     Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                                 </span>
                             </span>
-                            <md-button disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ confirmations }} Confirmations</md-button>
+                            <md-button v-if="confirmations < 12" disabled class="md-raised md-primary" style="background-color: #D15600; color: white">{{ confirmations }}/12 Confirmations</md-button>
+                            <md-button v-else disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ confirmations }} Confirmations</md-button>
                         </md-list-item>
                     </md-list>
                     <infinite-loading @infinite="infiniteHandler">
@@ -290,6 +291,7 @@
                 this.$apollo.queries.block.fetchMore({
                     variables,
                     updateQuery: (previousResult, { fetchMoreResult }) => {
+                        if (!fetchMoreResult.block) return;
                         const newTxs = fetchMoreResult.block.transactions
                         if (newTxs.length > 0) {
                             this.page += newTxs.length;

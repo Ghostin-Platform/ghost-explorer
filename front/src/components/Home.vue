@@ -51,21 +51,42 @@
                     <md-card class="md-primary" style="text-align: center; margin: auto">
                         <md-card-header>
                             <md-card-header-text>
-                                <div class="md-title">{{ (stakeWeight.percentile/ 1e8).toFixed(2) }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
-                                <div class="md-subhead">95' percentile reward stake / Last {{ stakeWeight.size }} stakes</div>
-                                <TimeSparkChart :chartData="stakeWeightChartData"  style="height: 60px; margin-top: 5px"></TimeSparkChart>
+                                <div class="md-title">{{ this.seriesTxCount.length > 0 ? this.seriesTxCount[this.seriesTxCount.length - 1].value : 0 }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">txs</span></div>
+                                <div class="md-subhead">Current day #Transactions</div>
+                                <TimeSparkChart :chartData="txChartData" style="height: 78px; margin-top: 5px; margin-bottom: 5px"></TimeSparkChart>
                             </md-card-header-text>
                         </md-card-header>
                     </md-card>
                     <md-card class="md-primary" style="text-align: center; margin: auto">
-                        <md-card-header>
-                            <md-card-header-text>
-                                <div class="md-title">{{ this.seriesTxCount.length > 0 ? this.seriesTxCount[this.seriesTxCount.length - 1].value : 0 }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">txs</span></div>
-                                <div class="md-subhead">Current day #Transactions</div>
-                                <TimeSparkChart :chartData="txChartData" style="height: 60px; margin-top: 5px; margin-bottom: 5px"></TimeSparkChart>
-                                <RadarChart style="height: 297px" :chartData="txRadarData"></RadarChart>
-                            </md-card-header-text>
-                        </md-card-header>
+                      <md-card-header>
+                        <md-card-header-text>
+                          <div class="md-title" style="margin-top: 0">
+                            <RadarChart style="height: 293px" :chartData="txRadarData"></RadarChart>
+                          </div>
+                          <div class="md-subhead">Current day transactions ventilation</div>
+                        </md-card-header-text>
+                      </md-card-header>
+                    </md-card>
+                    <div style="width: 100%; margin-top: 20px; margin-bottom: 5px">
+                      <b>Staking statistics</b>
+                    </div>
+                    <md-card class="md-primary" style="text-align: center; margin: auto">
+                    <md-card-header>
+                      <md-card-header-text>
+                        <div class="md-title">{{ (stakeWeight.percentile/ 1e8).toFixed(2) }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
+                        <div class="md-subhead">95' percentile reward stake / Last {{ stakeWeight.size }} stakes</div>
+                        <TimeSparkChart :chartData="stakeWeightChartData" style="height: 114px; margin-top: 5px"></TimeSparkChart>
+                      </md-card-header-text>
+                    </md-card-header>
+                  </md-card>
+                    <md-card class="md-primary" style="text-align: center; margin: auto">
+                      <md-card-header>
+                        <md-card-header-text>
+                          <div class="md-title">{{ lastStakerValue.value }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">diff stakers</span></div>
+                          <div class="md-subhead"># Different staker per day</div>
+                          <TimeSparkChart :chartData="stakersChartData" style="height: 115px; margin-top: 5px"></TimeSparkChart>
+                        </md-card-header-text>
+                      </md-card-header>
                     </md-card>
                 </div>
                 <div class="md-layout-item">
@@ -74,11 +95,16 @@
                             <b>6 Latest blocks</b>
                             <router-link style="float: right;" :to="`/blocks`">See all blocks</router-link>
                         </div>
-                        <md-card class="md-primary" style="margin: auto; cursor: pointer" @click.native="$router.push('/mempool')">
+                        <md-card style="margin: auto; cursor: pointer; background-color: #101010;" @click.native="$router.push('/mempool')">
                             <md-card-header>
                                 <md-card-header-text>
-                                    <md-icon>memory</md-icon>
-                                    <span style="margin-left: 10px;">Next blocks may contains <b>{{ info.pooledTxCount }}</b> transactions in addition to the reward</span>
+                                    <md-icon v-if="info.pooledTxCount === 0" style="color: #448aff">memory</md-icon>
+                                    <md-icon v-else style="color: #008C00">memory</md-icon>
+                                    <span style="margin-left: 10px;">Next blocks may contains
+                                      <b v-if="info.pooledTxCount === 0" style="color: #448aff">{{ info.pooledTxCount }}</b>
+                                      <b v-else style="color: #008C00">{{ info.pooledTxCount }}</b>
+                                    transactions in addition to the reward</span>
+                                    <span style="float: right"><md-progress-spinner :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
                                 </md-card-header-text>
                             </md-card-header>
                         </md-card>
@@ -110,7 +136,7 @@
                     <br/>
                     <div>
                         <div style="width: 100%; margin-bottom: 5px">
-                            <b>12 Latest transactions</b>
+                            <b>10 Latest transactions</b>
                             <router-link style="float: right;" :to="`/transactions`">See all transactions</router-link>
                         </div>
                         <md-table>
@@ -160,6 +186,27 @@
                             </md-table-row>
                         </md-table>
                     </div>
+                    <br/>
+                    <div>
+                      <div style="width: 100%; margin-bottom: 5px">
+                        <b>8 Latest stakers</b>
+                      </div>
+                      <md-table>
+                        <md-table-row style="background-color: #101010">
+                          <md-table-head>Block</md-table-head>
+                          <md-table-head>Address</md-table-head>
+                          <md-table-head># Reward amount</md-table-head>
+                          <md-table-head></md-table-head>
+                        </md-table-row>
+                        <md-table-row v-for="(reward, index) in rewards" :key="`${reward.address}-${index}`"
+                                      @click.native="$router.push(`/address/${reward.address}`)"
+                                      style="background-color: #101010; cursor: pointer;">
+                          <md-table-cell>{{ reward.blockheight }}</md-table-cell>
+                          <md-table-cell>{{ reward.address }}</md-table-cell>
+                          <md-table-cell colspan="2">{{ (reward.valueSat / 1e8).toFixed(4) }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></md-table-cell>
+                        </md-table-row>
+                      </md-table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -168,14 +215,17 @@
 
 <script>
 import {
+  eventBus,
   ReadBlocks,
   ReadInfo, ReadMarket,
   ReadTxs,
 } from "../main";
     import moment from 'moment';
     import gql from "graphql-tag";
+    import * as R from "ramda";
     import TimeSparkChart from "./charts/TimeSparkChart";
     import RadarChart from "./charts/RadarChart";
+import {BLOCKS_PAGINATION_COUNT, TX_PAGINATION_COUNT} from "@/main";
 
     const buildSparkDataset = (series, inSat = false) => {
         const datasets = [{ data: series.map(d => ({ x: new Date(d.time * 1000), y: d.value.percentile / ( inSat ? 1e8 : 1) }) )}]
@@ -183,6 +233,7 @@ import {
     }
 
     let timeRefresh;
+    let eventHandler;
     export default {
         name: 'Home',
         components: {RadarChart, TimeSparkChart},
@@ -238,6 +289,13 @@ import {
             stakeWeightChartData() {
                 return buildSparkDataset(this.seriesStakeWeight, true);
             },
+            stakersChartData() {
+              const datasets = [{ data: this.seriesMonthlyStakers.map(d => ({ x: new Date(d.time * 1000), y: d.value }) )}]
+              return { datasets };
+            },
+            lastStakerValue() {
+              return R.last(this.seriesMonthlyStakers);
+            },
             difficultyChartData() {
                 return buildSparkDataset(this.seriesDifficulty);
             },
@@ -255,6 +313,7 @@ import {
             return {
                 now: moment(),
                 info: {
+                    pooledTxCount: 0,
                     difficulty: 0,
                     stake_weight: 0,
                     moneysupply: 0,
@@ -267,9 +326,11 @@ import {
                   usd_24h_change: 0,
                 },
                 blocks: [],
+                rewards: [],
                 transactions: [],
                 seriesDifficulty: [],
                 seriesStakeWeight: [],
+                seriesMonthlyStakers: [],
                 seriesTxCount: [],
                 txTypeVentilation: [],
                 stakeWeight: {
@@ -284,13 +345,25 @@ import {
             }, 5000)
             // Refresh market
             self.$apollo.queries.market.refetch();
+            eventHandler = function() {
+              self.$apollo.queries.rewards.refetch();
+            }
+            eventBus.$on('new_block', eventHandler);
         },
         beforeDestroy() {
+          eventBus.$off('new_block', eventHandler);
           clearInterval(timeRefresh);
         },
         apollo: {
             info: () => ReadInfo,
             market: () => ReadMarket,
+            rewards: () => gql`query {
+              rewards {
+                address
+                valueSat
+                blockheight
+              }
+            }`,
             stakeWeight: () => gql`query {
                 stakeWeight {
                     min
@@ -327,12 +400,18 @@ import {
                 value
               }
             }`,
+            seriesMonthlyStakers: () => gql`query {
+              seriesMonthlyStakers {
+                time
+                value
+              }
+            }`,
             blocks: {
                 query: () => ReadBlocks,
                 variables() {
                     return {
                         offset: '+',
-                        limit: 6
+                        limit: BLOCKS_PAGINATION_COUNT
                     }
                 }
             },
@@ -341,7 +420,7 @@ import {
                 variables() {
                     return {
                         offset: '+',
-                        limit: 12
+                        limit: TX_PAGINATION_COUNT
                     }
                 }
             },

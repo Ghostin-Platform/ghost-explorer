@@ -1,14 +1,10 @@
-import {coinMarket, getBlockById, getBlocks, getTransactions, info, test, veterans} from '../domain/info';
+import { coinMarket, getBlockById, getBlocks, info, test, veterans } from '../domain/info';
 import { fetch } from '../database/redis';
-import {
-  CURRENT_PROCESSING_BLOCK,
-  getBlockTransactions,
-  getPooledTransactions,
-  getTransaction,
-} from '../database/ghost';
+import { CURRENT_PROCESSING_BLOCK, getBlockTransactions } from '../database/ghost';
 import {
   currentDayStakeWeight,
   currentDayTxTypeVentilation,
+  elMonthlyStakers,
   elSearch,
   monthlyDifficulty,
   monthlyStakeWeight,
@@ -28,6 +24,7 @@ const infoResolver = {
     stakeWeight: () => currentDayStakeWeight(),
     seriesStakeWeight: () => monthlyStakeWeight(),
     seriesDifficulty: () => monthlyDifficulty(),
+    seriesMonthlyStakers: () => elMonthlyStakers(),
     seriesTxCount: () => monthlyTxCount(),
     txTypeVentilation: () => currentDayTxTypeVentilation(),
     seriesAddressBalance: (_, { id }) => seriesAddressBalance(id),

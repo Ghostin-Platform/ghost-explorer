@@ -133,7 +133,7 @@ export const getAddressById = async (id, blockheight = 0) => {
     __typename: 'Address',
     id: `${id}-${latestTx.id}`,
     txid: latestTx.id,
-    txtype: latestTx.type,
+    blockheight: latestTx.blockheight,
     time: latestTx.time,
     address: id,
     nbTx: size,

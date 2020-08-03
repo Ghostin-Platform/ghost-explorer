@@ -1,4 +1,4 @@
-import { elAddressTransactions, elGetAddressBalance } from '../database/elasticSearch';
+import { elAddressTransactions, elGetAddressBalance, elLastRewards } from '../database/elasticSearch';
 import { getAddressPooledTransactions } from '../database/ghost';
 import { rpcCall } from '../config/utils';
 
@@ -16,6 +16,10 @@ export const getAddressBalance = async (id) => {
     }
   }
   return balance;
+};
+
+export const getLastRewardAddresses = () => {
+  return elLastRewards();
 };
 
 export const getAddressPooledTx = (id) => {

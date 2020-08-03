@@ -265,6 +265,36 @@ export const elUpdate = (indexName, documentId, documentBody, retry = 5) => {
     });
 };
 
+export const elLastRewards = async () => {
+  const query = {
+    index: INDEX_TRX,
+    size: 8,
+    body: {
+      query: {
+        bool: {
+          must: [{ match_phrase: { type: 'reward' } }],
+        },
+      },
+      sort: [{ time: 'desc' }],
+    },
+  };
+  const data = await el.search(query);
+  if (data && data.body.hits) {
+    const { hits } = data.body.hits;
+    return R.map(
+      (h) => ({
+        address: R.head(h._source.vin).address,
+        valueSat: h._source.variation,
+        time: h._source.time,
+        blockheight: h._source.blockheight,
+        blockhash: h._source.blockhash,
+      }),
+      hits
+    );
+  }
+  return [];
+};
+
 export const elDeleteByField = async (indexName, fieldName, value) => {
   const query = {
     match: { [fieldName]: value },
@@ -545,6 +575,57 @@ export const monthlyDifficulty = () => {
   });
 };
 
+export const elMonthlyStakers = async () => {
+  const start = moment().subtract(1, 'month').unix();
+  const query = {
+    index: INDEX_TRX,
+    size: 1,
+    body: {
+      query: {
+        bool: {
+          must: [
+            { match_phrase: { type: 'reward' } },
+            {
+              range: {
+                time: {
+                  gte: start,
+                },
+              },
+            },
+          ],
+        },
+      },
+      aggs: {
+        stakers_per_day: {
+          date_histogram: {
+            field: 'time',
+            calendar_interval: 'day',
+          },
+          aggs: {
+            type_count: {
+              cardinality: {
+                field: `vinAddresses.keyword`,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  const data = await el.search(query);
+  if (data && data.body.hits) {
+    const { buckets } = data.body.aggregations.stakers_per_day;
+    return R.map(
+      (b) => ({
+        time: b.key / 1000,
+        value: b.type_count.value,
+      }),
+      buckets
+    );
+  }
+  return [];
+};
+
 export const seriesAddressBalance = (id) => {
   const start = moment().subtract(1, 'year').unix();
   const query = {
@@ -595,66 +676,3 @@ export const seriesAddressBalance = (id) => {
     );
   });
 };
-
-/*
-export const monthlySupply = () => {
-  const start = moment().startOf('month').unix();
-  const query = {
-    index: INDEX_TRX,
-    _source_excludes: '*', // Dont need to get anything
-    size: MAX_WINDOW_SIZE,
-    body: {
-      query: {
-        bool: {
-          must: [
-            {
-              range: {
-                time: {
-                  gte: start,
-                },
-              },
-            },
-          ],
-          should: [{ match_phrase: { type: 'coinbase' } }, { match_phrase: { type: 'reward' } }],
-          minimum_should_match: 1,
-        },
-      },
-      aggs: {
-        supply_per_day: {
-          date_histogram: {
-            field: 'time',
-            calendar_interval: 'day',
-          },
-          aggs: {
-            supply: {
-              sum: {
-                field: `variation`,
-              },
-            },
-            cumulative_supply: {
-              cumulative_sum: {
-                buckets_path: 'supply',
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-  return el
-    .search(query)
-    .then((data) => {
-      const { buckets } = data.body.aggregations.supply_per_day;
-      return R.map(
-        (b) => ({
-          time: b.key / 1000,
-          value: b.cumulative_supply.value,
-        }),
-        buckets
-      );
-    })
-    .catch((e) => {
-      throw e;
-    });
-};
-*/
