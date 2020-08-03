@@ -82,7 +82,7 @@
                     <md-card class="md-primary" style="text-align: center; margin: auto">
                       <md-card-header>
                         <md-card-header-text>
-                          <div class="md-title">{{ lastStakerValue.value }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">diff stakers</span></div>
+                          <div class="md-title">{{ lastStakerValue }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">diff stakers</span></div>
                           <div class="md-subhead"># Different staker per day</div>
                           <TimeSparkChart :chartData="stakersChartData" style="height: 115px; margin-top: 5px"></TimeSparkChart>
                         </md-card-header-text>
@@ -294,7 +294,7 @@ import {BLOCKS_PAGINATION_COUNT, TX_PAGINATION_COUNT} from "@/main";
               return { datasets };
             },
             lastStakerValue() {
-              return R.last(this.seriesMonthlyStakers);
+              return this.seriesMonthlyStakers.length > 0 ? R.last(this.seriesMonthlyStakers).value : '-';
             },
             difficultyChartData() {
                 return buildSparkDataset(this.seriesDifficulty);
