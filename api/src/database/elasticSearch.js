@@ -2,14 +2,13 @@
 import { Client } from '@elastic/elasticsearch';
 import * as R from 'ramda';
 import moment from 'moment';
-import conf, { logger } from '../config/conf';
-import { ConfigurationError, DatabaseError } from '../config/errors';
+import conf from '../config/conf';
+import { ConfigurationError } from '../config/errors';
 
 const MAX_WINDOW_SIZE = 50000;
 export const INDEX_BLOCK = 'ghost_block';
 export const INDEX_ADDRESS = 'ghost_address';
 export const INDEX_TRX = 'ghost_trx';
-export const PLATFORM_INDICES = [INDEX_BLOCK, INDEX_TRX, INDEX_ADDRESS];
 
 export const el = new Client({ node: conf.get('elasticsearch:url') });
 
@@ -84,87 +83,6 @@ export const elSearch = async (term) => {
   return { addresses: addrPromise, blocks: blockPromise, transactions: txPromise };
 };
 
-export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
-  return Promise.all(
-    indexesToCreate.map((index) => {
-      return el.indices.exists({ index }).then((result) => {
-        if (result.body === false) {
-          return el.indices.create({
-            index,
-            body: {
-              settings: {
-                index: {
-                  max_result_window: 100000,
-                },
-                analysis: {
-                  normalizer: {
-                    string_normalizer: {
-                      type: 'custom',
-                      filter: ['lowercase', 'asciifolding'],
-                    },
-                  },
-                },
-              },
-              mappings: {
-                dynamic_templates: [
-                  {
-                    strings: {
-                      match_mapping_type: 'string',
-                      mapping: {
-                        type: 'text',
-                        fields: {
-                          keyword: {
-                            type: 'keyword',
-                            normalizer: 'string_normalizer',
-                            ignore_above: 512,
-                          },
-                        },
-                      },
-                    },
-                  },
-                ],
-                properties: {
-                  time: {
-                    type: 'date',
-                    format: 'epoch_second',
-                  },
-                  pooltime: {
-                    type: 'date',
-                    format: 'epoch_second',
-                  },
-                  mediantime: {
-                    type: 'date',
-                    format: 'epoch_second',
-                  },
-                  blocktime: {
-                    type: 'date',
-                    format: 'epoch_second',
-                  },
-                },
-              },
-            },
-          });
-        }
-        /* istanbul ignore next */
-        return result;
-      });
-    })
-  );
-};
-
-export const elDeleteIndexes = async (indexesToDelete = PLATFORM_INDICES) => {
-  return Promise.all(
-    indexesToDelete.map((index) => {
-      return el.indices.delete({ index }).catch((err) => {
-        /* istanbul ignore next */
-        if (err.meta.body && err.meta.body.error.type !== 'index_not_found_exception') {
-          logger.error(`[ELASTICSEARCH] Delete indices fail`, { error: err });
-        }
-      });
-    })
-  );
-};
-
 export const elGetAddressBalance = async (id) => {
   const query = {
     index: INDEX_ADDRESS,
@@ -221,50 +139,6 @@ export const elAddressTransactions = async (addressId, from = 0, size = null, bl
   return [];
 };
 
-export const elBulk = async (indexName, documents, refresh = true) => {
-  const body = documents.flatMap((d) => [
-    { update: { _id: d.id, _index: indexName, retry_on_conflict: 3 } },
-    { doc: d, doc_as_upsert: true },
-  ]);
-  return el.bulk({
-    body,
-    refresh,
-  });
-};
-
-export const elIndex = async (indexName, documentBody, refresh = true) => {
-  await el
-    .update({
-      index: indexName,
-      id: documentBody.id,
-      refresh,
-      timeout: '60m',
-      body: {
-        doc: documentBody,
-        doc_as_upsert: true,
-      },
-    })
-    .catch((err) => {
-      throw DatabaseError('Error indexing elastic', { error: err, body: documentBody });
-    });
-  return documentBody;
-};
-
-export const elUpdate = (indexName, documentId, documentBody, retry = 5) => {
-  return el
-    .update({
-      id: documentId,
-      index: indexName,
-      retry_on_conflict: retry,
-      timeout: '60m',
-      refresh: true,
-      body: R.dissoc('_index', documentBody),
-    })
-    .catch((err) => {
-      throw DatabaseError('Error updating elastic', { error: err, documentId, body: documentBody });
-    });
-};
-
 export const elLastRewards = async () => {
   const query = {
     index: INDEX_TRX,
@@ -293,18 +167,6 @@ export const elLastRewards = async () => {
     );
   }
   return [];
-};
-
-export const elDeleteByField = async (indexName, fieldName, value) => {
-  const query = {
-    match: { [fieldName]: value },
-  };
-  await el.deleteByQuery({
-    index: indexName,
-    refresh: true,
-    body: { query },
-  });
-  return value;
 };
 
 export const currentDayStakeWeight = () => {

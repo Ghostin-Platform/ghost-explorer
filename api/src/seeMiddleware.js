@@ -1,14 +1,14 @@
 import { logger } from './config/conf';
 
-export const EVENT_NEW_BLOCK = 'new_block';
-export const EVENT_NEW_TX = 'new_transaction';
-
-export const EVENT_MEMPOOL_ADDED = 'new_mempool';
-export const EVENT_MEMPOOL_REMOVED = 'del_mempool';
-
-export const EVENT_UPDATE_INFO = 'update_info';
-
 let clients = [];
+
+export const broadcast = (event, data) => {
+  for (let index = 0; index < clients.length; index += 1) {
+    const client = clients[index];
+    client.sendEvent(event, data);
+  }
+};
+
 const createSeeMiddleware = () => {
   const eventsHandler = (req, res) => {
     const clientId = Date.now();
@@ -55,13 +55,6 @@ const createSeeMiddleware = () => {
       app.get('/events', eventsHandler);
     },
   };
-};
-
-export const broadcast = (event, data) => {
-  for (let index = 0; index < clients.length; index += 1) {
-    const client = clients[index];
-    client.sendEvent(event, data);
-  }
 };
 
 export default createSeeMiddleware;

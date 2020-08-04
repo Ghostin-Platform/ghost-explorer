@@ -258,7 +258,8 @@
         }
     }`
     const BLOCK_HOME_PAGINATION_COUNT = 6;
-    const newBlockHandler = (newBlocks) => {
+    const newBlockHandler = (self, newBlocks) => {
+      // Update the list
       const oldData = apolloClient.readQuery({query: ReadHomeBlocks, variables: {offset: "+", limit: BLOCK_HOME_PAGINATION_COUNT}});
       // Update the number of confirmations for all other blocks
       let blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
@@ -267,6 +268,8 @@
       blocks = blocks.slice(0, BLOCK_HOME_PAGINATION_COUNT);
       const data = {blocks};
       apolloClient.writeQuery({query: ReadHomeBlocks, variables: {offset: "+", limit: BLOCK_HOME_PAGINATION_COUNT}, data});
+      // Update the stakers list
+      self.$apollo.queries.rewards.refetch();
     };
     // endregion
     // region tx update
@@ -402,12 +405,14 @@
         },
         mounted() {
           const self = this;
-          timeRefresh = setInterval(function () {
-            self.$data.now = moment().subtract(self.info.timeoffset, 'seconds')
-          }, 5000)
-          eventBus.$on(EVENT_NEW_BLOCK, (blocks) => newBlockHandler(blocks));
-          eventBus.$on(EVENT_NEW_TRANSACTION, (txs) => newTxHandler(txs));
-          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+          self.$nextTick(function () {
+            timeRefresh = setInterval(function () {
+              self.$data.now = moment().subtract(self.info.timeoffset, 'seconds')
+            }, 5000)
+            eventBus.$on(EVENT_NEW_BLOCK, (blocks) => newBlockHandler(self, blocks));
+            eventBus.$on(EVENT_NEW_TRANSACTION, (txs) => newTxHandler(txs));
+            eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+          });
         },
         beforeDestroy() {
           eventBus.$off(EVENT_NEW_BLOCK);

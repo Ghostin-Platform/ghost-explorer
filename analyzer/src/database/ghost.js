@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import { Promise } from 'bluebird';
 import { rpcCall } from '../config/utils';
-import { blockStreamId, fetch } from './redis';
+import { blockStreamId } from './redis';
 
 // export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
@@ -12,46 +12,6 @@ export const GROUP_CONCURRENCY = 25; // Number of query in //
 const toSat = (num) => num * 100000000;
 
 export const getRawPooledTransactions = (verbose = true) => rpcCall('getrawmempool', [verbose]);
-
-export const getPooledTransactionsCount = () =>
-  getRawPooledTransactions(false).then(async (pooledTx) => pooledTx.length);
-
-export const getNetworkInfo = async () => {
-  // const coinMarketPromise = getCoinMarket();
-  const networkInfoPromise = rpcCall('getnetworkinfo');
-  const stackInfoPromise = rpcCall('getstakinginfo');
-  const blockchainInfoPromise = rpcCall('getblockchaininfo');
-  const pooledTxCountPromise = getPooledTransactionsCount();
-  const [networkInfo, stackInfo, blockchainInfo, pooledTxCount] = await Promise.all([
-    networkInfoPromise,
-    stackInfoPromise,
-    blockchainInfoPromise,
-    pooledTxCountPromise,
-  ]);
-  const currentBlock = await fetch(CURRENT_PROCESSING_BLOCK);
-  const syncPercent = (currentBlock * 100) / blockchainInfo.blocks;
-  return {
-    // Internal sync
-    __typename: 'BlockChainInfo',
-    id: 'ghost_info',
-    version: '1.0-beta',
-    name: blockchainInfo.chain,
-    sync_height: currentBlock,
-    sync_percent: syncPercent,
-    pooledTxCount,
-    // Extra info
-    // market: Object.assign(coinMarket, { __typename: 'MarketInfo' }),
-    connections: networkInfo.connections,
-    timeoffset: networkInfo.timeoffset,
-    node_version: networkInfo.subversion,
-    height: blockchainInfo.blocks,
-    verification_progress: blockchainInfo.verificationprogress,
-    difficulty: stackInfo.difficulty,
-    stake_weight: stackInfo.netstakeweight,
-    moneysupply: blockchainInfo.moneysupply,
-    delayedblocks: blockchainInfo.delayedblocks,
-  };
-};
 
 export const getBlockByHeight = async (index) => {
   const blockHash = await rpcCall('getblockhash', [index]);
@@ -90,7 +50,6 @@ const computeTrxType = (rawTransaction) => {
   if (countStandard === 0) return TYPE_MIXED_PRIVATE;
   return TYPE_MIXED_STANDARD;
 };
-
 const computePublicAddr = (rawTransaction) => {
   // vin
   const withVinPubAddr = R.filter((r) => r.address, rawTransaction.vin);
@@ -229,36 +188,6 @@ export const getBlockTransactions = (block, offset = 0, limit = 10) => {
   return Promise.map(limitedTxs, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
 };
 
-export const getPooledTransactions = async (offset = 0, limit = 5) => {
-  const poolTx = await getRawPooledTransactions();
-  const poolTxIds = Object.keys(poolTx);
-  const limitedTxs = limit <= 0 ? poolTxIds : R.take(limit, poolTxIds.slice(offset));
-  return Promise.map(
-    limitedTxs,
-    async (txId) => {
-      const tx = await getTransaction(txId);
-      return Object.assign(tx, poolTx[tx.id]);
-    },
-    { concurrency: GROUP_CONCURRENCY }
-  );
-};
-
-export const getAddressPooledTransactions = async (id) => {
-  const allTx = await getRawPooledTransactions();
-  const allTxs = Object.keys(allTx).map((k) => ({ txid: k, ...allTx[k] }));
-  const addrTx = (await rpcCall('getaddressmempool', [id])) || [];
-  const addrTxs = R.uniq(R.map((tx) => tx.txid, addrTx));
-  const limitedTxs = R.filter((x) => addrTxs.includes(x.txid), allTxs);
-  return Promise.map(
-    limitedTxs,
-    async (lTx) => {
-      const tx = await getTransaction(lTx.txid);
-      return Object.assign(tx, lTx);
-    },
-    { concurrency: GROUP_CONCURRENCY }
-  );
-};
-
 export const enrichBlock = async (block) => {
   const { height, tx, confirmations } = block;
   // Resolving transactions
@@ -303,14 +232,4 @@ export const enrichBlock = async (block) => {
     rewardSat: rewardTx ? rewardTx.variation : 0,
     participants: R.uniq(R.flatten(R.map((txp) => txp.participants, transactions))),
   };
-};
-
-export const getEnrichedBlockByHeight = async (index) => {
-  const block = await getBlockByHeight(index);
-  return block ? enrichBlock(block) : null;
-};
-
-export const getEnrichedBlockByHash = async (index) => {
-  const block = await getBlockByHash(index);
-  return block ? enrichBlock(block) : null;
 };

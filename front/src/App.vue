@@ -53,17 +53,20 @@ import {
     export default {
         name: 'App',
         mounted() {
+          const self = this;
+          self.$nextTick(function () {
             // Start SSE Listener
-            this.$sse(sseApi, {format: 'plain'}).then(sse => {
-                msgServer = sse;
-                sse.subscribe(EVENT_NEW_BLOCK, (m) => eventBus.$emit(EVENT_NEW_BLOCK, JSON.parse(m)));
-                sse.subscribe(EVENT_NEW_TRANSACTION, (m) => eventBus.$emit(EVENT_NEW_TRANSACTION, JSON.parse(m)));
-                sse.subscribe(EVENT_UPDATE_INFO, (m) => eventBus.$emit(EVENT_UPDATE_INFO, JSON.parse(m)));
-                sse.subscribe(EVENT_NEW_MEMPOOL, (m) => eventBus.$emit(EVENT_NEW_MEMPOOL, JSON.parse(m)));
-                sse.subscribe(EVENT_DEL_MEMPOOL, (m) => eventBus.$emit(EVENT_DEL_MEMPOOL, JSON.parse(m)));
+            self.$sse(sseApi, {format: 'plain'}).then(sse => {
+              msgServer = sse;
+              sse.subscribe(EVENT_NEW_BLOCK, (m) => eventBus.$emit(EVENT_NEW_BLOCK, JSON.parse(m)));
+              sse.subscribe(EVENT_NEW_TRANSACTION, (m) => eventBus.$emit(EVENT_NEW_TRANSACTION, JSON.parse(m)));
+              sse.subscribe(EVENT_UPDATE_INFO, (m) => eventBus.$emit(EVENT_UPDATE_INFO, JSON.parse(m)));
+              sse.subscribe(EVENT_NEW_MEMPOOL, (m) => eventBus.$emit(EVENT_NEW_MEMPOOL, JSON.parse(m)));
+              sse.subscribe(EVENT_DEL_MEMPOOL, (m) => eventBus.$emit(EVENT_DEL_MEMPOOL, JSON.parse(m)));
             }).catch(err => {
-                console.error('Failed to connect to server', err);
+              console.error('Failed to connect to server', err);
             });
+          })
         },
         data() {
             return {

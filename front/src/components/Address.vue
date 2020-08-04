@@ -476,8 +476,7 @@ import TimeBalanceChart from "./charts/TimeBalanceChart";
                 return formatter.format(Math.abs(this.address.totalSent / 1e8))
             },
             fees() {
-                const formatter = new Intl.NumberFormat('en-US');
-                return formatter.format(this.address.totalFees / 1e8)
+                return this.address.totalFees / 1e8
             },
             rewards() {
                 const formatter = new Intl.NumberFormat('en-US');
