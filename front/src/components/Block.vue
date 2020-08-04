@@ -108,7 +108,7 @@
                     </div>
                     <div style="width: 100%;"><b>Hashes</b></div>
                     <md-list class="md-double-line">
-                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
+                        <md-list-item style="background-color: #101010; margin-bottom: 8px">
                             <md-icon>vpn_key</md-icon>
                             <div class="md-list-item-text">
                                 <span>{{ block.hash }}</span>
@@ -118,7 +118,7 @@
                                 <md-icon>content_copy</md-icon>
                             </md-button>
                         </md-list-item>
-                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
+                        <md-list-item style="background-color: #101010; margin-bottom: 8px">
                             <md-icon>undo</md-icon>
                             <div class="md-list-item-text">
                                 <span v-if="block.previousblockhash"><router-link :to="`/block/${block.previousblockhash}`">{{ block.previousblockhash }}</router-link></span>
@@ -134,7 +134,7 @@
                                 <md-icon>content_copy</md-icon>
                             </md-button>
                         </md-list-item>
-                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
+                        <md-list-item style="background-color: #101010; margin-bottom: 8px">
                             <md-icon>redo</md-icon>
                             <div class="md-list-item-text">
                                 <span v-if="block.nextblockhash"><router-link :to="`/block/${block.nextblockhash}`">{{ block.nextblockhash }}</router-link></span>
@@ -150,7 +150,7 @@
                                 <md-icon>content_copy</md-icon>
                             </md-button>
                         </md-list-item>
-                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
+                        <md-list-item style="background-color: #101010; margin-bottom: 8px">
                             <md-icon>account_tree</md-icon>
                             <div class="md-list-item-text">
                                 <span>{{ block.merkleroot }}</span>
@@ -160,7 +160,7 @@
                                 <md-icon>content_copy</md-icon>
                             </md-button>
                         </md-list-item>
-                        <md-list-item style="background-color: #101010; margin-bottom: 4px">
+                        <md-list-item style="background-color: #101010; margin-bottom: 8px">
                             <md-icon>fingerprint</md-icon>
                             <div class="md-list-item-text">
                                 <span>{{ block.witnessmerkleroot }}</span>

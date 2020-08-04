@@ -27,7 +27,7 @@
                     <div class="md-layout-item md-size-15"></div>
                 </div>
             </div>
-            <div class="md-layout" style="margin-top: 75px; padding-bottom: 25px; background-color: #080808; min-height: calc(100vh - 145px)">
+            <div class="md-layout" style="margin-top: 75px; background-color: #080808; min-height: calc(100vh - 75px)">
                 <div class="md-layout-item md-size-15"></div>
                 <div class="md-layout-item">
                     <router-view></router-view>
