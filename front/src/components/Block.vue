@@ -1,9 +1,9 @@
 <template>
     <div>
         <div style="min-height: 5px; margin-bottom: 8px">
-            <div v-if="$apollo.loading">
-                <md-progress-bar md-mode="query"></md-progress-bar>
-            </div>
+          <div v-if="$apollo.loading">
+            <md-progress-bar md-mode="query"></md-progress-bar>
+          </div>
         </div>
         <div>
           <div v-if="block">

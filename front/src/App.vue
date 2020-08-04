@@ -3,17 +3,16 @@
         <md-content>
             <div style="position: fixed; top: 0; width: 100%; z-index: 9999">
                 <div class="md-layout" style="background-color: #000000; padding-top: 15px; padding-bottom: 15px;">
-                    <div class="md-layout-item md-size-15"></div>
-                    <div class="md-layout-item">
+                    <div class="md-layout-item" style="min-width: 1280px; max-width: 1280px; margin: auto">
                         <div class="md-layout-item md-layout md-gutter">
-                            <div class="md-layout-item md-size-15" style="padding-left: 0">
+                            <div class="md-layout-item md-size-15" style="padding-left: 0; min-width: 200px">
                                 <img alt="Vue logo" src="./assets/logo.png" style="float: left;" width="44">
                                 <div style="font-family: 'Sen', sans-serif; float: left; margin-left: 15px; padding-top: 8px; font-size: 32px;" class="md-title">ghostin</div>
                             </div>
-                            <div class="md-layout-item md-size-10">
+                            <div class="md-layout-item md-size-10" style="min-width: 20px">
                                 <md-button v-on:click="$router.push('/')" style="font-family: 'Sen', sans-serif;">ghostscan</md-button>
                             </div>
-                            <div class="md-layout-item md-size-40">
+                            <div class="md-layout-item md-size-40" style="min-width: 20px">
                                 <md-button v-on:click="$router.push('/support')" style="font-family: 'Sen', sans-serif;">support us</md-button>
                             </div>
                             <div class="md-layout-item" style="padding-right: 0">
@@ -24,15 +23,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="md-layout-item md-size-15"></div>
                 </div>
             </div>
-            <div class="md-layout" style="margin-top: 75px; background-color: #080808; min-height: calc(100vh - 75px)">
-                <div class="md-layout-item md-size-15"></div>
-                <div class="md-layout-item">
+            <div class="md-layout" style="margin-top: 75px; background-color: #080808;">
+                <div class="md-layout-item" style="min-width: 1280px; max-width: 1280px; margin: auto;  min-height: calc(100vh - 75px)">
                     <router-view></router-view>
                 </div>
-                <div class="md-layout-item md-size-15"></div>
             </div>
             <div style="text-align: center; margin: auto; padding: 15px; background-color: #080808; height: 80px">
                 <md-divider></md-divider>

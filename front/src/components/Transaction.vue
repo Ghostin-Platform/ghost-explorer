@@ -230,9 +230,10 @@
                                       <router-link :to="`/address/${outData.address}`">{{ outData.address }}</router-link>
                                   </div>
                                   <div v-else-if="outData.type === 'anon'">Anonymous</div>
-                                  <div v-else>
+                                  <div v-else-if="outData.address !== 'Unparsed address'">
                                       <router-link :to="`/address/${outData.address}`">{{ outData.address }}</router-link>
                                   </div>
+                                  <div v-else>Unparsed address</div>
                               </span>
                               <!-- Coin -->
                               <div v-if="outData.type === 'blind'">

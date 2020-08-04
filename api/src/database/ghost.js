@@ -137,7 +137,7 @@ const computeVoutPerAddr = (rawTransaction) => {
   for (let index = 0; index < rawTransaction.vout.length; index += 1) {
     const rawVout = rawTransaction.vout[index];
     let outAddrs = rawVout.pubkey ? [rawVout.pubkey] : [];
-    if (rawVout.scriptPubKey) outAddrs = rawVout.scriptPubKey.addresses;
+    if (rawVout.scriptPubKey) outAddrs = rawVout.scriptPubKey.addresses || ['Unparsed address'];
     for (let adr = 0; adr < outAddrs.length; adr += 1) {
       const address = outAddrs[adr];
       const current = addresses.get(address);
