@@ -8,6 +8,7 @@ import VueApollo from 'vue-apollo'
 import VueSSE from 'vue-sse';
 import gql from "graphql-tag";
 import VueMaterial from 'vue-material'
+import VueAnalytics from 'vue-analytics'
 import VueRouter from 'vue-router'
 import 'vue-material/dist/vue-material.min.css'
 import './assets/ghost.css'
@@ -26,8 +27,6 @@ import Search from "./components/Search";
 
 // region configuration
 export const VETERAN_AMOUNT = 20000;
-const graphqlApi = 'http://localhost:4000/graphql';
-export const sseApi = 'http://localhost:4000/events';
 Vue.config.productionTip = false
 Vue.use(Toasted)
 Vue.use(VueApollo)
@@ -69,7 +68,7 @@ export const EVENT_UPDATE_INFO = 'update_info';
 // endregion
 
 // region apollo
-const httpLink = createHttpLink({uri: graphqlApi})
+const httpLink = createHttpLink({uri: '/graphql'})
 const fragmentMatcher = new IntrospectionFragmentMatcher({
     introspectionQueryResultData: {
         __schema: {
@@ -114,6 +113,7 @@ const router = new VueRouter({
     routes,
     linkActiveClass
 })
+Vue.use(VueAnalytics, { id: 'UA-89670666-4', router })
 // endregion
 
 Vue.mixin({

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "build": "vue-cli-service build && node src/setupBuild.js",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
@@ -23,6 +23,7 @@
     "moment": "^2.27.0",
     "ramda": "^0.27.0",
     "vue": "^2.6.11",
+    "vue-analytics": "^5.22.1",
     "vue-apollo": "^3.0.3",
     "vue-chartjs": "^3.5.0",
     "vue-infinite-loading": "^2.4.5",

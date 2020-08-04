@@ -24,13 +24,13 @@
                                 If you want to support us you can:
                             </div>
                             <div style="margin-left: 29px; margin-top: 8px">
-                                - Tip some ghost on <span v-on:click="copy('GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61')" style="color: #116aff">GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61</span> public address
+                              <md-icon>keyboard_arrow_right</md-icon>Tip some ghost on <span v-on:click="copy('GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61')" style="color: #116aff">GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61</span> public address
                             </div>
                             <div style="margin-left: 29px; margin-top: 8px">
-                                - Join the ghost discord channel to talk to us <a href="https://discord.gg/Pjbme6v" style="color: #116aff">https://discord.gg/Pjbme6v</a>
+                              <md-icon>keyboard_arrow_right</md-icon>Join the ghost discord channel to talk to us <a href="https://discord.gg/Pjbme6v" style="color: #116aff">https://discord.gg/Pjbme6v</a>
                             </div>
                             <div style="margin-left: 29px; margin-top: 8px">
-                                - Send us and email to ask features or send some love :) <span style="color: #116aff">contact@ghostin.io</span>
+                              <md-icon>keyboard_arrow_right</md-icon>Send us and email to ask features or send some love :) <span style="color: #116aff">contact@ghostin.io</span>
                             </div>
                         </md-card-header-text>
                     </md-card-header>

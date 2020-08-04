@@ -10,7 +10,7 @@ import {
 import { getCoinMarket, httpGet } from '../config/utils';
 import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
 import { elAddressTransactions } from '../database/elasticSearch';
-import { broadcast } from '../seeMiddleware';
+import { broadcast } from '../middleware/seeMiddleware';
 
 export const test = async () => {
   const t = await getTransaction('7360d012db628526dffec8efc4092882d0d7b39449f6a929751561ceb99f5986');

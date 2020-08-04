@@ -1,16 +1,14 @@
 import express from 'express';
-// noinspection NodeJsCodingAssistanceForCoreModules
-import { readFileSync } from 'fs';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import compression from 'compression';
 import helmet from 'helmet';
-import { isEmpty } from 'ramda';
-import path from 'path';
 import nconf from 'nconf';
 import { logger } from './config/conf';
-import createSeeMiddleware from './seeMiddleware';
+import createSeeMiddleware from './middleware/seeMiddleware';
+
+const FRONT_BUILD_PATH = './public';
 
 const createApp = (apolloServer) => {
   // Init the http server
@@ -22,17 +20,7 @@ const createApp = (apolloServer) => {
   app.use(helmet());
   app.use(bodyParser.json({ limit: '100mb' }));
 
-  const AppBasePath = nconf.get('app:base_path');
-  const basePath = isEmpty(AppBasePath) || AppBasePath.startsWith('/') ? AppBasePath : `/${AppBasePath}`;
-
-  // -- Generated CSS with correct base path
-  app.get('/static/css/*', (req, res) => {
-    const data = readFileSync(path.join(__dirname, `../public${req.url}`), 'utf8');
-    const withBasePath = data.replace(/%BASE_PATH%/g, basePath);
-    res.header('Content-Type', 'text/css');
-    res.send(withBasePath);
-  });
-  app.use('/static', express.static(path.join(__dirname, '../public/static')));
+  app.use('/', express.static(FRONT_BUILD_PATH));
 
   const serverHealthCheck = () => {
     return new Promise((resolve) => {
@@ -45,14 +33,8 @@ const createApp = (apolloServer) => {
   seeMiddleware.applyMiddleware({ app });
 
   // Other routes
-  app.get('*', (req, res) => {
-    const data = readFileSync(`${__dirname}/../public/index.html`, 'utf8');
-    const withOptionValued = data.replace(/%BASE_PATH%/g, basePath);
-    res.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
-    res.header('Expires', '-1');
-    res.header('Pragma', 'no-cache');
-    return res.send(withOptionValued);
-  });
+  const deliverIndexHtml = (res) => res.sendFile('index.html', { root: FRONT_BUILD_PATH });
+  app.all('*', (req, res) => deliverIndexHtml(res));
 
   // Error handling
   app.use((err, req, res, next) => {

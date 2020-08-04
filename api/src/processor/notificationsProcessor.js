@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { listenNotifications } from '../database/redis';
-import { broadcast } from '../seeMiddleware';
+import { broadcast } from '../middleware/seeMiddleware';
 import { getNetworkInfo } from '../database/ghost';
 
 const EVENT_UPDATE_INFO = 'update_info';

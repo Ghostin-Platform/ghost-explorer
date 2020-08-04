@@ -1,4 +1,4 @@
-import { logger } from './config/conf';
+import { logger } from '../config/conf';
 
 let clients = [];
 

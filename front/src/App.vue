@@ -45,18 +45,22 @@
 
 <script>
 import {
-  sseApi, eventBus, EVENT_NEW_BLOCK, EVENT_DEL_MEMPOOL, EVENT_NEW_MEMPOOL,
-  EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO
+  EVENT_DEL_MEMPOOL,
+  EVENT_NEW_BLOCK,
+  EVENT_NEW_MEMPOOL,
+  EVENT_NEW_TRANSACTION,
+  EVENT_UPDATE_INFO,
+  eventBus
 } from "@/main";
 
-    let msgServer;
+let msgServer;
     export default {
         name: 'App',
         mounted() {
           const self = this;
           self.$nextTick(function () {
             // Start SSE Listener
-            self.$sse(sseApi, {format: 'plain'}).then(sse => {
+            self.$sse('/events', {format: 'plain'}).then(sse => {
               msgServer = sse;
               sse.subscribe(EVENT_NEW_BLOCK, (m) => eventBus.$emit(EVENT_NEW_BLOCK, JSON.parse(m)));
               sse.subscribe(EVENT_NEW_TRANSACTION, (m) => eventBus.$emit(EVENT_NEW_TRANSACTION, JSON.parse(m)));
