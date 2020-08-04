@@ -90,7 +90,7 @@
 </template>
 
 <script>
-    import {ReadInfo} from "../main";
+import {EVENT_UPDATE_INFO, eventBus, ReadInfo, UpdateInfo} from "@/main";
     import gql from "graphql-tag";
 
     export default {
@@ -125,6 +125,12 @@
                 }
             },
             info: () => ReadInfo,
+        },
+        mounted() {
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+        },
+        beforeDestroy() {
+          eventBus.$off(EVENT_UPDATE_INFO);
         },
     }
 </script>

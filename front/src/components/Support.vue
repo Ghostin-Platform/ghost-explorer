@@ -64,13 +64,56 @@
 </template>
 
 <script>
-    import {GetAddress, ReadInfo} from "../main";
+    import {ReadInfo} from "@/main";
     import gql from "graphql-tag";
     import moment from "moment";
     import * as R from "ramda";
 
     const TipAddress = "GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61";
     const TIP_PAGINATION_COUNT = 20;
+
+    const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
+        address(id: $id) {
+            id
+            address
+            totalReceived
+            totalRewarded
+            totalSent
+            rewardSize
+            rewardAvgTime
+            rewardAvgSize
+            totalFees
+            balance
+            nbTx
+            transactions(offset: $txOffset, limit: $txLimit) {
+                id
+                blockhash
+                type
+                txid
+                voutSize
+                vinAddresses
+                vinAddressesSize
+                vinPerAddresses {
+                    address
+                    valueSat
+                }
+                voutAddresses
+                voutAddressesSize
+                voutPerAddresses {
+                    address
+                    valueSat
+                }
+                hash
+                time
+                blockheight
+                feeSat
+                inSat
+                outSat
+                transferSat
+                variation
+            }
+        }
+    }`
 
     export default {
         name: 'Support',

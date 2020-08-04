@@ -44,41 +44,23 @@
 </template>
 
 <script>
-    import {
-        clientAddMempoolMutation, clientDelMempoolMutation,
-        clientInfoUpdateMutation,
-        clientNewBlockMutation,
-        clientNewTxMutation,
-        sseApi,
-        eventBus
-    } from "./main";
+import {
+  sseApi, eventBus, EVENT_NEW_BLOCK, EVENT_DEL_MEMPOOL, EVENT_NEW_MEMPOOL,
+  EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO
+} from "@/main";
 
     let msgServer;
     export default {
         name: 'App',
         mounted() {
             // Start SSE Listener
-            const updateData = (mutation, key, message) =>
-                this.$apollo.mutate({ mutation, variables: {[key]: JSON.parse(message) } });
             this.$sse(sseApi, {format: 'plain'}).then(sse => {
                 msgServer = sse;
-                sse.subscribe('new_block', (message) => {
-                    eventBus.$emit('new_block', JSON.parse(message));
-                    updateData(clientNewBlockMutation, 'block', message);
-                });
-                sse.subscribe('new_transaction', (message) => {
-                    eventBus.$emit('new_transaction', JSON.parse(message));
-                    updateData(clientNewTxMutation, 'tx', message);
-                });
-                sse.subscribe('update_info', (message) => {
-                    updateData(clientInfoUpdateMutation, 'info', message);
-                });
-                sse.subscribe('new_mempool', (message) => {
-                    updateData(clientAddMempoolMutation, 'tx', message);
-                });
-                sse.subscribe('del_mempool', (message) => {
-                    updateData(clientDelMempoolMutation, 'tx', message);
-                });
+                sse.subscribe(EVENT_NEW_BLOCK, (m) => eventBus.$emit(EVENT_NEW_BLOCK, JSON.parse(m)));
+                sse.subscribe(EVENT_NEW_TRANSACTION, (m) => eventBus.$emit(EVENT_NEW_TRANSACTION, JSON.parse(m)));
+                sse.subscribe(EVENT_UPDATE_INFO, (m) => eventBus.$emit(EVENT_UPDATE_INFO, JSON.parse(m)));
+                sse.subscribe(EVENT_NEW_MEMPOOL, (m) => eventBus.$emit(EVENT_NEW_MEMPOOL, JSON.parse(m)));
+                sse.subscribe(EVENT_DEL_MEMPOOL, (m) => eventBus.$emit(EVENT_DEL_MEMPOOL, JSON.parse(m)));
             }).catch(err => {
                 console.error('Failed to connect to server', err);
             });
@@ -94,7 +76,6 @@
             }
         },
         beforeDestroy() {
-            console.log('APP DESTROY')
             if (msgServer) msgServer.close();
         },
     }

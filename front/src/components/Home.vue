@@ -214,26 +214,88 @@
 </template>
 
 <script>
-import {
-  eventBus,
-  ReadBlocks,
-  ReadInfo, ReadMarket,
-  ReadTxs,
-} from "../main";
     import moment from 'moment';
     import gql from "graphql-tag";
     import * as R from "ramda";
     import TimeSparkChart from "./charts/TimeSparkChart";
     import RadarChart from "./charts/RadarChart";
-import {BLOCKS_PAGINATION_COUNT, TX_PAGINATION_COUNT} from "@/main";
+    import {
+      EVENT_NEW_BLOCK,
+      eventBus,
+      ReadInfo,
+      EVENT_NEW_TRANSACTION, apolloClient, EVENT_UPDATE_INFO, UpdateInfo,
+    } from "@/main";
 
     const buildSparkDataset = (series, inSat = false) => {
         const datasets = [{ data: series.map(d => ({ x: new Date(d.time * 1000), y: d.value.percentile / ( inSat ? 1e8 : 1) }) )}]
         return { datasets };
     }
 
+    // region market
+    const ReadMarket = gql`query {
+        market {
+            usd
+            usd_market_cap
+            usd_24h_vol
+            usd_24h_change
+            last_updated_at
+        }
+    }`
+    // endregion
+    // region block update
+    const ReadHomeBlocks = gql`query GetBlocks($offset: String!, $limit: Int!) {
+        blocks(offset: $offset, limit: $limit) {
+            id
+            hash
+            offset
+            feeSat
+            outSat
+            height
+            time
+            txSize
+            size
+            transferSat
+        }
+    }`
+    const BLOCK_HOME_PAGINATION_COUNT = 6;
+    const newBlockHandler = (newBlocks) => {
+      const oldData = apolloClient.readQuery({query: ReadHomeBlocks, variables: {offset: "+", limit: BLOCK_HOME_PAGINATION_COUNT}});
+      // Update the number of confirmations for all other blocks
+      let blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
+      // Add the new block on top
+      blocks.unshift(...newBlocks);
+      blocks = blocks.slice(0, BLOCK_HOME_PAGINATION_COUNT);
+      const data = {blocks};
+      apolloClient.writeQuery({query: ReadHomeBlocks, variables: {offset: "+", limit: BLOCK_HOME_PAGINATION_COUNT}, data});
+    };
+    // endregion
+    // region tx update
+    const ReadHomeTxs = gql`query GetTxs($offset: String!, $limit: Int!) {
+        transactions(offset: $offset, limit: $limit) {
+            id
+            type
+            txid
+            hash
+            size
+            offset
+            time
+            blockheight
+            blockhash
+            feeSat
+            outSat
+            transferSat
+        }
+    }`
+    const TX_HOME_PAGINATION_COUNT = 10;
+    const newTxHandler = (txs) => {
+      const data = apolloClient.readQuery({query: ReadHomeTxs, variables: {offset: "+", limit: TX_HOME_PAGINATION_COUNT}});
+      data.transactions.unshift(...txs);
+      data.transactions = data.transactions.slice(0, TX_HOME_PAGINATION_COUNT);
+      apolloClient.writeQuery({query: ReadHomeTxs, variables: {offset: "+", limit: TX_HOME_PAGINATION_COUNT}, data});
+    }
+    // endregion
+
     let timeRefresh;
-    let eventHandler;
     export default {
         name: 'Home',
         components: {RadarChart, TimeSparkChart},
@@ -339,19 +401,18 @@ import {BLOCKS_PAGINATION_COUNT, TX_PAGINATION_COUNT} from "@/main";
             }
         },
         mounted() {
-            const self = this;
-            timeRefresh = setInterval(function () {
-                self.$data.now = moment().subtract(self.info.timeoffset, 'seconds')
-            }, 5000)
-            // Refresh market
-            self.$apollo.queries.market.refetch();
-            eventHandler = function() {
-              self.$apollo.queries.rewards.refetch();
-            }
-            eventBus.$on('new_block', eventHandler);
+          const self = this;
+          timeRefresh = setInterval(function () {
+            self.$data.now = moment().subtract(self.info.timeoffset, 'seconds')
+          }, 5000)
+          eventBus.$on(EVENT_NEW_BLOCK, (blocks) => newBlockHandler(blocks));
+          eventBus.$on(EVENT_NEW_TRANSACTION, (txs) => newTxHandler(txs));
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
         },
         beforeDestroy() {
-          eventBus.$off('new_block', eventHandler);
+          eventBus.$off(EVENT_NEW_BLOCK);
+          eventBus.$off(EVENT_NEW_TRANSACTION);
+          eventBus.$off(EVENT_UPDATE_INFO);
           clearInterval(timeRefresh);
         },
         apollo: {
@@ -407,20 +468,20 @@ import {BLOCKS_PAGINATION_COUNT, TX_PAGINATION_COUNT} from "@/main";
               }
             }`,
             blocks: {
-                query: () => ReadBlocks,
+                query: () => ReadHomeBlocks,
                 variables() {
                     return {
                         offset: '+',
-                        limit: BLOCKS_PAGINATION_COUNT
+                        limit: BLOCK_HOME_PAGINATION_COUNT
                     }
                 }
             },
             transactions: {
-                query: () => ReadTxs,
+                query: () => ReadHomeTxs,
                 variables() {
                     return {
                         offset: '+',
-                        limit: TX_PAGINATION_COUNT
+                        limit: TX_HOME_PAGINATION_COUNT
                     }
                 }
             },

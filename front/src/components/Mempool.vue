@@ -64,7 +64,7 @@
                                      Mixed blind/anon ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                                  </span>
                                  <span v-else-if="tx.type === 'mixed_standard'">
-                                     Mixed standard/private of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                     Mixed standard/private {{ tx.out > 0 ? `of ${tx.out} Ghost` : '' }} ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                                  </span>
                                  <span v-else>
                                      Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
@@ -87,15 +87,53 @@
 </template>
 
 <script>
-    import {GetPool, ReadInfo} from "../main";
     import moment from "moment";
+    import {
+      ReadInfo,
+      eventBus,
+      EVENT_NEW_MEMPOOL,
+      apolloClient,
+      EVENT_DEL_MEMPOOL, EVENT_UPDATE_INFO, UpdateInfo
+    } from "@/main";
+    import * as R from "ramda";
+    import gql from "graphql-tag";
 
-    const PAGINATION_COUNT = 50;
+    const MEMPOOL_PAGINATION_COUNT = 50;
+    const GetPool = gql`query GetPool($offset: Int!, $limit: Int!) {
+        mempool(offset: $offset, limit: $limit) {
+            id
+            type
+            txid
+            voutSize
+            voutAddressesSize
+            hash
+            time
+            size
+            feeSat
+            inSat
+            outSat
+            transferSat
+        }
+    }`
+    const newMempoolHandler = (newTxs) => {
+      const oldData = apolloClient.readQuery({query: GetPool, variables: {offset: 0, limit: MEMPOOL_PAGINATION_COUNT}});
+      let  mempool = oldData.mempool;
+      mempool.unshift(...newTxs);
+      const data = {mempool};
+      apolloClient.writeQuery({query: GetPool, variables: {offset: 0, limit: MEMPOOL_PAGINATION_COUNT}, data});
+    }
+    const removeMempoolHandler = (oldTxs) => {
+      const oldData = apolloClient.readQuery({query: GetPool, variables: {offset: 0, limit: MEMPOOL_PAGINATION_COUNT}});
+      let mempool = R.filter(d => !oldTxs.includes(d.txid), oldData.mempool);
+      const data = {mempool};
+      apolloClient.writeQuery({query: GetPool, variables: {offset: 0, limit: MEMPOOL_PAGINATION_COUNT}, data});
+    }
+
     export default {
         name: 'Mempool',
         data() {
             return {
-                page: PAGINATION_COUNT,
+                page: MEMPOOL_PAGINATION_COUNT,
                 info: {
                   height: 0,
                   sync_percent: 0,
@@ -109,7 +147,7 @@
             infiniteHandler($state) {
                 const variables = {
                     offset: this.page,
-                    limit: PAGINATION_COUNT,
+                    limit: MEMPOOL_PAGINATION_COUNT,
                 };
                 this.$apollo.queries.mempool.fetchMore({
                     variables,
@@ -147,11 +185,21 @@
                 variables() {
                     return {
                         offset: 0,
-                        limit: PAGINATION_COUNT,
+                        limit: MEMPOOL_PAGINATION_COUNT,
                     }
                 },
             },
             info: () => ReadInfo,
+        },
+        mounted() {
+          eventBus.$on(EVENT_NEW_MEMPOOL, (txs) => newMempoolHandler(txs));
+          eventBus.$on(EVENT_DEL_MEMPOOL, (txs) => removeMempoolHandler(txs));
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+        },
+        beforeDestroy() {
+          eventBus.$off(EVENT_NEW_MEMPOOL);
+          eventBus.$off(EVENT_DEL_MEMPOOL);
+          eventBus.$off(EVENT_UPDATE_INFO);
         },
     }
 </script>

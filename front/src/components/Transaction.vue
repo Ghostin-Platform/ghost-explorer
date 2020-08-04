@@ -293,8 +293,65 @@
 </template>
 
 <script>
-    import {GetTx, ReadInfo} from "../main";
+import {apolloClient, EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO, eventBus, ReadInfo, UpdateInfo} from "@/main";
     import moment from "moment";
+    import * as R from "ramda";
+    import gql from "graphql-tag";
+
+    const GetTx = gql`query GetTx($id: String!) {
+        transaction(id: $id) {
+            id
+            txid
+            hash
+            time
+            blocktime
+            inSat
+            outSat
+            feeSat
+            blockhash
+            variation
+            size
+            locktime
+            blockheight
+            type
+            vinAddresses
+            voutAddresses
+            vinPerAddresses {
+                address
+                type
+                value
+                valueSat
+            }
+            voutPerAddresses {
+                address
+                type
+                value
+                valueSat
+                spentTxId
+            }
+        }
+    }`
+    const newTxHandler = (self, txs) => {
+      const currentTx = R.find(n => n.txid === self.transaction.txid, txs);
+      if(currentTx) {
+        apolloClient.writeFragment({
+          id: `Transaction:${currentTx.id}`,
+          fragment: gql`
+            fragment UpdateTx on Transaction {
+                time
+                blockheight
+                blockhash
+            }
+        `,
+          data: {
+            __typename: 'Transaction',
+            time: currentTx.time,
+            blockhash: currentTx.blockhash,
+            blockheight: currentTx.blockheight,
+          },
+        });
+      }
+    }
 
     export default {
         name: 'Transaction',
@@ -344,6 +401,15 @@
                 }
             },
             info: () => ReadInfo,
+        },
+        mounted() {
+          const self = this;
+          eventBus.$on(EVENT_NEW_TRANSACTION, (txs) => newTxHandler(self, txs));
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+        },
+        beforeDestroy() {
+          eventBus.$off(EVENT_NEW_TRANSACTION);
+          eventBus.$off(EVENT_UPDATE_INFO);
         },
     }
 </script>

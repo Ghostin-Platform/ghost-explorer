@@ -236,7 +236,7 @@
                       </span>
                     </md-list-item>
                   </md-list>
-                  <infinite-loading @infinite="infiniteHandler">
+                  <infinite-loading v-if="initialLoadingDone" @infinite="infiniteHandler">
                     <div slot="no-more" style="margin-top: 10px"></div>
                     <div slot="no-results" style="margin-top: 10px"></div>
                   </infinite-loading>
@@ -270,11 +270,17 @@
 </template>
 
 <script>
-    import {ADDR_PAGINATION_COUNT, eventBus, GetAddress, GetAddressPool, ReadInfo, VETERAN_AMOUNT} from "../main";
-    import moment from "moment";
-    import * as R from "ramda";
-    import gql from "graphql-tag";
-    import TimeBalanceChart from "./charts/TimeBalanceChart";
+import {
+  apolloClient, EVENT_NEW_MEMPOOL,
+  EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO,
+  eventBus,
+  ReadInfo, UpdateInfo,
+  VETERAN_AMOUNT
+} from "@/main";
+import moment from "moment";
+import * as R from "ramda";
+import gql from "graphql-tag";
+import TimeBalanceChart from "./charts/TimeBalanceChart";
 
     const computeTransferValue = (self, tx) => {
         //Outs
@@ -285,14 +291,118 @@
         const localAddrInSat = R.sum(R.map(x => x.valueSat, ins));
         return ((localAddrOutSat - localAddrInSat) / 1e8).toFixed(2);
     }
+    const newTxHandler = (self, newTxs) => {
+      const allAddrs = [];
+      const currentAddress = self.$route.params.id;
+      for (const newTx of newTxs) {
+        allAddrs.push(...newTx.participants);
+      }
+      const impactedAddresses = R.uniq(allAddrs);
+      if (impactedAddresses.includes(currentAddress)) {
+        // Refresh mempool
+        self.$apollo.queries.addressMempool.refetch();
+        // Refresh address
+        self.$apollo.queries.address.refetch();
+      }
+    }
 
-    let eventHandler;
+    const ADDR_PAGINATION_COUNT = 20;
+    const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
+            address(id: $id) {
+                id
+                address
+                totalReceived
+                totalRewarded
+                totalSent
+                rewardSize
+                rewardAvgTime
+                rewardAvgSize
+                totalFees
+                balance
+                nbTx
+                transactions(offset: $txOffset, limit: $txLimit) {
+                    id
+                    blockhash
+                    type
+                    txid
+                    voutSize
+                    vinAddresses
+                    vinAddressesSize
+                    vinPerAddresses {
+                        address
+                        valueSat
+                    }
+                    voutAddresses
+                    voutAddressesSize
+                    voutPerAddresses {
+                        address
+                        valueSat
+                    }
+                    hash
+                    time
+                    blockheight
+                    feeSat
+                    inSat
+                    outSat
+                    transferSat
+                    variation
+                }
+            }
+        }`
+    const GetAddressPool = gql`query GetAddressPool($id: String!) {
+        addressMempool(id: $id) {
+            id
+            type
+            txid
+            voutSize
+            voutAddressesSize
+            voutPerAddresses {
+                address
+                valueSat
+            }
+            vinPerAddresses {
+                address
+                valueSat
+            }
+            hash
+            time
+            size
+            feeSat
+            inSat
+            outSat
+            transferSat
+        }
+    }`
+    const newMempoolHandler = (newTxs) => {
+      // Get all impactedAddresses
+      const allAddrs = [];
+      for (const newTx of newTxs) {
+        allAddrs.push(...newTx.vinAddresses, ...newTx.voutAddresses);
+      }
+      const impactedAddresses = R.uniq(allAddrs);
+      for (let index = 0; index < impactedAddresses.length; index += 1) {
+        const impactedAddress = impactedAddresses[index];
+        const txs = R.filter(tx => [...tx.vinAddresses, ...tx.voutAddresses].includes(impactedAddress), newTxs);
+        // Update the block list on the home
+        try {
+          const oldData = apolloClient.readQuery({query: GetAddressPool, variables: { id: impactedAddress }});
+          const transactions = oldData.addressMempool;
+          // Add the new block on top
+          transactions.unshift(...txs);
+          const addressMempool = transactions;
+          const data = { addressMempool };
+          apolloClient.writeQuery({query: GetAddressPool, variables: { id: impactedAddress }, data});
+        } catch (e) {
+          // Nothing to do
+        }
+      }
+    }
+
     export default {
         name: 'Address',
         components: {TimeBalanceChart},
         data() {
-            return {
-                page: ADDR_PAGINATION_COUNT,
+          return {
                 info: {
                   height: 0,
                   sync_percent: 0,
@@ -301,7 +411,6 @@
                 },
                 addressMempool: [],
                 address: {
-                    id: "",
                     address: "-",
                     totalFees: 0,
                     totalReceived: 0,
@@ -320,30 +429,31 @@
                 await navigator.clipboard.writeText(s);
             },
             infiniteHandler($state) {
-                const variables = {
-                    id: this.$route.params.id,
-                    txOffset: this.page,
-                    txLimit: ADDR_PAGINATION_COUNT,
-                };
-                this.$apollo.queries.address.fetchMore({
-                    variables,
-                    updateQuery: (previousResult, { fetchMoreResult }) => {
-                        if (!fetchMoreResult.address) return;
-                        const newTxs = fetchMoreResult.address.transactions
-                        if (newTxs.length > 0) {
-                            this.page += newTxs.length;
-                            $state.loaded();
-                        } else {
-                            $state.complete();
-                        }
-                        return {
-                            address: Object.assign(this.address, { transactions: [...previousResult.address.transactions, ...newTxs] })
-                        }
-                    },
-                })
+              const variables = {
+                id: this.$route.params.id,
+                txOffset: this.address.transactions.length,
+                txLimit: ADDR_PAGINATION_COUNT,
+              };
+              this.$apollo.queries.address.fetchMore({
+                variables,
+                updateQuery: (previousResult, {fetchMoreResult}) => {
+                  const newTxs = fetchMoreResult.address.transactions
+                  if (newTxs.length > 0 && newTxs.length === ADDR_PAGINATION_COUNT) {
+                    $state.loaded();
+                  } else {
+                    $state.complete();
+                  }
+                  return {
+                    address: Object.assign(this.address, {transactions: [...previousResult.address.transactions, ...newTxs]})
+                  }
+                },
+              })
             },
         },
         computed: {
+            initialLoadingDone() {
+              return this.address.id !== undefined;
+            },
             balanceChartData() {
                 const datasets = [{ data: this.seriesAddressBalance.map(d => ({ x: new Date(d.time * 1000), y: d.value / 1e8 }) )}]
                 return { datasets };
@@ -402,7 +512,7 @@
                         txOffset: 0,
                         txLimit: ADDR_PAGINATION_COUNT,
                     }
-                }
+                },
             },
             seriesAddressBalance: {
                 query: () => gql`query SeriesAddress($id: String!)  {
@@ -429,24 +539,14 @@
         },
         mounted() {
           const self = this;
-          const currentAddress = self.$route.params.id;
-          eventHandler = function(newTxs) {
-            const allAddrs = [];
-            for (const newTx of newTxs) {
-              allAddrs.push(...newTx.participants);
-            }
-            const impactedAddresses = R.uniq(allAddrs);
-            if (impactedAddresses.includes(currentAddress)) {
-              // Refresh mempool
-              self.$apollo.queries.addressMempool.refetch();
-              // Refresh address
-              self.$apollo.queries.address.refetch();
-            }
-          }
-          eventBus.$on('new_transaction', eventHandler);
+          eventBus.$on(EVENT_NEW_TRANSACTION, (txs) => newTxHandler(self, txs));
+          eventBus.$on(EVENT_NEW_MEMPOOL, (txs) => newMempoolHandler(txs));
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
         },
         beforeDestroy() {
-          eventBus.$off('new_transaction', eventHandler);
+          eventBus.$off(EVENT_NEW_TRANSACTION);
+          eventBus.$off(EVENT_NEW_MEMPOOL);
+          eventBus.$off(EVENT_UPDATE_INFO);
         },
     }
 </script>

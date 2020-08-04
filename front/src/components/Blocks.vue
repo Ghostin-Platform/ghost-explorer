@@ -40,7 +40,7 @@
                                 <md-table-cell>{{ block.confirmations }}</md-table-cell>
                             </md-table-row>
                         </md-table>
-                        <infinite-loading v-if="!loadingBlocks" @infinite="infiniteHandler">
+                        <infinite-loading v-if="initialLoadingDone" @infinite="infiniteHandler">
                             <div slot="no-more" style="margin-top: 10px">No more blocks</div>
                             <div slot="no-results" style="margin-top: 10px"></div>
                         </infinite-loading>
@@ -52,15 +52,46 @@
 </template>
 
 <script>
-    import {ReadBlocks, ReadInfo} from "../main";
     import moment from "moment";
+    import {
+      ReadInfo,
+      eventBus,
+      EVENT_NEW_BLOCK, apolloClient, EVENT_UPDATE_INFO, UpdateInfo
+    } from "@/main";
+    import * as R from "ramda";
+    import gql from "graphql-tag";
+
+    const BLOCK_ALL_PAGINATION_COUNT = 50;
+    const AllBlocks = gql`query AllBlocks($offset: String!, $limit: Int!) {
+        blocks(offset: $offset, limit: $limit) {
+            id
+            hash
+            offset
+            feeSat
+            outSat
+            height
+            time
+            txSize
+            size
+            transferSat
+        }
+    }`
+    const newBlockHandler = (newBlocks) => {
+      // Update the block list on the home
+      const oldData = apolloClient.readQuery({query: AllBlocks, variables: {offset: "+", limit: BLOCK_ALL_PAGINATION_COUNT}});
+      // Update the number of confirmations for all other blocks
+      let blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
+      // Add the new block on top
+      blocks.unshift(...newBlocks);
+      blocks = blocks.slice(0, blocks.length - newBlocks.length);
+      const data = {blocks};
+      apolloClient.writeQuery({query: AllBlocks, variables: {offset: "+", limit: BLOCK_ALL_PAGINATION_COUNT}, data});
+    };
 
     export default {
         name: 'Blocks',
         data() {
             return {
-                loadingBlocks: 0,
-                offset: '+',
                 now: moment(),
                 info: {
                     difficulty: 0,
@@ -81,15 +112,13 @@
             infiniteHandler($state) {
                 const variables = {
                     offset: this.blocks[this.blocks.length - 1].offset,
-                    limit: 50,
+                    limit: BLOCK_ALL_PAGINATION_COUNT,
                 };
                 this.$apollo.queries.blocks.fetchMore({
                     variables,
                     updateQuery: (previousResult, { fetchMoreResult }) => {
-                      if (!fetchMoreResult.blocks) return;
                         const newBlocks = fetchMoreResult.blocks
                         if (newBlocks.length > 0) {
-                            this.offset = newBlocks[newBlocks.length - 1].offset;
                             $state.loaded();
                         } else {
                             $state.complete();
@@ -102,6 +131,9 @@
             },
         },
         computed: {
+            initialLoadingDone() {
+              return this.blocks.length > 0;
+            },
             displayBlocks() {
                 return this.blocks.map(b => {
                     const received = moment.unix(b.time).format('LLL');
@@ -116,15 +148,22 @@
         apollo: {
             info: () => ReadInfo,
             blocks: {
-                query: () => ReadBlocks,
+                query: () => AllBlocks,
                 variables() {
                     return {
                         offset: '+',
-                        limit: 50
+                        limit: BLOCK_ALL_PAGINATION_COUNT
                     }
                 },
-                loadingKey: "loadingBlocks"
             },
-        }
+        },
+        mounted() {
+          eventBus.$on(EVENT_NEW_BLOCK, (blocks) => newBlockHandler(blocks));
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+        },
+        beforeDestroy() {
+          eventBus.$off(EVENT_NEW_BLOCK);
+          eventBus.$off(EVENT_UPDATE_INFO);
+        },
     }
 </script>

@@ -62,7 +62,7 @@
                                 <md-table-cell>{{ tx.confirmations }}</md-table-cell>
                             </md-table-row>
                         </md-table>
-                        <infinite-loading v-if="!loadingTxs" @infinite="infiniteHandler">
+                        <infinite-loading v-if="initialLoadingDone" @infinite="infiniteHandler">
                             <div slot="no-more" style="margin-top: 10px">No more transactions</div>
                             <div slot="no-results" style="margin-top: 10px"></div>
                         </infinite-loading>
@@ -74,15 +74,48 @@
 </template>
 
 <script>
-    import {ReadInfo, ReadTxs} from "../main";
     import moment from "moment";
+    import {
+      apolloClient,
+      EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO,
+      eventBus,
+      ReadInfo, UpdateInfo,
+    } from "@/main";
+    import * as R from "ramda";
+    import gql from "graphql-tag";
+
+    const TX_ALL_PAGINATION_COUNT = 50;
+    const AllTxs = gql`query AllTxs($offset: String!, $limit: Int!) {
+        transactions(offset: $offset, limit: $limit) {
+            id
+            type
+            txid
+            hash
+            size
+            offset
+            time
+            blockheight
+            blockhash
+            feeSat
+            outSat
+            transferSat
+        }
+    }`
+    const newTxHandler = (txs) => {
+      const oldData = apolloClient.readQuery({query: AllTxs, variables: {offset: "+", limit: TX_ALL_PAGINATION_COUNT}});
+      // Update the number of confirmations for all other blocks
+      let transactions = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.transactions);
+      // Add the new block on top
+      transactions.unshift(...txs);
+      transactions = transactions.slice(0, transactions.length - txs.length);
+      const data = {transactions};
+      apolloClient.writeQuery({query: AllTxs, variables: {offset: "+", limit: TX_ALL_PAGINATION_COUNT}, data});
+    }
 
     export default {
         name: 'Transactions',
         data() {
             return {
-                loadingTxs: 0,
-                offset: '+',
                 now: moment(),
                 info: {
                     difficulty: 0,
@@ -103,7 +136,7 @@
             infiniteHandler($state) {
                 const variables = {
                     offset: this.transactions[this.transactions.length - 1].offset,
-                    limit: 50,
+                    limit: TX_ALL_PAGINATION_COUNT,
                 };
                 this.$apollo.queries.transactions.fetchMore({
                     variables,
@@ -111,7 +144,6 @@
                         if (!fetchMoreResult.transactions) return;
                         const newTxs = fetchMoreResult.transactions
                         if (newTxs.length > 0) {
-                            this.offset = newTxs[newTxs.length - 1].offset;
                             $state.loaded();
                         } else {
                             $state.complete();
@@ -124,6 +156,9 @@
             },
         },
         computed: {
+            initialLoadingDone() {
+              return this.transactions.length > 0;
+            },
             displayTxs() {
                 return this.transactions.map(tx => {
                     const received = moment.unix(tx.time).format('LLL');
@@ -138,15 +173,22 @@
         apollo: {
             info: () => ReadInfo,
             transactions: {
-                query: () => ReadTxs,
+                query: () => AllTxs,
                 variables() {
                     return {
                         offset: '+',
-                        limit: 50
+                        limit: TX_ALL_PAGINATION_COUNT
                     }
                 },
-                loadingKey: "loadingTxs"
             },
-        }
+        },
+        mounted() {
+          eventBus.$on(EVENT_NEW_TRANSACTION, (txs) => newTxHandler(txs));
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+        },
+        beforeDestroy() {
+          eventBus.$off(EVENT_NEW_TRANSACTION);
+          eventBus.$off(EVENT_UPDATE_INFO);
+        },
     }
 </script>

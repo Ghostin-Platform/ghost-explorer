@@ -212,7 +212,7 @@
                                     Mixed blind/anon ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                                 </span>
                                 <span v-else-if="tx.type === 'mixed_standard'">
-                                    Mixed standard/private of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                    Mixed standard/private {{ tx.out > 0 ? `of ${tx.out} Ghost` : '' }} ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
                                 </span>
                                 <span v-else>
                                     Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
@@ -222,7 +222,7 @@
                             <md-button v-else disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ confirmations }} Confirmations</md-button>
                         </md-list-item>
                     </md-list>
-                    <infinite-loading @infinite="infiniteHandler">
+                    <infinite-loading v-if="initialLoadingDone" @infinite="infiniteHandler">
                         <div slot="no-more" style="margin-top: 10px"></div>
                         <div slot="no-results" style="margin-top: 10px"></div>
                     </infinite-loading>
@@ -255,14 +255,70 @@
 </template>
 
 <script>
-    import {GetBlock, ReadInfo} from "../main";
     import moment from 'moment';
-    const PAGINATION_COUNT = 5;
+    import {apolloClient, EVENT_NEW_BLOCK, EVENT_UPDATE_INFO, eventBus, ReadInfo, UpdateInfo} from "@/main";
+    import gql from "graphql-tag";
+    import * as R from "ramda";
+
+    const BLOCK_SINGLE_PAGINATION_COUNT = 10;
+    const GetBlock = gql`query GetBlock($id: String!, $txOffset: Int!, $txLimit: Int!) {
+      block(id: $id) {
+          id
+          hash
+          time
+          difficulty
+          height
+          feeSat
+          txSize
+          rewardSat
+          merkleroot
+          witnessmerkleroot
+          previousblockhash
+          nextblockhash
+          bits
+          outSat
+          size
+          version
+          transactions(offset: $txOffset, limit: $txLimit) {
+              id
+              type
+              txid
+              voutSize
+              voutAddressesSize
+              hash
+              time
+              blockhash
+              blockheight
+              size
+              feeSat
+              inSat
+              outSat
+              transferSat
+          }
+      }
+    }`
+    const newBlockHandler = (self, newBlocks) => {
+      const newBlock = R.find(n => n.previousblockhash === self.block.hash, newBlocks);
+      if (newBlock) {
+        apolloClient.writeFragment({
+          id: `Block:${self.block.hash}`,
+          fragment: gql`
+            fragment UpdateBlock on Block {
+                nextblockhash
+            }
+        `,
+          data: {
+            __typename: 'Block',
+            nextblockhash: newBlock.hash,
+          },
+        });
+      }
+    };
+
     export default {
         name: 'Block',
         data() {
             return {
-                page: PAGINATION_COUNT,
                 info: {
                     height: 0,
                     sync_percent: 0,
@@ -285,16 +341,14 @@
             infiniteHandler($state) {
                 const variables = {
                   id: this.$route.params.id,
-                  txOffset: this.page,
-                  txLimit: PAGINATION_COUNT,
+                  txOffset: this.block.transactions.length,
+                  txLimit: BLOCK_SINGLE_PAGINATION_COUNT,
                 };
                 this.$apollo.queries.block.fetchMore({
                     variables,
                     updateQuery: (previousResult, { fetchMoreResult }) => {
-                        if (!fetchMoreResult.block) return;
                         const newTxs = fetchMoreResult.block.transactions
                         if (newTxs.length > 0) {
-                            this.page += newTxs.length;
                             $state.loaded();
                         } else {
                             $state.complete();
@@ -307,6 +361,9 @@
             },
         },
         computed: {
+            initialLoadingDone() {
+              return this.block.id !== undefined;
+            },
             confirmations() {
                 return this.info.height - this.block.height + 1;
             },
@@ -345,11 +402,20 @@
                     return {
                         id: this.$route.params.id,
                         txOffset: 0,
-                        txLimit: PAGINATION_COUNT,
+                        txLimit: BLOCK_SINGLE_PAGINATION_COUNT,
                     }
                 }
             },
             info: () => ReadInfo,
+        },
+        mounted() {
+          const self = this;
+          eventBus.$on(EVENT_NEW_BLOCK, (blocks) => newBlockHandler(self, blocks));
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+        },
+        beforeDestroy() {
+          eventBus.$off(EVENT_NEW_BLOCK);
+          eventBus.$off(EVENT_UPDATE_INFO);
         },
     }
 </script>
