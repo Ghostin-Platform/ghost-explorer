@@ -76,7 +76,7 @@
                             <md-button disabled class="md-raised md-primary" style="background-color: #a94442; color: white">Unconfirmed</md-button>
                         </md-list-item>
                     </md-list>
-                    <infinite-loading @infinite="infiniteHandler">
+                    <infinite-loading v-if="initialLoadingDone" @infinite="infiniteHandler">
                         <div slot="no-more" style="margin-top: 10px"></div>
                         <div slot="no-results" style="margin-top: 10px"></div>
                     </infinite-loading>
@@ -133,42 +133,43 @@
         name: 'Mempool',
         data() {
             return {
-                page: MEMPOOL_PAGINATION_COUNT,
                 info: {
                   height: 0,
                   sync_percent: 0,
                   timeoffset: 0,
                   connections: 0
                 },
-                mempool: []
+                mempool: null
             }
         },
         methods: {
             infiniteHandler($state) {
                 const variables = {
-                    offset: this.page,
+                    offset: this.mempool.length,
                     limit: MEMPOOL_PAGINATION_COUNT,
                 };
                 this.$apollo.queries.mempool.fetchMore({
                     variables,
                     updateQuery: (previousResult, {fetchMoreResult}) => {
-                        if (!fetchMoreResult.mempool) return;
                         const newPool = fetchMoreResult.mempool
                         if (newPool.length > 0) {
-                            this.page += newPool.length;
                             $state.loaded();
                         } else {
                             $state.complete();
                         }
-                        const mempool = [...previousResult.mempool, ...newPool];
-                        return {mempool}
+                        const oldMempool = previousResult.mempool || [];
+                        const mempool = [...oldMempool, ...newPool];
+                        return { mempool }
                     },
                 })
             },
         },
         computed: {
+            initialLoadingDone() {
+              return this.mempool !== null;
+            },
             displayTxs() {
-                return this.mempool.map(tx => {
+                return this.mempool && this.mempool.map(tx => {
                     const received = moment.unix(tx.time).format('DD/MM/YY, HH:mm:ss');
                     const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
                     const satIn = tx.inSat > 0 ? (tx.inSat / 1e8).toFixed(4) : 0;

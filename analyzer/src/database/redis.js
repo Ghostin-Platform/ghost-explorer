@@ -55,15 +55,7 @@ export const write = async (key, data) => {
   await client.set(key, val);
   return data;
 };
-/*
-const REDIS_EXPIRE_TIME = 90;
-export const setExpire = async (key, data, expiration = REDIS_EXPIRE_TIME) => {
-  const client = await getClient();
-  const val = JSON.stringify(data);
-  await client.write(key, val, 'ex', expiration);
-  return data;
-};
- */
+
 export const clear = async (key) => {
   const client = await getClient();
   await client.del(key);
@@ -76,8 +68,7 @@ const storeEvent = async (streamKey, id, key, data) => {
   try {
     await client.call('XADD', streamKey, id, key, JSON.stringify(data));
   } catch (e) {
-    console.log(e);
-    // throw e;
+    logger.error(e);
   }
 };
 export const notify = async (key, data) => {
@@ -104,18 +95,6 @@ const mapStreamToJS = ([id, data]) => {
     result[data[2 * i]] = JSON.parse(data[2 * i + 1]);
   }
   return result;
-};
-
-// export const fetchLatestEventId = async (streamKey) => {
-//   const client = await getClient();
-//   const res = await client.call('XREVRANGE', streamKey, '+', '-', 'COUNT', 1);
-//   if (res.length > 0) return res[0][0];
-//   return undefined;
-// };
-
-export const streamRange = async (streamKey, offset, limit) => {
-  const client = await getClient();
-  return client.call('XREVRANGE', streamKey, offset, '-', 'COUNT', limit);
 };
 
 export const listenStream = async (streamKey, from, batchSize, callback) => {
