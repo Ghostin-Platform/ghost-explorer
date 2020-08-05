@@ -96,7 +96,7 @@ const computePublicAddr = (rawTransaction) => {
   const withVinPubAddr = R.filter((r) => r.address, rawTransaction.vin);
   const vinPub = R.map((addr) => addr.address, withVinPubAddr);
   // vout
-  const withVoutPubAddr = R.filter((r) => r.scriptPubKey, rawTransaction.vout);
+  const withVoutPubAddr = R.filter((r) => r.scriptPubKey && r.scriptPubKey.addresses, rawTransaction.vout);
   const voutPub = R.flatten(R.map((addr) => addr.scriptPubKey.addresses, withVoutPubAddr));
   // total
   return R.uniq([...vinPub, ...voutPub]);

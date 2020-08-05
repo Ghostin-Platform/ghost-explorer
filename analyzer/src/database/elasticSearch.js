@@ -141,7 +141,7 @@ export const elAddressTransactions = async (addressId, from = 0, size = null, bl
     const transactions = R.map((h) => h._source, hits);
     return { size: data.body.hits.total.value, transactions };
   }
-  return [];
+  return { size: 0, transactions: [] };
 };
 
 export const elBulk = async (indexName, documents, refresh = true) => {

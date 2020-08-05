@@ -123,12 +123,12 @@ export const listenStream = async (streamKey, from, batchSize, callback) => {
   let lastProcessedEventId = from;
   const processStep = () => {
     return client.xread('COUNT', batchSize, 'STREAMS', streamKey, lastProcessedEventId).then(async (streamResult) => {
-      if (streamResult) {
+      if (streamResult && streamResult.length > 0) {
         const [, results] = R.head(streamResult);
         const data = R.map((r) => mapStreamToJS(r), results);
         const { eventId } = R.last(data);
-        lastProcessedEventId = eventId;
         await callback(eventId, data);
+        lastProcessedEventId = eventId;
       }
       return true;
     });
