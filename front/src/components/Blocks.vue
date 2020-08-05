@@ -136,7 +136,7 @@
             },
             displayBlocks() {
                 return this.blocks.map(b => {
-                    const received = moment.unix(b.time).format('LLL');
+                    const received = moment.unix(b.time).format('DD/MM/YY, HH:mm:ss');
                     const transfer = b.transferSat > 0 ? (b.transferSat / 1e8).toFixed(2) : 0;
                     const out = b.outSat > 0 ? (b.outSat / 1e8).toFixed(2) : 0;
                     const fee = b.feeSat > 0 ? (b.feeSat / 1e8).toFixed(6) : 0;

@@ -381,7 +381,7 @@
                 return formatter.format(this.block.difficulty)
             },
             creation() {
-                return moment.unix(this.block.time).format('LLL');
+                return moment.unix(this.block.time).format('DD/MM/YY, HH:mm:ss');
             },
             displayTxs() {
                 return this.block.transactions.map(tx => {

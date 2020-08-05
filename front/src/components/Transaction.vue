@@ -389,7 +389,7 @@ import {apolloClient, EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO, eventBus, ReadIn
                 return (this.transaction.outSat / 1e8).toFixed(2);
             },
             creation() {
-                return moment.unix(this.transaction.time).format('LLL');
+                return moment.unix(this.transaction.time).format('DD/MM/YY, HH:mm:ss');
             },
         },
         apollo: {

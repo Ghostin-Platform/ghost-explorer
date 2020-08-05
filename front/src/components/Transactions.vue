@@ -161,7 +161,7 @@
             },
             displayTxs() {
                 return this.transactions.map(tx => {
-                    const received = moment.unix(tx.time).format('LLL');
+                    const received = moment.unix(tx.time).format('DD/MM/YY, HH:mm:ss');
                     const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
                     const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(2) : 0;
                     const fee = tx.feeSat > 0 ? (tx.feeSat / 1e8).toFixed(6) : 0;

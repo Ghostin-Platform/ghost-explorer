@@ -169,7 +169,7 @@
         computed: {
             displayTxs() {
                 return this.mempool.map(tx => {
-                    const received = moment.unix(tx.time).format('LLL');
+                    const received = moment.unix(tx.time).format('DD/MM/YY, HH:mm:ss');
                     const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
                     const satIn = tx.inSat > 0 ? (tx.inSat / 1e8).toFixed(4) : 0;
                     const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(4) : 0;
