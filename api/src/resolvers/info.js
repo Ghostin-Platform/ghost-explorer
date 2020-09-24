@@ -9,7 +9,6 @@ import {
   monthlyDifficulty,
   monthlyStakeWeight,
   monthlyTxCount,
-  seriesAddressBalance,
 } from '../database/elasticSearch';
 
 const infoResolver = {
@@ -27,7 +26,6 @@ const infoResolver = {
     seriesMonthlyStakers: () => elMonthlyStakers(),
     seriesTxCount: () => monthlyTxCount(),
     txTypeVentilation: () => currentDayTxTypeVentilation(),
-    seriesAddressBalance: (_, { id }) => seriesAddressBalance(id),
   },
   Block: {
     transactions: (block, { offset, limit }) => getBlockTransactions(block, offset, limit),

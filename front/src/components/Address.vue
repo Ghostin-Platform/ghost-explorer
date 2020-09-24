@@ -9,9 +9,9 @@
             <div v-if="address">
               <h3>
                 <router-link :to="`/`">Home</router-link>
-                <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Address #{{address.address}}
+                <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Address #{{address.id}}
                 <div style="float: right; font-size: 14px">
-                  <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+                  <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
                 </div>
               </h3>
               <md-divider style="margin-bottom: 20px"></md-divider>
@@ -81,7 +81,7 @@
                 </md-card-header>
               </md-card>
               <md-list style="padding: 0; margin-bottom: 10px">
-                <md-list-item v-for="tx in displayAddressMempool" :key="tx.txid" :to="`/tx/${tx.txid}`" style="background-color: #101010; margin-bottom: 4px">
+                <md-list-item v-for="tx in displayAddressMempool" :key="`mempool-${tx.txid}`" :to="`/tx/${tx.txid}`" style="background-color: #101010; margin-bottom: 4px">
                   <div v-if="tx.type === 'reward'">
                          <span v-if="tx.voutAddressesSize === 1">
                              <md-icon class="md-primary">trending_up</md-icon>
@@ -116,7 +116,7 @@
               <md-divider style="margin-bottom: 20px"></md-divider>
               <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
-                  <div v-if="seriesAddressBalance.length > 1" style="margin-bottom: 8px">
+                  <div v-if="address.history.length > 1" style="margin-bottom: 8px">
                     <div style="width: 100%; margin-bottom: 5px">
                       <b>Balance evolution</b>
                     </div>
@@ -144,8 +144,8 @@
                     <md-card-header>
                       <md-card-header-text>
                         <div class="md-title">
-                          {{ address.address.substring(0, 15)}}...
-                          <md-button @click="copy(address.address)" class="md-icon-button md-list-action">
+                          {{ address.id.substring(0, 15)}}...
+                          <md-button @click="copy(address.id)" class="md-icon-button md-list-action">
                             <md-icon>content_copy</md-icon>
                           </md-button>
                         </div>
@@ -157,7 +157,7 @@
                     <md-card-header>
                       <md-card-header-text>
                         <div class="md-title">
-                          <qrcode :value=address.address :options="{ width: 150, color: { dark: '#ffffff', light:'#000000' } }"></qrcode>
+                          <qrcode :value=address.id :options="{ width: 150, color: { dark: '#ffffff', light:'#000000' } }"></qrcode>
                         </div>
                         <div class="md-subhead" style="margin-top: 10px">Scan the QR Code</div>
                       </md-card-header-text>
@@ -167,13 +167,13 @@
                 <div class="md-layout-item">
                   <div style="width: 100%; margin-bottom: 5px"><b>{{ address.nbTx }} Transactions</b></div>
                   <md-list v-if="displayTxs.length > 0">
-                    <md-list-item v-for="tx in displayTxs" :key="tx.txid" :to="`/tx/${tx.txid}`" style="background-color: #101010; margin-bottom: 4px">
+                    <md-list-item v-for="tx in displayTxs" :key="`live-${tx.txid}`" :to="`/tx/${tx.txid}`" style="background-color: #101010; margin-bottom: 4px">
                       <div v-if="tx.type === 'reward'">
                         <span v-if="tx.voutAddressesSize === 1">
                             <md-icon class="md-primary">trending_up</md-icon>
                         </span>
                         <span v-else>
-                          <span v-if="tx.vinAddresses.includes(address.address)">
+                          <span v-if="tx.vinAddresses.includes(address.id)">
                             <md-icon class="md-primary">trending_flat</md-icon>
                           </span>
                           <span v-else>
@@ -197,7 +197,7 @@
                                   Staked Reward <b>{{(tx.variation / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
                               </span>
                               <span v-else>
-                                <span v-if="tx.vinAddresses.includes(address.address)">
+                                <span v-if="tx.vinAddresses.includes(address.id)">
                                   Transferred Reward <b>{{(tx.variation / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
                                 </span>
                                 <span v-else>
@@ -248,7 +248,7 @@
                 <router-link :to="`/`">Home</router-link>
                 <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Address not found
                 <div style="float: right; font-size: 14px">
-                  <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+                  <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
                 </div>
               </h3>
               <md-divider style="margin-bottom: 20px"></md-divider>
@@ -270,17 +270,17 @@
 </template>
 
 <script>
-import {
-  apolloClient, EVENT_NEW_MEMPOOL,
-  EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO,
-  eventBus,
-  ReadInfo, UpdateInfo,
-  VETERAN_AMOUNT
-} from "@/main";
-import moment from "moment";
-import * as R from "ramda";
-import gql from "graphql-tag";
-import TimeBalanceChart from "./charts/TimeBalanceChart";
+    import {
+      apolloClient, EVENT_NEW_MEMPOOL,
+      EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO,
+      eventBus,
+      ReadInfo, UpdateInfo,
+      VETERAN_AMOUNT
+    } from "@/main";
+    import moment from "moment";
+    import * as R from "ramda";
+    import gql from "graphql-tag";
+    import TimeBalanceChart from "./charts/TimeBalanceChart";
 
     const computeTransferValue = (self, tx) => {
         //Outs
@@ -310,7 +310,6 @@ import TimeBalanceChart from "./charts/TimeBalanceChart";
     const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
             address(id: $id) {
                 id
-                address
                 totalReceived
                 totalRewarded
                 totalSent
@@ -320,6 +319,10 @@ import TimeBalanceChart from "./charts/TimeBalanceChart";
                 totalFees
                 balance
                 nbTx
+                history {
+                    time
+                    balance
+                }
                 transactions(offset: $txOffset, limit: $txLimit) {
                     id
                     blockhash
@@ -406,12 +409,13 @@ import TimeBalanceChart from "./charts/TimeBalanceChart";
                 info: {
                   height: 0,
                   sync_percent: 0,
+                  sync_index_percent: 0,
                   timeoffset: 0,
                   connections: 0
                 },
                 addressMempool: [],
                 address: {
-                    address: "-",
+                    id: "-",
                     totalFees: 0,
                     totalReceived: 0,
                     totalSent: 0,
@@ -419,9 +423,9 @@ import TimeBalanceChart from "./charts/TimeBalanceChart";
                     rewardSize: 0,
                     rewardAvgSize: 0,
                     rewardAvgTime: 0,
-                    transactions: []
-                },
-                seriesAddressBalance: []
+                    transactions: [],
+                    history: []
+                }
             }
         },
         methods: {
@@ -452,10 +456,10 @@ import TimeBalanceChart from "./charts/TimeBalanceChart";
         },
         computed: {
             initialLoadingDone() {
-              return this.address.id !== undefined;
+              return this.address.id !== '-';
             },
             balanceChartData() {
-                const datasets = [{ data: this.seriesAddressBalance.map(d => ({ x: new Date(d.time * 1000), y: d.value / 1e8 }) )}]
+                const datasets = [{ data: this.address.history.map(d => ({ x: new Date(d.time * 1000), y: d.balance / 1e8 }) )}]
                 return { datasets };
             },
             isVeteran() {
@@ -512,19 +516,6 @@ import TimeBalanceChart from "./charts/TimeBalanceChart";
                         txLimit: ADDR_PAGINATION_COUNT,
                     }
                 },
-            },
-            seriesAddressBalance: {
-                query: () => gql`query SeriesAddress($id: String!)  {
-                  seriesAddressBalance(id: $id) {
-                    time
-                    value
-                  }
-                }`,
-                variables() {
-                    return {
-                        id: this.$route.params.id,
-                    }
-                }
             },
             addressMempool: {
                 query: () => GetAddressPool,

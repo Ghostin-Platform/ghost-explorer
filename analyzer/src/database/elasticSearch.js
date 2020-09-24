@@ -69,6 +69,15 @@ export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
                   },
                 ],
                 properties: {
+                  history: {
+                    type: 'nested',
+                    properties: {
+                      time: {
+                        type: 'date',
+                        format: 'epoch_second',
+                      },
+                    },
+                  },
                   time: {
                     type: 'date',
                     format: 'epoch_second',
@@ -82,6 +91,18 @@ export const elCreateIndexes = async (indexesToCreate = PLATFORM_INDICES) => {
                     format: 'epoch_second',
                   },
                   blocktime: {
+                    type: 'date',
+                    format: 'epoch_second',
+                  },
+                  last_reward_time: {
+                    type: 'date',
+                    format: 'epoch_second',
+                  },
+                  last_sent_time: {
+                    type: 'date',
+                    format: 'epoch_second',
+                  },
+                  last_received_time: {
                     type: 'date',
                     format: 'epoch_second',
                   },
@@ -144,7 +165,7 @@ export const elAddressTransactions = async (addressId, from = 0, size = null, bl
   return { size: 0, transactions: [] };
 };
 
-export const elBulk = async (indexName, documents, refresh = true) => {
+export const elBulkUpsert = async (indexName, documents, refresh = true) => {
   const body = documents.flatMap((d) => [
     { update: { _id: d.id, _index: indexName, retry_on_conflict: 3 } },
     { doc: d, doc_as_upsert: true },
@@ -152,5 +173,56 @@ export const elBulk = async (indexName, documents, refresh = true) => {
   return el.bulk({
     body,
     refresh,
+  });
+};
+
+export const lastElementOfIndex = (indexName) => {
+  const query = {
+    index: indexName,
+    size: 1,
+    body: {
+      query: {
+        match_all: {},
+      },
+      sort: [{ time: 'desc' }],
+    },
+  };
+  return el.search(query).then((d) => d.body.hits.hits[0]?._source.offset || '0-0');
+};
+
+export const elBulkAddressUpdate = async (indexName, documents, refresh = true) => {
+  const body = documents.flatMap(({ tx, document, update }) => {
+    const params = update;
+    let source = `${Object.keys(params)
+      .map((key) => {
+        if (key.startsWith('last_')) {
+          return `ctx._source.${key} = params.${key} == null ? ctx._source.${key} : params.${key}`;
+        }
+        return `ctx._source.${key} = (double)ctx._source.${key} + (double)params.${key}`;
+      })
+      .join('; ')};`;
+    source += `ctx._source.history.removeIf(h -> h.id == params.innerId);`;
+    source += `ctx._source.history.add([
+        "id": params.innerId, "time": params.blocktime, 
+        "totalFees": ctx._source.totalFees, 
+        "totalReceived": ctx._source.totalReceived, 
+        "totalSent": ctx._source.totalSent, 
+        "totalRewarded": ctx._source.totalRewarded, 
+        "balance" : ctx._source.balance
+    ])`;
+    params.innerId = `${document.id}-${tx.id}`;
+    params.blocktime = tx.blocktime;
+    return [
+      { update: { _id: document.id, _index: indexName, retry_on_conflict: 10 } },
+      {
+        script: { source, lang: 'painless', params },
+        upsert: document,
+      },
+    ];
+  });
+  return el.bulk({ body, refresh }).then((result) => {
+    if (result.body.errors) {
+      throw new Error('elBulkAddressUpdate bulk error');
+    }
   });
 };

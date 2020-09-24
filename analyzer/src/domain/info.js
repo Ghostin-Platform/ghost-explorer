@@ -1,33 +1,13 @@
 import * as R from 'ramda';
-import moment from 'moment';
-import { TYPE_REWARD } from '../database/ghost';
-import { elAddressTransactions } from '../database/elasticSearch';
+import { toGh, TYPE_REWARD } from '../database/ghost';
 
 const computeAddrRewards = (id, transactions) => {
   const rewards = R.filter((tx) => tx.type === TYPE_REWARD && tx.vinAddresses.includes(id), transactions);
   const rewardsNumber = rewards.length;
   const rewardsSum = R.sum(R.map((r) => r.variation, rewards));
-  const rewardsTime = R.map((t) => moment.unix(t.time), transactions);
-  const rewardsDuration = [];
-  if (rewardsTime.length > 1) {
-    for (let index = 0; index < rewardsTime.length; index += 1) {
-      const rTime = rewardsTime[index];
-      const nexIndex = index + 1;
-      if (nexIndex < rewardsTime.length) {
-        const cTime = rewardsTime[nexIndex];
-        const duration = moment.duration(cTime.diff(rTime)).as('seconds');
-        rewardsDuration.push(duration);
-      }
-    }
-  }
-  const avgTimeBetweenRewards =
-    rewardsDuration.length > 0 ? moment.duration(R.sum(rewardsDuration) / rewardsNumber, 'seconds').humanize() : null;
-  const avgRewardsAmount = rewardsSum / rewardsNumber;
   return {
     size: rewardsNumber,
     sum: rewardsSum,
-    avg_size: avgRewardsAmount,
-    avg_time: avgTimeBetweenRewards,
   };
 };
 
@@ -58,31 +38,52 @@ const computeAddrBalance = (id, transactions) => {
   const totalFees = R.sum(R.map((o) => o.feeSat, sentTransactions));
   return {
     totalReceived: totalReceivedTest,
-    totalSent: -totalSentTest,
+    totalSent: totalSentTest,
     totalFees,
   };
 };
 
-export const getAddressById = async (id, blockheight = 0) => {
-  const { transactions, size } = await elAddressTransactions(id, 0, null, blockheight);
-  const latestTx = R.head(transactions);
-  const rewardStatistic = computeAddrRewards(id, transactions);
-  const balance = computeAddrBalance(id, transactions);
+export const computeAddressUpdate = (tx, reward, balance) => {
+  const totalFees = toGh(Math.abs(balance.totalFees));
+  const totalReceived = toGh(Math.abs(balance.totalReceived));
+  const totalSent = toGh(Math.abs(balance.totalSent));
+  const totalRewarded = toGh(Math.abs(reward.sum));
+  const totalBalance = totalReceived + totalRewarded - totalSent;
+  // const historyReward = [];
   return {
-    __typename: 'Address',
-    id: `${id}-${latestTx.id}`,
-    txid: latestTx.id,
-    blockheight: latestTx.blockheight,
-    time: latestTx.time,
-    address: id,
-    nbTx: size,
-    totalFees: balance.totalFees,
-    totalReceived: balance.totalReceived,
-    totalSent: balance.totalSent,
-    totalRewarded: rewardStatistic.sum,
-    rewardSize: rewardStatistic.size,
-    rewardAvgSize: rewardStatistic.avg_size,
-    rewardAvgTime: rewardStatistic.avg_time,
-    balance: balance.totalReceived + rewardStatistic.sum - balance.totalSent,
+    nbTx: 1,
+    // Balance
+    totalFees,
+    totalReceived,
+    totalSent,
+    totalRewarded,
+    balance: totalBalance,
+    // Last
+    last_reward_time: totalRewarded > 0 ? tx.blocktime : null,
+    last_sent_time: totalSent > 0 ? tx.blocktime : null,
+    last_received_time: totalReceived > 0 ? tx.blocktime : null,
   };
+};
+
+export const genAddressTransactionUpdate = (id, tx) => {
+  const reward = computeAddrRewards(id, [tx]);
+  const balance = computeAddrBalance(id, [tx]);
+  const update = computeAddressUpdate(tx, reward, balance);
+  const base = {
+    __typename: 'Address',
+    id,
+    history: [
+      {
+        id: `${id}-${tx.id}`,
+        time: tx.blocktime,
+        totalFees: update.totalFees,
+        totalReceived: update.totalReceived,
+        totalSent: update.totalSent,
+        totalRewarded: update.totalRewarded,
+        balance: update.balance,
+      },
+    ],
+  };
+  const document = Object.assign(base, update);
+  return { tx, document, update };
 };

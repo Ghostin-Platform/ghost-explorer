@@ -5,8 +5,8 @@ import conf, { logger } from '../config/conf';
 import { DatabaseError } from '../config/errors';
 
 // const ONE_YEAR_SEC_RETENTION = 31556952;
-export const STREAM_TRANSACTION_KEY = 'stream.transactions';
-export const STREAM_BLOCK_KEY = 'stream.blocks';
+export const STREAM_TRANSACTION_KEY = 'ghostin.stream.trx';
+export const STREAM_BLOCK_KEY = 'ghostin.stream.blocks';
 const redisOptions = {
   lazyConnect: true,
   port: conf.get('redis:port'),
@@ -18,20 +18,22 @@ const redisOptions = {
 
 let redis = null;
 const initRedisClient = async () => {
-  redis = redis || new Redis(redisOptions);
-  if (redis.status !== 'ready') {
-    await redis.connect();
+  const client = new Redis(redisOptions);
+  if (client.status !== 'ready') {
+    await client.connect();
   }
-  redis.on('error', (error) => {
+  client.on('error', (error) => {
     /* istanbul ignore next */
     logger.error('[REDIS] An error occurred on redis', { error });
   });
-  return redis;
+  return client;
 };
 
 const getClient = async () => {
-  if (redis) return redis;
-  return initRedisClient();
+  if (!redis) {
+    redis = await initRedisClient();
+  }
+  return redis;
 };
 
 export const redisIsAlive = async () => {
@@ -63,6 +65,15 @@ export const clear = async (key) => {
 // endregion
 
 // region stream
+export const fetchLatestProcessedBlock = async () => {
+  const client = await getClient();
+  const res = await client.call('XREVRANGE', STREAM_BLOCK_KEY, '+', '-', 'COUNT', 1);
+  if (res.length > 0) {
+    return JSON.parse(res[0][1][1]).height;
+  }
+  return undefined;
+};
+
 const storeEvent = async (streamKey, id, key, data) => {
   const client = await getClient();
   try {
@@ -98,30 +109,24 @@ const mapStreamToJS = ([id, data]) => {
 };
 
 export const listenStream = async (streamKey, from, batchSize, callback) => {
-  const client = await getClient();
+  const client = await initRedisClient();
   let lastProcessedEventId = from;
   const processStep = () => {
-    return client.xread('COUNT', batchSize, 'STREAMS', streamKey, lastProcessedEventId).then(async (streamResult) => {
-      if (streamResult && streamResult.length > 0) {
-        const [, results] = R.head(streamResult);
-        const data = R.map((r) => mapStreamToJS(r), results);
-        const { eventId } = R.last(data);
-        await callback(eventId, data);
-        lastProcessedEventId = eventId;
-      }
-      return true;
-    });
-  };
-  const wait = (time) => {
-    return new Promise((resolve) => {
-      setTimeout(async () => {
-        resolve();
-      }, time);
-    });
+    return client
+      .xread('BLOCK', 20000, 'COUNT', batchSize, 'STREAMS', streamKey, lastProcessedEventId)
+      .then(async (streamResult) => {
+        if (streamResult && streamResult.length > 0) {
+          const [, results] = R.head(streamResult);
+          const data = R.map((r) => mapStreamToJS(r), results);
+          const { eventId } = R.last(data);
+          await callback(eventId, data);
+          lastProcessedEventId = eventId;
+        }
+        return true;
+      });
   };
   const processingLoop = async () => {
     while (true) {
-      await wait(2);
       await processStep();
     }
   };

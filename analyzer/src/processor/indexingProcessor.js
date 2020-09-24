@@ -1,75 +1,83 @@
 import * as R from 'ramda';
-import { Promise } from 'bluebird';
-import { STREAM_BLOCK_KEY, listenStream, STREAM_TRANSACTION_KEY, write, notify } from '../database/redis';
-import streamFromResolver from './processorUtils';
-import { elBulk, INDEX_ADDRESS, INDEX_BLOCK, INDEX_TRX } from '../database/elasticSearch';
-import { GROUP_CONCURRENCY } from '../database/ghost';
+import { STREAM_BLOCK_KEY, listenStream, STREAM_TRANSACTION_KEY, notify } from '../database/redis';
+import {
+  elBulkAddressUpdate,
+  elBulkUpsert,
+  INDEX_ADDRESS,
+  INDEX_BLOCK,
+  INDEX_TRX,
+  lastElementOfIndex,
+} from '../database/elasticSearch';
 import { logger } from '../config/conf';
 import { EVENT_NEW_BLOCK, EVENT_NEW_TX } from '../database/events';
-import { getAddressById } from '../domain/info';
+import { genAddressTransactionUpdate } from '../domain/info';
 
 // region indexing
-const INDEXING_BATCH_SIZE = 100;
-export const CURRENT_INDEXING_BLOCK = 'indexing.current.block';
+const INDEXING_BATCH_SIZE = 200;
 const processBlock = async (blocks) => {
-  const start = new Date().getTime();
   const rawBlocks = R.map((item) => item.block, blocks).reverse();
   // Index all blocks
-  await elBulk(INDEX_BLOCK, rawBlocks);
-  // Get last block to save last indexing state.
-  const lastBlock = R.last(blocks);
-  await write(CURRENT_INDEXING_BLOCK, lastBlock.eventId);
+  await elBulkUpsert(INDEX_BLOCK, rawBlocks);
   // Broadcast the result
   await notify(EVENT_NEW_BLOCK, rawBlocks);
-  // Log the time
-  const end = new Date().getTime();
-  logger.info(`[Ghost Explorer] ${rawBlocks.length} blocks indexed in ${end - start} ms`);
   return true;
 };
 export const indexingBlockProcessor = async () => {
-  const from = await streamFromResolver(CURRENT_INDEXING_BLOCK);
+  const from = await lastElementOfIndex(INDEX_BLOCK);
   return listenStream(STREAM_BLOCK_KEY, from, INDEXING_BATCH_SIZE, async (id, blocks) => {
     try {
+      const start = new Date().getTime();
       await processBlock(blocks);
+      // Log the time
+      const end = new Date().getTime();
+      const lastBlock = R.last(blocks);
+      logger.info(`[Ghost Explorer] Block indexing: ${lastBlock.block.height} indexed (in ${end - start} ms)`);
     } catch (e) {
       logger.error(e);
     }
   });
 };
 
-export const CURRENT_INDEXING_TRX = 'indexing.current.trx';
 const processTrx = async (txs) => {
-  const start = new Date().getTime();
-  const rawTxs = R.map((item) => item.tx, txs).reverse();
+  const rawTxs = R.map((item) => item.tx, txs);
   // Index all trx
-  await elBulk(INDEX_TRX, rawTxs);
+  await elBulkUpsert(INDEX_TRX, rawTxs);
   // Index address history
-  const addressToIndex = [];
+  const addressToIndex = {};
   for (let index = 0; index < rawTxs.length; index += 1) {
     const rawTx = rawTxs[index];
     for (let partIndex = 0; partIndex < rawTx.participants.length; partIndex += 1) {
       const participant = rawTx.participants[partIndex];
-      addressToIndex.push({ participant, blockheight: rawTx.blockheight });
+      if (addressToIndex[participant]) {
+        addressToIndex[participant] = [...addressToIndex[participant], rawTx];
+      } else {
+        addressToIndex[participant] = [rawTx];
+      }
     }
   }
-  const opts = { concurrency: GROUP_CONCURRENCY };
-  const addresses = await Promise.map(addressToIndex, (ad) => getAddressById(ad.participant, ad.blockheight), opts);
-  await elBulk(INDEX_ADDRESS, addresses);
-  // Get last block to save last indexing state.
-  const lastTx = R.last(txs);
-  await write(CURRENT_INDEXING_TRX, lastTx.eventId);
+  const addEntries = Object.entries(addressToIndex);
+  const actions = [];
+  addEntries.forEach(([participant, trx]) => {
+    trx.forEach((tx) => {
+      const actionData = genAddressTransactionUpdate(participant, tx);
+      actions.push(R.assoc('participant', participant, actionData));
+    });
+  });
+  await elBulkAddressUpdate(INDEX_ADDRESS, actions);
   // Broadcast the result
   await notify(EVENT_NEW_TX, rawTxs);
-  // Log the time
-  const end = new Date().getTime();
-  logger.info(`[Ghost Explorer] ${rawTxs.length} txs - ${addresses.length} addrs indexed in ${end - start} ms`);
   return true;
 };
 export const indexingTrxProcessor = async () => {
-  const from = await streamFromResolver(CURRENT_INDEXING_TRX);
+  const from = await lastElementOfIndex(INDEX_TRX);
   return listenStream(STREAM_TRANSACTION_KEY, from, INDEXING_BATCH_SIZE, async (id, txs) => {
     try {
+      const start = new Date().getTime();
       await processTrx(txs);
+      // Log the time
+      const end = new Date().getTime();
+      const lastTx = R.last(txs);
+      logger.info(`[Ghost Explorer] Tx indexing: ${lastTx.tx.height} indexed (in ${end - start} ms)`);
     } catch (e) {
       logger.error(e);
     }

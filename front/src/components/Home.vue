@@ -14,7 +14,7 @@
             <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
                     <div style="width: 100%; margin-bottom: 5px">
-                        <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+                        <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
                     </div>
                     <md-card v-bind:style="coinVarClass">
                         <md-card-header>
@@ -385,6 +385,7 @@
                     height: 0,
                     sync_height: 0,
                     sync_percent: 0,
+                    sync_index_percent: 0,
                 },
                 market: {
                   usd: 0,

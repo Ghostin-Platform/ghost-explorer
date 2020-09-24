@@ -4,8 +4,8 @@ import conf, { logger } from '../config/conf';
 import { DatabaseError } from '../config/errors';
 
 // const ONE_YEAR_SEC_RETENTION = 31556952;
-export const STREAM_TRANSACTION_KEY = 'stream.transactions';
-export const STREAM_BLOCK_KEY = 'stream.blocks';
+export const STREAM_TRANSACTION_KEY = 'ghostin.stream.trx';
+export const STREAM_BLOCK_KEY = 'ghostin.stream.blocks';
 const redisOptions = {
   lazyConnect: true,
   port: conf.get('redis:port'),
@@ -32,6 +32,15 @@ const getClient = async () => {
   if (redis) return redis;
   redis = initRedisClient();
   return redis;
+};
+
+export const fetchLatestProcessedBlock = async () => {
+  const client = await getClient();
+  const res = await client.call('XREVRANGE', STREAM_BLOCK_KEY, '+', '-', 'COUNT', 1);
+  if (res.length > 0) {
+    return JSON.parse(res[0][1][1]).height;
+  }
+  return undefined;
 };
 
 export const listenNotifications = async (callback) => {

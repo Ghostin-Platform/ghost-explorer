@@ -43,6 +43,7 @@ type BlockChainInfo {
   verification_progress: Float
   sync_height: Float
   sync_percent: Float
+  sync_index_percent: Float
   difficulty: Float
   stake_weight: Float
   moneysupply: Float
@@ -233,16 +234,17 @@ type Transaction {
 }
 type Address {
   id: ID!
-  address: String!
   nbTx: Int
   balance: Float
+  time: Int
   totalRewarded: Float
   totalFees: Float
   totalReceived: Float
   rewardSize: Int
-  rewardAvgSize: Float
   totalSent: Float
+  rewardAvgSize: Float
   rewardAvgTime: String
+  history: [Address]
   transactions(offset: Int! = 0, limit: Int! = 5): [Transaction]
 }
 
@@ -255,7 +257,7 @@ type Reward {
 }
 
 type Veteran {
-  address: String!
+  id: String!
   balance: Float
   percent: Float
   share: Float

@@ -12,6 +12,9 @@
                             <div class="md-layout-item md-size-10" style="min-width: 20px">
                                 <md-button v-on:click="$router.push('/')" style="font-family: 'Sen', sans-serif;">ghostscan</md-button>
                             </div>
+                          <div class="md-layout-item md-size-10" style="min-width: 20px">
+                            <md-button v-on:click="$router.push('/gvr')" style="font-family: 'Sen', sans-serif;">gvr</md-button>
+                          </div>
                             <div class="md-layout-item md-size-40" style="min-width: 20px">
                                 <md-button v-on:click="$router.push('/support')" style="font-family: 'Sen', sans-serif;">support us</md-button>
                             </div>
@@ -33,7 +36,7 @@
             <div style="text-align: center; margin: auto; padding: 15px; background-color: #080808; height: 80px">
                 <md-divider></md-divider>
                 <br/>
-                <span style="font-size: 16px; font-family: 'Sen', sans-serif;">ghostin 1.0.0 @ 2020</span>
+                <span style="font-size: 16px; font-family: 'Sen', sans-serif;">ghostin 1.1.0 @ 2020</span>
             </div>
         </md-content>
     </div>

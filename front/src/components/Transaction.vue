@@ -13,7 +13,7 @@
                   <span v-else><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon><router-link :to="`/mempool`">Pending</router-link></span>
                   <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Transaction <span style="font-size: 16px">#{{ transaction.txid }}</span>
                   <div style="float: right; font-size: 14px">
-                      <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+                    <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
                   </div>
               </h3>
               <md-divider style="margin-bottom: 20px"></md-divider>
@@ -272,7 +272,7 @@
             <h3>
               <router-link :to="`/`">Home</router-link><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Transaction not found
               <div style="float: right; font-size: 14px">
-                <b><img alt="Vue logo" src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(2) }}% Synchronized | {{ info.timeoffset }} secs</b>
+                <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
               </div>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
@@ -361,6 +361,7 @@ import {apolloClient, EVENT_NEW_TRANSACTION, EVENT_UPDATE_INFO, eventBus, ReadIn
                 info: {
                   height: 0,
                   sync_percent: 0,
+                  sync_index_percent: 0,
                   timeoffset: 0,
                   connections: 0
                 },

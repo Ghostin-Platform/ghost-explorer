@@ -76,11 +76,54 @@ const txSearch = async (term) => {
   return R.map((t) => t._source.id, hits);
 };
 
+export const lastIndexedBlock = () => {
+  const query = {
+    index: INDEX_TRX,
+    size: 1,
+    body: {
+      query: {
+        match_all: {},
+      },
+      sort: [{ time: 'desc' }],
+    },
+  };
+  return el.search(query).then((d) => {
+    const { hits } = d.body.hits;
+    return hits.length === 1 ? hits[0]._source.height : 0;
+  });
+};
+
 export const elSearch = async (term) => {
   const addrPromise = addressSearch(term);
   const blockPromise = blockSearch(term);
   const txPromise = txSearch(term);
   return { addresses: addrPromise, blocks: blockPromise, transactions: txPromise };
+};
+
+export const elGetVeterans = async () => {
+  const query = {
+    index: INDEX_ADDRESS,
+    size: 1000,
+    body: {
+      query: {
+        bool: {
+          must: [{ range: { balance: { gte: 2000000000000 } } }],
+        },
+      },
+      sort: [{ balance: 'desc' }],
+    },
+  };
+  const data = await el.search(query);
+  if (data && data.body.hits) {
+    const { hits } = data.body.hits;
+    const sources = hits.map((h) => h._source);
+    const totalBalance = R.sum(sources.map((a) => a.balance));
+    return sources.map((h) => {
+      const percent = (100 * h.balance) / totalBalance;
+      return { id: h.id, balance: h.balance, percent };
+    });
+  }
+  return [];
 };
 
 export const elGetAddressBalance = async (id) => {
@@ -90,19 +133,40 @@ export const elGetAddressBalance = async (id) => {
     body: {
       query: {
         bool: {
-          must: [{ match_phrase: { address: id } }],
+          must: [{ match_phrase: { id } }],
         },
       },
-      sort: [{ time: 'desc' }],
     },
   };
   const data = await el.search(query);
   if (data && data.body.hits) {
     const { hits } = data.body.hits;
-    const addresses = R.map((h) => h._source, hits);
-    return R.head(addresses);
+    if (hits.length === 0) return undefined;
+    const address = R.head(hits)._source;
+    const addrHistory = address.history.sort((a, b) => a.time - b.time);
+    let lastReward = 0;
+    let rewardSize = 0;
+    let lastRewardDate = null;
+    const rewardPeriod = [];
+    addrHistory.forEach((o) => {
+      if (lastReward < o.totalRewarded) {
+        rewardSize += 1;
+        if (lastRewardDate && o.time) {
+          rewardPeriod.push(o.time - lastRewardDate);
+        }
+        lastRewardDate = o.time;
+      }
+      lastReward = o.totalRewarded;
+    });
+    const avgTime = rewardPeriod.length > 0 ? rewardPeriod.reduce((a, b) => a + b) / rewardPeriod.length : 0;
+    const rewardAvgTime = moment.duration(avgTime * 1000).humanize();
+    const rewardAvgSize = address.totalRewarded / rewardSize;
+    // Compute histo sample
+    const maxSplit = addrHistory.length / 50;
+    const lastHisto = R.flatten(R.splitEvery(maxSplit < 1 ? 1 : maxSplit, addrHistory.reverse()).map((g) => R.head(g)));
+    return Object.assign(address, { rewardAvgSize, rewardAvgTime, rewardSize, history: lastHisto });
   }
-  return [];
+  return undefined;
 };
 
 export const elAddressTransactions = async (addressId, from = 0, size = null, blockheight = 0) => {
@@ -486,55 +550,4 @@ export const elMonthlyStakers = async () => {
     );
   }
   return [];
-};
-
-export const seriesAddressBalance = (id) => {
-  const start = moment().subtract(1, 'year').unix();
-  const query = {
-    index: INDEX_ADDRESS,
-    _source_excludes: '*', // Dont need to get anything
-    body: {
-      query: {
-        bool: {
-          must: [
-            { match_phrase: { address: id } },
-            {
-              range: {
-                time: {
-                  gte: start,
-                },
-              },
-            },
-          ],
-        },
-      },
-      sort: [{ time: 'desc' }],
-      aggs: {
-        balance: {
-          date_histogram: {
-            field: 'time',
-            min_doc_count: 1,
-            calendar_interval: 'day',
-          },
-          aggs: {
-            balance: {
-              max: {
-                field: `balance`,
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-  return el.search(query).then((data) => {
-    const { buckets } = data.body.aggregations.balance;
-    return R.map(
-      (b) => ({
-        time: b.key / 1000,
-        value: b.balance.value,
-      }),
-      buckets
-    );
-  });
 };

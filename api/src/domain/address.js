@@ -11,7 +11,17 @@ export const getAddressBalance = async (id) => {
       return {
         __typename: 'Address',
         id,
-        address: id,
+        nbTx: 0,
+        balance: 0,
+        totalRewarded: 0,
+        totalFees: 0,
+        totalReceived: 0,
+        rewardSize: 0,
+        totalSent: 0,
+        rewardAvgSize: 0,
+        rewardAvgTime: '',
+        history: [],
+        transactions: [],
       };
     }
   }
@@ -27,6 +37,6 @@ export const getAddressPooledTx = (id) => {
 };
 
 export const addressTransactions = (address, offset, limit) => {
-  return elAddressTransactions(address.address, offset, limit, 0) //
+  return elAddressTransactions(address.id, offset, limit, 0) //
     .then((data) => data.transactions);
 };

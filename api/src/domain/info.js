@@ -7,9 +7,9 @@ import {
   getTransaction,
   TYPE_REWARD,
 } from '../database/ghost';
-import { getCoinMarket, httpGet } from '../config/utils';
+import { getCoinMarket } from '../config/utils';
 import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
-import { elAddressTransactions } from '../database/elasticSearch';
+import { elAddressTransactions, elGetVeterans } from '../database/elasticSearch';
 import { broadcast } from '../middleware/seeMiddleware';
 
 export const test = async () => {
@@ -28,18 +28,7 @@ export const coinMarket = async () => {
   return Object.assign(coin, { __typename: 'MarketInfo' });
 };
 
-export const veterans = async () => {
-  const data = await httpGet('https://gvr.mml2.net/balances/get/richlist', 'richlist');
-  if (data) {
-    return data.map((t) => ({
-      address: t.address,
-      balance: t.balance,
-      percent: t.yourPercent,
-      share: t.yourShare,
-    }));
-  }
-  return [];
-};
+export const veterans = () => elGetVeterans();
 
 export const getBlockById = (id) => {
   // eslint-disable-next-line no-restricted-globals

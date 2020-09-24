@@ -6,10 +6,11 @@ import { blockStreamId } from './redis';
 // export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
 // export const BLOCK_MATURITY = 100;
-export const CURRENT_PROCESSING_BLOCK = 'processing.current.block';
+// export const CURRENT_PROCESSING_BLOCK = 'ghostin.current.block';
 export const GROUP_CONCURRENCY = 25; // Number of query in //
 
 const toSat = (num) => num * 100000000;
+export const toGh = (num) => num; // / 100000000;
 
 export const getRawPooledTransactions = (verbose = true) => rpcCall('getrawmempool', [verbose]);
 

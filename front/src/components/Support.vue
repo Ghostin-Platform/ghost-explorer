@@ -75,7 +75,6 @@
     const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
         address(id: $id) {
             id
-            address
             totalReceived
             totalRewarded
             totalSent
@@ -144,9 +143,9 @@
                 return this.address.transactions.map(tx => {
                     const received = moment.unix(tx.time).format('DD/MM/YY, HH:mm:ss');
                     const tipOut = R.find(x => x.address === TipAddress, tx.voutPerAddresses);
-                    const tip = tipOut ? (tipOut.valueSat / 1e8).toFixed(4) : 0;
+                    const tip = tipOut ? (tipOut.valueSat / 1e8).toFixed(4) : null;
                     return Object.assign(tx, {received, tip})
-                })
+                }).filter(f => f.tip)
             },
         },
         methods: {

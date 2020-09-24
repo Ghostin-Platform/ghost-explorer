@@ -24,6 +24,7 @@ import Address from "./components/Address";
 import Support from "./components/Support";
 import Toasted from 'vue-toasted';
 import Search from "./components/Search";
+import Gvr from "@/components/Gvr";
 
 // region configuration
 export const VETERAN_AMOUNT = 20000;
@@ -49,6 +50,7 @@ export const ReadInfo = gql`query {
         connections
         sync_height
         sync_percent
+        sync_index_percent
         moneysupply
     }
 }`
@@ -101,6 +103,7 @@ const routes = [
     {path: '/blocks', component: Blocks},
     {path: '/transactions', component: Transactions},
     {path: '/support', component: Support},
+    {path: '/gvr', component: Gvr},
     {path: '/block/:id', component: Block},
     {path: '/tx/:id', component: Transaction},
     {path: '/address/:id', component: Address},
