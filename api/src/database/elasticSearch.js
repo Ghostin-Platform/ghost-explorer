@@ -38,15 +38,10 @@ const addressSearch = async (term) => {
       index: INDEX_ADDRESS,
       body: {
         query: { query_string: { query: escape(term) } },
-        aggs: {
-          uniq: {
-            terms: { field: 'address.keyword', size: 5 },
-          },
-        },
       },
     });
-    const { buckets } = searchItems.body.aggregations.uniq;
-    return R.map((t) => t.key, buckets);
+    const { hits } = searchItems.body.hits;
+    return R.map((t) => t._source.id, hits);
   } catch (e) {
     return [];
   }

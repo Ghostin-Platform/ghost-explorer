@@ -18,10 +18,10 @@ const initProcessors = async () => {
   await notificationsProcessor();
 };
 
-const platformInit = async (reindex = false) => {
+const platformInit = async () => {
   try {
     await checkSystemDependencies();
-    await initProcessors(reindex);
+    await initProcessors();
   } catch (e) {
     logger.error(e);
     throw e;
