@@ -36,7 +36,7 @@
             <div style="text-align: center; margin: auto; padding: 15px; background-color: #080808; height: 80px">
                 <md-divider></md-divider>
                 <br/>
-                <span style="font-size: 16px; font-family: 'Sen', sans-serif;">ghostin 1.1.0 @ 2020</span>
+                <span style="font-size: 16px; font-family: 'Sen', sans-serif;">ghostin 1.2.0 @ 2020</span>
             </div>
         </md-content>
     </div>
