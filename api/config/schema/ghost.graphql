@@ -239,6 +239,7 @@ type Address {
   time: Int
   totalRewarded: Float
   totalFees: Float
+  received: Float
   totalReceived: Float
   rewardSize: Int
   totalSent: Float
@@ -259,8 +260,8 @@ type Reward {
 type Veteran {
   id: String!
   balance: Float
+  vets: Float
   percent: Float
-  share: Float
 }
 
 type SearchData {

@@ -2,6 +2,7 @@ import * as R from 'ramda';
 import { Promise } from 'bluebird';
 import { rpcCall } from '../config/utils';
 import { blockStreamId } from './redis';
+// import { computeAddrBalance } from '../domain/info';
 
 // export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
@@ -10,7 +11,6 @@ import { blockStreamId } from './redis';
 export const GROUP_CONCURRENCY = 25; // Number of query in //
 
 const toSat = (num) => num * 100000000;
-export const toGh = (num) => num; // / 100000000;
 
 export const getRawPooledTransactions = (verbose = true) => rpcCall('getrawmempool', [verbose]);
 
@@ -234,3 +234,20 @@ export const enrichBlock = async (block) => {
     participants: R.uniq(R.flatten(R.map((txp) => txp.participants, transactions))),
   };
 };
+
+// export const checkBalanceAddress = async () => {
+//   const balance = await rpcCall('getaddressbalance', ['GWj2s8s3X7AE77ouXzniz4teGYKuW5HNMb']);
+//   const txids = await rpcCall('getaddresstxids', ['GWj2s8s3X7AE77ouXzniz4teGYKuW5HNMb']);
+//   const txs = await Promise.map(txids, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
+//   for (let i = 0; i < txs.length; i += 1) {
+//     const tx = txs[i];
+//     // eslint-disable-next-line no-await-in-loop
+//     const b = await computeAddrBalance('GWj2s8s3X7AE77ouXzniz4teGYKuW5HNMb', [tx]);
+//     // eslint-disable-next-line no-console
+//     console.log(b.totalReceived - b.totalSent);
+//   }
+//   const b = await computeAddrBalance('GWj2s8s3X7AE77ouXzniz4teGYKuW5HNMb', txs);
+//   const totalBalance = b.totalReceived - b.totalSent;
+//   const isSame = balance.balance === totalBalance;
+//   if (!isSame) throw Error('address balance computation error');
+// };

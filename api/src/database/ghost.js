@@ -1,8 +1,8 @@
 import * as R from 'ramda';
 import { Promise } from 'bluebird';
 import { rpcCall } from '../config/utils';
-import {blockStreamId, fetch, fetchLatestProcessedBlock} from './redis';
-import {lastIndexedBlock} from "./elasticSearch";
+import { blockStreamId, fetchLatestProcessedBlock } from './redis';
+import { lastIndexedBlock } from './elasticSearch';
 
 // export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
@@ -226,6 +226,13 @@ export const getTransaction = (txId) =>
       transferSat,
     });
   });
+
+export const getAddressTxLength = (addId) => {
+  return rpcCall('getaddresstxids', [addId]).then(async (txids) => {
+    if (!txids) return 0;
+    return txids.length;
+  });
+};
 
 export const getBlockTransactions = (block, offset = 0, limit = 10) => {
   const { tx } = block;

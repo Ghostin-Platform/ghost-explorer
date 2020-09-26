@@ -18,17 +18,19 @@
             <div class="md-layout-item">
                 <md-list v-if="veterans.length > 0">
                     <md-list-item v-for="addr in veterans" :key="addr.id" style="background-color: #101010; margin-bottom: 4px" :to="`/address/${addr.id}`">
-                      <md-icon class="md-primary">toys</md-icon>
+                      <md-icon v-if="isColdStakingAddr(addr.id)" class="md-primary">ac_unit</md-icon>
+                      <md-icon v-if="!isColdStakingAddr(addr.id)" class="md-primary">local_fire_department</md-icon>
                       <span class="md-list-item-text">
                         {{ addr.id }}
                       </span>
                       <span style="margin-left: 25px; font-family: 'Sen', sans-serif" class="md-list-item-text">
                         {{ format(addr.balance) }} Ghost
                       </span>
-                      <span class="md-raised md-primary" style="color: #008C00;">
-                        <span>
+                      <span class="md-raised md-primary" >
+                        <span style="float: left; margin-right: 20px; font-family: 'Sen', sans-serif"><b>{{ addr.vets }}</b> Vets</span>
+                        <div style="min-width: 140px; color: #008C00;">
                           <b>{{ addr.percent.toFixed(2) }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">%</span></b>
-                        </span>
+                        </div>
                       </span>
                     </md-list-item>
                 </md-list>
@@ -47,6 +49,7 @@
             id
             balance
             percent
+            vets
         }
     }`
 
@@ -68,6 +71,9 @@
           format(number) {
             const formatter = new Intl.NumberFormat('en-US');
             return formatter.format(Math.abs(number / 1e8))
+          },
+          isColdStakingAddr(id) {
+            return id.startsWith('2');
           },
         },
         computed: {

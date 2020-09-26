@@ -22,6 +22,7 @@ const processBlock = async (blocks) => {
   await notify(EVENT_NEW_BLOCK, rawBlocks);
   return true;
 };
+
 export const indexingBlockProcessor = async () => {
   const from = await lastElementOfIndex(INDEX_BLOCK);
   return listenStream(STREAM_BLOCK_KEY, from, INDEXING_BATCH_SIZE, async (id, blocks) => {

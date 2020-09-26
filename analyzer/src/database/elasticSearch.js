@@ -203,7 +203,8 @@ export const elBulkAddressUpdate = async (indexName, documents, refresh = true) 
       .join('; ')};`;
     source += `ctx._source.history.removeIf(h -> h.id == params.innerId);`;
     source += `ctx._source.history.add([
-        "id": params.innerId, "time": params.blocktime, 
+        "id": params.innerId, 
+        "time": params.blocktime, 
         "totalFees": ctx._source.totalFees, 
         "totalReceived": ctx._source.totalReceived, 
         "totalSent": ctx._source.totalSent, 
@@ -222,7 +223,7 @@ export const elBulkAddressUpdate = async (indexName, documents, refresh = true) 
   });
   return el.bulk({ body, refresh }).then((result) => {
     if (result.body.errors) {
-      throw new Error('elBulkAddressUpdate bulk error');
+      throw new Error(documents);
     }
   });
 };

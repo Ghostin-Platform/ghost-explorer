@@ -7,18 +7,14 @@ import {
   storeTransaction,
   notify,
   STREAM_BLOCK_KEY,
-  STREAM_TRANSACTION_KEY, fetchLatestProcessedBlock,
+  STREAM_TRANSACTION_KEY,
+  fetchLatestProcessedBlock,
 } from './database/redis';
 import { getChainHeight } from './config/utils';
 import { enrichBlock, getBlockByHeight, getBlockTransactions } from './database/ghost';
 import initBlockListener from './database/zeromq';
 import { elCreateIndexes, elDeleteIndexes, elIsAlive } from './database/elasticSearch';
-import {
-  CURRENT_INDEXING_BLOCK,
-  CURRENT_INDEXING_TRX,
-  indexingBlockProcessor,
-  indexingTrxProcessor,
-} from './processor/indexingProcessor';
+import { indexingBlockProcessor, indexingTrxProcessor } from './processor/indexingProcessor';
 import listenMempool from './processor/mempoolProcessor';
 import { EVENT_MEMPOOL_ADDED, EVENT_MEMPOOL_REMOVED } from './database/events';
 

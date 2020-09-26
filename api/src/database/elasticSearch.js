@@ -95,6 +95,7 @@ export const elSearch = async (term) => {
   return { addresses: addrPromise, blocks: blockPromise, transactions: txPromise };
 };
 
+const VET_SIZE = 2000000000000;
 export const elGetVeterans = async () => {
   const query = {
     index: INDEX_ADDRESS,
@@ -102,7 +103,7 @@ export const elGetVeterans = async () => {
     body: {
       query: {
         bool: {
-          must: [{ range: { balance: { gte: 2000000000000 } } }],
+          must: [{ range: { balance: { gte: VET_SIZE } } }],
         },
       },
       sort: [{ balance: 'desc' }],
@@ -113,9 +114,11 @@ export const elGetVeterans = async () => {
     const { hits } = data.body.hits;
     const sources = hits.map((h) => h._source);
     const totalBalance = R.sum(sources.map((a) => a.balance));
+    const totalVets = Math.floor(totalBalance / VET_SIZE);
     return sources.map((h) => {
-      const percent = (100 * h.balance) / totalBalance;
-      return { id: h.id, balance: h.balance, percent };
+      const vets = Math.floor(h.balance / VET_SIZE);
+      const percent = (100 * vets) / totalVets;
+      return { id: h.id, balance: h.balance, vets, percent };
     });
   }
   return [];
@@ -158,8 +161,10 @@ export const elGetAddressBalance = async (id) => {
     const rewardAvgSize = address.totalRewarded / rewardSize;
     // Compute histo sample
     const maxSplit = addrHistory.length / 50;
-    const lastHisto = R.flatten(R.splitEvery(maxSplit < 1 ? 1 : maxSplit, addrHistory.reverse()).map((g) => R.head(g)));
-    return Object.assign(address, { rewardAvgSize, rewardAvgTime, rewardSize, history: lastHisto });
+    const sampleHistoric = R.flatten(
+      R.splitEvery(maxSplit < 1 ? 1 : maxSplit, addrHistory.reverse()).map((g) => R.head(g))
+    );
+    return Object.assign(address, { rewardAvgSize, rewardAvgTime, rewardSize, history: sampleHistoric });
   }
   return undefined;
 };

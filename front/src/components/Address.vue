@@ -120,7 +120,7 @@
                     <div style="width: 100%; margin-bottom: 5px">
                       <b>Balance evolution</b>
                     </div>
-                    <TimeBalanceChart :chartData="balanceChartData" style="height: 92px"></TimeBalanceChart>
+                    <TimeBalanceChart :chartData="balanceChartData" style="height: 100px"></TimeBalanceChart>
                   </div>
                   <div style="width: 100%; margin-bottom: 5px"><b>Reward statistics</b></div>
                   <md-card class="md-primary" style="text-align: center; margin: auto">
@@ -169,7 +169,7 @@
                   <md-list v-if="displayTxs.length > 0">
                     <md-list-item v-for="tx in displayTxs" :key="`live-${tx.txid}`" :to="`/tx/${tx.txid}`" style="background-color: #101010; margin-bottom: 4px">
                       <div v-if="tx.type === 'reward'">
-                        <span v-if="tx.voutAddressesSize === 1">
+                        <span v-if="tx.vinAddresses.includes(address.id) && tx.voutAddresses.includes(address.id)">
                             <md-icon class="md-primary">trending_up</md-icon>
                         </span>
                         <span v-else>
@@ -193,15 +193,15 @@
                           <span v-if="tx.type === 'reward'">
                               <span style="font-size: 14px;">{{ tx.received }}</span>
                               <span style="font-size: 14px; margin-left: 15px; margin-right: 10px">-</span>
-                              <span v-if="tx.voutAddressesSize === 1">
+                              <span v-if="tx.vinAddresses.includes(address.id) && tx.voutAddresses.includes(address.id)">
                                   Staked Reward <b>{{(tx.variation / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
                               </span>
                               <span v-else>
                                 <span v-if="tx.vinAddresses.includes(address.id)">
-                                  Transferred Reward <b>{{(tx.variation / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
+                                  Sent <b>{{(tx.outSat / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span> (Transferred Reward)
                                 </span>
                                 <span v-else>
-                                  Received <b>{{(tx.variation / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span> (Reward)
+                                  Received <b>{{(tx.inSat / 1e8).toFixed(4)}} & {{(tx.variation / 1e8).toFixed(4)}}</b>  <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span> (Transferred Reward)
                                 </span>
                               </span>
                           </span>
@@ -322,6 +322,7 @@
                 history {
                     time
                     balance
+                    totalReceived
                 }
                 transactions(offset: $txOffset, limit: $txLimit) {
                     id
