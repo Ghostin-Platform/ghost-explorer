@@ -49,7 +49,7 @@ export const updateUser = async (email, data) => {
   await storeObject(USER, email, data);
   if (data.addressesAlias !== null) {
     // Need to update all indexed address alias
-    const sets = await readSet(`${ADDRESSES}:${email}`, 'addresses');
+    const sets = await readSet(ADDRESSES, email);
     await elUpdateByIds(sets, { alias: data.addressesAlias }, [INDEX_ADDRESS]);
   }
   return getUser(email);
