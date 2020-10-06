@@ -66,6 +66,10 @@ export const getBlockByHash = async (hash) => {
   return rpcCall('getblock', [hash]);
 };
 
+export const verifyMessage = async (address, signature, message) => {
+  return rpcCall('verifymessage', [address, signature, message]).catch(() => false);
+};
+
 export const TYPE_REWARD = 'reward';
 const TYPE_COINBASE = 'coinbase';
 const TYPE_BLIND = 'blind';
@@ -204,7 +208,7 @@ export const getTransaction = (txId) =>
       __typename: 'Transaction',
       id: rawTx.txid,
       type,
-      time: rawTx.time || poolInfo.time,
+      time: rawTx.time || (poolInfo && poolInfo.time),
       pooltime: poolInfo && poolInfo.time,
       blockheight: rawTx.height,
       participants: computePublicAddr(rawTx),
@@ -233,6 +237,18 @@ export const getAddressTxLength = (addId) => {
     return txids.length;
   });
 };
+
+// export const testunspent = () => {
+//   //return rpcCall('listunspent', [1, 9999999, ['GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61']])
+//   return rpcCall('listaddressgroupings', [])
+//     .then(async (data) => {
+//       if (!data) return 0;
+//       return data.length;
+//     })
+//     .catch((e) => {
+//       console.log(e);
+//     });
+// };
 
 export const getBlockTransactions = (block, offset = 0, limit = 10) => {
   const { tx } = block;

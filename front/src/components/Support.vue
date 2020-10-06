@@ -9,6 +9,9 @@
             <h3>
                 <router-link :to="`/`">Home</router-link>
                 <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Support us
+                <div style="float: right; font-size: 14px">
+                  <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
+                </div>
             </h3>
         </div>
         <md-divider style="margin-bottom: 20px"></md-divider>
@@ -18,7 +21,7 @@
                     <md-card-header>
                         <md-card-header-text style="font-size: 18px; line-height: 30px">
                             <md-icon>assistant</md-icon>
-                            &nbsp;<b>ghostin</b> (in for initiative) to discover the blockchain ecosystem by creating a platform that will help the Ghost<br/>
+                            &nbsp;<b>ghostin</b> (in for initiative) aims to discover the blockchain ecosystem by creating a platform that will help the Ghost<br/>
                             <div style="margin-left: 29px">blockain community, starting with a next generation explorer and lot more to come.</div>
                             <div style="margin-left: 29px; margin-top: 8px">
                                 If you want to support us you can:
@@ -29,29 +32,23 @@
                             <div style="margin-left: 29px; margin-top: 8px">
                               <md-icon>keyboard_arrow_right</md-icon>Join the ghost discord channel to talk to us <a href="https://discord.gg/Pjbme6v" style="color: #116aff">https://discord.gg/Pjbme6v</a>
                             </div>
-                            <div style="margin-left: 29px; margin-top: 8px">
-                              <md-icon>keyboard_arrow_right</md-icon>Send us and email to ask features or send some love :) <span style="color: #116aff">contact@ghostin.io</span>
-                            </div>
                         </md-card-header-text>
                     </md-card-header>
                 </md-card>
             </div>
-            <div class="md-layout-item md-size-20">
-                <qrcode value="GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61" :options="{ width: 244, color: { dark: '#ffffff', light:'#000000' } }"></qrcode>
+            <div class="md-layout-item md-size-20" style="text-align: right">
+                <qrcode value="GVnq2MoGbnU4oT3vsmzwzSwQtVd1ENHQ61" :options="{ width: 208, color: { dark: '#ffffff', light:'#000000' } }"></qrcode>
             </div>
         </div>
         <div class="md-layout md-gutter">
             <div class="md-layout-item">
-                <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px">
-                    <md-list-item :to="`/tx/${tx.txid}`">
+                <md-list>
+                    <md-list-item v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px" :to="`/tx/${tx.txid}`">
                         <md-icon class="md-primary">card_giftcard</md-icon>
                         <span class="md-list-item-text">
-                                Tip received @ {{ tx.received }} from {{ tx.vinAddresses.join(', ') }}
-                                 <span style="font-size: 12px">
-
-                                </span>
-                            </span>
-                        <md-button v-if="tx.blockhash" disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ tx.tip }} Ghost</md-button>
+                            Tip received @ {{ tx.received }} from {{ tx.vinAddresses.join(', ') }}
+                        </span>
+                        <md-button v-if="tx.blockhash" disabled class="md-raised md-primary" style="background-color: #008C00; color: white; min-width: 150px">{{ tx.tip }} Ghost</md-button>
                     </md-list-item>
                 </md-list>
                 <infinite-loading @infinite="infiniteHandler">
@@ -64,7 +61,7 @@
 </template>
 
 <script>
-    import {ReadInfo} from "@/main";
+import {EVENT_UPDATE_INFO, eventBus, ReadInfo, UpdateInfo} from "@/main";
     import gql from "graphql-tag";
     import moment from "moment";
     import * as R from "ramda";
@@ -201,6 +198,12 @@
                 }
             },
             info: () => ReadInfo,
+        },
+        mounted() {
+          eventBus.$on(EVENT_UPDATE_INFO, UpdateInfo);
+        },
+        beforeDestroy() {
+          eventBus.$off(EVENT_UPDATE_INFO);
         },
     }
 </script>

@@ -1,9 +1,9 @@
 /* eslint-disable no-underscore-dangle */
-import { Client } from '@elastic/elasticsearch';
+import {Client} from '@elastic/elasticsearch';
 import * as R from 'ramda';
 import moment from 'moment';
 import conf from '../config/conf';
-import { ConfigurationError } from '../config/errors';
+import {ConfigurationError} from '../config/errors';
 
 const MAX_WINDOW_SIZE = 50000;
 export const INDEX_BLOCK = 'ghost_block';
@@ -118,10 +118,65 @@ export const elGetVeterans = async () => {
     return sources.map((h) => {
       const vets = Math.floor(h.balance / VET_SIZE);
       const percent = (100 * vets) / totalVets;
-      return { id: h.id, balance: h.balance, vets, percent };
+      return { id: h.id, balance: h.balance, alias: h.alias, vets, percent };
     });
   }
   return [];
+};
+
+export const elFindByIds = async (ids, indices = [INDEX_BLOCK, INDEX_TRX, INDEX_ADDRESS]) => {
+  const workingIds = Array.isArray(ids) ? ids : [ids];
+  const shouldTerms = [];
+  for (let index = 0; index < workingIds.length; index += 1) {
+    const id = workingIds[index];
+    shouldTerms.push({ match_phrase: { 'id.keyword': id } });
+  }
+  const query = {
+    index: indices,
+    size: 1000,
+    body: {
+      query: {
+        bool: {
+          should: shouldTerms,
+          minimum_should_match: 1,
+        },
+      },
+      sort: [{ balance: 'desc' }],
+    },
+  };
+  const data = await el.search(query);
+  return data.body.hits.hits.map((h) => h._source);
+};
+
+export const elUpdateByIds = async (ids, data, indices = [INDEX_BLOCK, INDEX_TRX, INDEX_ADDRESS]) => {
+  const workingIds = Array.isArray(ids) ? ids : [ids];
+  const shouldTerms = [];
+  for (let index = 0; index < workingIds.length; index += 1) {
+    const id = workingIds[index];
+    shouldTerms.push({ match_phrase: { 'id.keyword': id } });
+  }
+  const source = Object.entries(data)
+    .map(([k]) => `ctx._source.${k} = params.${k}`)
+    .join(';');
+  const query = {
+    index: indices,
+    size: 2000,
+    refresh: true,
+    body: {
+      query: {
+        bool: {
+          should: shouldTerms,
+          minimum_should_match: 1,
+        },
+      },
+      script: {
+        source,
+        lang: 'painless',
+        params: data,
+      },
+    },
+  };
+  await el.updateByQuery(query);
 };
 
 export const elGetAddressBalance = async (id) => {
@@ -142,25 +197,23 @@ export const elGetAddressBalance = async (id) => {
     if (hits.length === 0) return undefined;
     const address = R.head(hits)._source;
     const addrHistory = address.history.sort((a, b) => a.time - b.time);
-    let lastReward = 0;
     let rewardSize = 0;
     let lastRewardDate = null;
     const rewardPeriod = [];
     addrHistory.forEach((o) => {
-      if (lastReward < o.totalRewarded) {
+      if (o.txRewarded > 0) {
         rewardSize += 1;
         if (lastRewardDate && o.time) {
           rewardPeriod.push(o.time - lastRewardDate);
         }
         lastRewardDate = o.time;
       }
-      lastReward = o.totalRewarded;
     });
     const avgTime = rewardPeriod.length > 0 ? rewardPeriod.reduce((a, b) => a + b) / rewardPeriod.length : 0;
     const rewardAvgTime = moment.duration(avgTime * 1000).humanize();
     const rewardAvgSize = address.totalRewarded / rewardSize;
     // Compute histo sample
-    const maxSplit = addrHistory.length / 50;
+    const maxSplit = 1;
     const sampleHistoric = R.flatten(
       R.splitEvery(maxSplit < 1 ? 1 : maxSplit, addrHistory.reverse()).map((g) => R.head(g))
     );

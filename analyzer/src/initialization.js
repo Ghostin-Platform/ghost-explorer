@@ -13,7 +13,7 @@ import {
 import { getChainHeight } from './config/utils';
 import { enrichBlock, getBlockByHeight, getBlockTransactions } from './database/ghost';
 import initBlockListener from './database/zeromq';
-import { elCreateIndexes, elDeleteIndexes, elIsAlive } from './database/elasticSearch';
+import {elBlockCleanup, elCreateIndexes, elDeleteIndexes, elIsAlive} from './database/elasticSearch';
 import { indexingBlockProcessor, indexingTrxProcessor } from './processor/indexingProcessor';
 import listenMempool from './processor/mempoolProcessor';
 import { EVENT_MEMPOOL_ADDED, EVENT_MEMPOOL_REMOVED } from './database/events';
@@ -85,6 +85,7 @@ const platformInit = async (clearStream = false, clearIndex = false) => {
   try {
     // Check deps
     await checkSystemDependencies();
+    // await checkBalanceAddress();
     // --- Cleanup
     await platformCleanup(clearStream, clearIndex);
     // Start
@@ -102,6 +103,9 @@ const platformInit = async (clearStream = false, clearIndex = false) => {
         }
       });
       await initBlockListener(async (block) => {
+        // If this block height already exist
+        await elBlockCleanup(block.height);
+        // Process the new block
         const enrichedBlock = await enrichBlock(block);
         return processBlockData(enrichedBlock);
       });

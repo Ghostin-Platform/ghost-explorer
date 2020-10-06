@@ -12,38 +12,36 @@ class AuthDirective extends SchemaDirectiveVisitor {
   visitObject(type) {
     this.ensureFieldsWrapped(type);
     // noinspection JSUndefinedPropertyAssignment
-    type._requiredCapabilities = this.args.for;
+    type._requiredRoles = this.args.for;
     type._requiredAll = this.args.and;
   }
 
   visitFieldDefinition(field, details) {
     this.ensureFieldsWrapped(details.objectType);
-    field._requiredCapabilities = this.args.for;
+    field._requiredRoles = this.args.for;
     field._requiredAll = this.args.and;
   }
 
   authenticationControl(func, args, objectType, field) {
     // Get the required Role from the field first, falling back
     // to the objectType if no Role is required by the field:
-    const requiredCapabilities = field._requiredCapabilities || objectType._requiredCapabilities || [];
+    const requiredRoles = field._requiredRoles || objectType._requiredRoles || [];
     const requiredAll = field._requiredAll || objectType._requiredAll || false;
     // If a role is required
     const context = args[2];
     const { user } = context;
     if (!user) throw AuthRequired(); // User must be authenticated.
     // Start checking capabilities
-    if (requiredCapabilities.length === 0) return func.apply(this, args);
-    // Compute user capabilities
-    const userCapabilities = map((c) => c.name, user.capabilities);
+    if (requiredRoles.length === 0) return func.apply(this, args);
     // Check the user capabilities
     const availableCapabilities = [];
-    for (let index = 0; index < requiredCapabilities.length; index += 1) {
-      const checkCapability = requiredCapabilities[index];
-      const matchingCapabilities = filter((r) => includes(checkCapability, r), userCapabilities);
+    for (let index = 0; index < requiredRoles.length; index += 1) {
+      const checkCapability = requiredRoles[index];
+      const matchingCapabilities = filter((r) => includes(checkCapability, r), user.roles);
       if (matchingCapabilities.length > 0) availableCapabilities.push(checkCapability);
     }
     if (availableCapabilities.length === 0) throw ForbiddenAccess();
-    if (requiredAll && availableCapabilities.length !== requiredCapabilities.length) throw ForbiddenAccess();
+    if (requiredAll && availableCapabilities.length !== requiredRoles.length) throw ForbiddenAccess();
     return func.apply(this, args);
   }
 

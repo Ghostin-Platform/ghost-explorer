@@ -247,7 +247,6 @@
         blocks(offset: $offset, limit: $limit) {
             id
             hash
-            offset
             feeSat
             outSat
             height
@@ -280,7 +279,6 @@
             txid
             hash
             size
-            offset
             time
             blockheight
             blockhash

@@ -25,6 +25,10 @@ import Support from "./components/Support";
 import Toasted from 'vue-toasted';
 import Search from "./components/Search";
 import Gvr from "@/components/Gvr";
+import Me from "@/components/Me";
+import Profile from "@/components/account/Profile";
+import Addresses from "@/components/account/Addresses";
+import Admin from "@/components/account/Admin";
 
 // region configuration
 export const VETERAN_AMOUNT = 20000;
@@ -55,8 +59,9 @@ export const ReadInfo = gql`query {
     }
 }`
 export const UpdateInfo = (info) => {
-    const data = apolloClient.readQuery({query: ReadInfo});
-    data.info = info;
+    // const data = apolloClient.readQuery({query: ReadInfo});
+    // data.info = info;
+    const data = { info };
     apolloClient.writeQuery({query: ReadInfo, data});
 }
 // endregion
@@ -102,6 +107,11 @@ const routes = [
     {path: '/mempool', component: Mempool},
     {path: '/blocks', component: Blocks},
     {path: '/transactions', component: Transactions},
+    {path: '/me', component: Me, children: [
+        { path: 'addresses', component: Addresses },
+        { path: 'admin', component: Admin },
+        { path: '', component: Profile },
+    ]},
     {path: '/support', component: Support},
     {path: '/gvr', component: Gvr},
     {path: '/block/:id', component: Block},

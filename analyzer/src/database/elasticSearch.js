@@ -190,29 +190,91 @@ export const lastElementOfIndex = (indexName) => {
   return el.search(query).then((d) => d.body.hits.hits[0]?._source.offset || '0-0');
 };
 
+export const elBlockCleanup = async (block) => {
+  // Update current block to be orphan
+  await el.updateByQuery({
+    index: INDEX_BLOCK,
+    refresh: true,
+    body: {
+      script: {
+        lang: 'painless',
+        source: 'ctx._source.isMainChain = false;',
+        params: { block },
+      },
+      query: {
+        bool: {
+          must: [{ match: { height: block } }],
+        },
+      },
+    },
+  });
+  // Cleanup addresses
+  await el.updateByQuery({
+    index: INDEX_ADDRESS,
+    refresh: true,
+    body: {
+      script: {
+        lang: 'painless',
+        source: 'ctx._source.history.removeIf(h -> h.block >= params.block);',
+        params: { block },
+      },
+      query: {
+        nested: {
+          path: 'history',
+          query: {
+            bool: {
+              must: [{ range: { 'history.block': { gte: block } } }],
+            },
+          },
+        },
+      },
+    },
+  });
+};
+
 export const elBulkAddressUpdate = async (indexName, documents, refresh = true) => {
   const body = documents.flatMap(({ tx, document, update }) => {
     const params = update;
-    let source = `${Object.keys(params)
-      .map((key) => {
-        if (key.startsWith('last_')) {
-          return `ctx._source.${key} = params.${key} == null ? ctx._source.${key} : params.${key}`;
-        }
-        return `ctx._source.${key} = (double)ctx._source.${key} + (double)params.${key}`;
-      })
-      .join('; ')};`;
-    source += `ctx._source.history.removeIf(h -> h.id == params.innerId);`;
+    params.innerId = tx.id;
+    params.block = tx.height;
+    params.blocktime = tx.blocktime;
+    let source =
+      'long totalFees = (long)params.totalFees; ' +
+      'long totalReceived = (long)params.totalReceived; ' +
+      'long totalSent = (long)params.totalSent; ' +
+      'long totalRewarded = (long)params.totalRewarded; ' +
+      'long totalBalance = (long)params.balance; ' +
+      'for (h in ctx._source.history) { ' +
+      /**/ 'totalFees += (long)h.txFees; ' +
+      /**/ 'totalReceived += (long)h.txReceived; ' +
+      /**/ 'totalSent += (long)h.txSent; ' +
+      /**/ 'totalRewarded += (long)h.txRewarded; ' +
+      /**/ 'totalBalance += (long)h.txBalance; ' +
+      '}';
     source += `ctx._source.history.add([
         "id": params.innerId, 
+        "block": params.block, 
         "time": params.blocktime, 
-        "totalFees": ctx._source.totalFees, 
-        "totalReceived": ctx._source.totalReceived, 
-        "totalSent": ctx._source.totalSent, 
-        "totalRewarded": ctx._source.totalRewarded, 
-        "balance" : ctx._source.balance
-    ])`;
-    params.innerId = `${document.id}-${tx.id}`;
-    params.blocktime = tx.blocktime;
+        "txSent": params.totalSent,
+        "txFees": params.totalFees,
+        "txReceived": params.totalReceived,
+        "txRewarded": params.totalRewarded,
+        "txBalance": params.balance,
+        "totalFees": totalFees, 
+        "totalReceived": totalReceived, 
+        "totalSent": totalSent, 
+        "totalRewarded": totalRewarded, 
+        "totalBalance": totalBalance
+    ]); `;
+    source += 'if (params.totalReceived > 0) { ctx._source.last_received_time = params.blocktime; } ';
+    source += 'if (params.totalRewarded > 0) { ctx._source.last_reward_time = params.blocktime; }';
+    source += 'if (params.totalSent > 0) { ctx._source.last_sent_time = params.blocktime; }';
+    source += 'ctx._source.nbTx = ctx._source.history.length; ';
+    source += 'ctx._source.totalFees = (long)totalFees; ';
+    source += 'ctx._source.totalReceived = (long)totalReceived; ';
+    source += 'ctx._source.totalRewarded = (long)totalRewarded; ';
+    source += 'ctx._source.totalSent = (long)totalSent; ';
+    source += 'ctx._source.balance = (long)totalBalance; ';
     return [
       { update: { _id: document.id, _index: indexName, retry_on_conflict: 10 } },
       {

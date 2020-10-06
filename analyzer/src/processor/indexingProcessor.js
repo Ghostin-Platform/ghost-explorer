@@ -11,11 +11,12 @@ import {
 import { logger } from '../config/conf';
 import { EVENT_NEW_BLOCK, EVENT_NEW_TX } from '../database/events';
 import { genAddressTransactionUpdate } from '../domain/info';
+import {getAddressBalance} from "../database/ghost";
 
 // region indexing
 const INDEXING_BATCH_SIZE = 200;
 const processBlock = async (blocks) => {
-  const rawBlocks = R.map((item) => item.block, blocks).reverse();
+  const rawBlocks = R.map((item) => Object.assign(item.block, { offset: item.eventId }), blocks).reverse();
   // Index all blocks
   await elBulkUpsert(INDEX_BLOCK, rawBlocks);
   // Broadcast the result
@@ -40,7 +41,7 @@ export const indexingBlockProcessor = async () => {
 };
 
 const processTrx = async (txs) => {
-  const rawTxs = R.map((item) => item.tx, txs);
+  const rawTxs = R.map((item) => Object.assign(item.tx, { offset: item.eventId }), txs);
   // Index all trx
   await elBulkUpsert(INDEX_TRX, rawTxs);
   // Index address history

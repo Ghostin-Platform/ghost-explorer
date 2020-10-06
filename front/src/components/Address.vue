@@ -9,7 +9,10 @@
             <div v-if="address">
               <h3>
                 <router-link :to="`/`">Home</router-link>
-                <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Address #{{address.id}}
+                <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>
+                <span style="color: #448aff" v-if="address.alias && address.id !== address.alias">{{address.alias}} <md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon></span>
+                <span v-else>#Address</span>
+                {{address.id}}
                 <div style="float: right; font-size: 14px">
                   <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
                 </div>
@@ -169,7 +172,7 @@
                   <md-list v-if="displayTxs.length > 0">
                     <md-list-item v-for="tx in displayTxs" :key="`live-${tx.txid}`" :to="`/tx/${tx.txid}`" style="background-color: #101010; margin-bottom: 4px">
                       <div v-if="tx.type === 'reward'">
-                        <span v-if="tx.vinAddresses.includes(address.id) && tx.voutAddresses.includes(address.id)">
+                        <span v-if="tx.voutAddressesSize === 1">
                             <md-icon class="md-primary">trending_up</md-icon>
                         </span>
                         <span v-else>
@@ -193,15 +196,15 @@
                           <span v-if="tx.type === 'reward'">
                               <span style="font-size: 14px;">{{ tx.received }}</span>
                               <span style="font-size: 14px; margin-left: 15px; margin-right: 10px">-</span>
-                              <span v-if="tx.vinAddresses.includes(address.id) && tx.voutAddresses.includes(address.id)">
+                              <span v-if="tx.voutAddressesSize === 1">
                                   Staked Reward <b>{{(tx.variation / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
                               </span>
                               <span v-else>
                                 <span v-if="tx.vinAddresses.includes(address.id)">
-                                  Sent <b>{{(tx.outSat / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span> (Transferred Reward)
+                                  Staked Reward to pool <b>{{(tx.variation / 1e8).toFixed(4)}}</b> <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
                                 </span>
                                 <span v-else>
-                                  Received <b>{{(tx.inSat / 1e8).toFixed(4)}} & {{(tx.variation / 1e8).toFixed(4)}}</b>  <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span> (Transferred Reward)
+                                  Pool Reward <b>{{(tx.variation / 1e8).toFixed(4)}}</b>  <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span>
                                 </span>
                               </span>
                           </span>
@@ -281,7 +284,6 @@
     import * as R from "ramda";
     import gql from "graphql-tag";
     import TimeBalanceChart from "./charts/TimeBalanceChart";
-
     const computeTransferValue = (self, tx) => {
         //Outs
         const outs = R.filter(x => x.address.toLowerCase() === self.$route.params.id.toLowerCase(), tx.voutPerAddresses);
@@ -305,11 +307,11 @@
         self.$apollo.queries.address.refetch();
       }
     }
-
     const ADDR_PAGINATION_COUNT = 20;
     const GetAddress = gql`query GetAddress($id: String!, $txOffset: Int!, $txLimit: Int!) {
             address(id: $id) {
                 id
+                alias
                 totalReceived
                 totalRewarded
                 totalSent
@@ -321,7 +323,7 @@
                 nbTx
                 history {
                     time
-                    balance
+                    totalBalance
                     totalReceived
                 }
                 transactions(offset: $txOffset, limit: $txLimit) {
@@ -401,7 +403,6 @@
         }
       }
     }
-
     export default {
         name: 'Address',
         components: {TimeBalanceChart},
@@ -418,6 +419,7 @@
                 address: {
                     id: "-",
                     totalFees: 0,
+                    totalBalance: 0,
                     totalReceived: 0,
                     totalSent: 0,
                     totalRewarded: 0,
@@ -460,7 +462,7 @@
               return this.address.id !== '-';
             },
             balanceChartData() {
-                const datasets = [{ data: this.address.history.map(d => ({ x: new Date(d.time * 1000), y: d.balance / 1e8 }) )}]
+                const datasets = [{ data: this.address.history.map(d => ({ x: new Date(d.time * 1000), y: d.totalBalance / 1e8 }) )}]
                 return { datasets };
             },
             isVeteran() {

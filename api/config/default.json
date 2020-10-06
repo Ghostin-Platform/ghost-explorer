@@ -3,7 +3,13 @@
     "port": 4000,
     "logs": "./logs",
     "logs_level": "info",
+    "secret": "changemesecret",
+    "admin" : {
+      "email": "admin@ghostin.io",
+      "password": "ghostin"
+    },
     "zmq" : "tcp://127.0.0.1:20792",
+    "cookie_secure" : false,
     "daemon_rpc": {
       "uri": "http://127.0.0.1:20793",
       "user": "test",

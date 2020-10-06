@@ -66,7 +66,6 @@
         blocks(offset: $offset, limit: $limit) {
             id
             hash
-            offset
             feeSat
             outSat
             height

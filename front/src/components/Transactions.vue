@@ -92,7 +92,6 @@
             txid
             hash
             size
-            offset
             time
             blockheight
             blockhash

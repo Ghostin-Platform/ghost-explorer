@@ -1,4 +1,5 @@
 ### Directives
+directive @auth(for: [Roles] = [], and: Boolean = false) on OBJECT | FIELD_DEFINITION
 directive @constraint(
   # String constraints
   minLength: Int
@@ -17,11 +18,27 @@ directive @constraint(
   multipleOf: Int
 ) on INPUT_FIELD_DEFINITION
 
+enum Roles {
+  ROOT
+  VET
+}
+
 ### Scalar
 scalar DateTime
 scalar ConstraintString
 scalar ConstraintNumber
 scalar Upload
+
+type Me {
+  id: ID!
+  name: String!
+  addressesAlias: String
+  balance: Float
+  email: String!
+  principalAddress: ID
+  roles: [Roles]
+  addresses: [Address]
+}
 
 type MarketInfo {
   usd: Float
@@ -76,7 +93,6 @@ type Block {
   hash: String!
   height: Float!
   feeSat: Float
-  offset: String!
   time: Int
   mediantime: Int
   size: Float
@@ -207,7 +223,6 @@ type Transaction {
   blocktime: Int
   blockhash: String
   blockheight: Int
-  offset: String!
   hex: String
   height: Int
   confirmations: Int
@@ -232,8 +247,18 @@ type Transaction {
   voutAddressesSize: Int
   voutSize: Int
 }
+type AddressHistory {
+  time: Int
+  totalSent: Float
+  totalFees: Float
+  totalRewarded: Float
+  totalReceived: Float
+  totalBalance: Float
+}
+
 type Address {
   id: ID!
+  alias: String
   nbTx: Int
   balance: Float
   time: Int
@@ -245,7 +270,7 @@ type Address {
   totalSent: Float
   rewardAvgSize: Float
   rewardAvgTime: String
-  history: [Address]
+  history: [AddressHistory]
   transactions(offset: Int! = 0, limit: Int! = 5): [Transaction]
 }
 
@@ -259,6 +284,7 @@ type Reward {
 
 type Veteran {
   id: String!
+  alias: String
   balance: Float
   vets: Float
   percent: Float
@@ -273,6 +299,8 @@ type SearchData {
 ### QUERIES
 type Query {
   test: String
+  me: Me @auth
+  users: [Me] @auth(for: [ROOT])
   info: BlockChainInfo
   market: MarketInfo
   search(term: String!): SearchData
@@ -295,4 +323,14 @@ type Query {
   txTypeVentilation: [DataPoint]
   # Address stat
   seriesAddressBalance(id: String!): [TimeDataPoint]
+}
+
+type Mutation {
+  login(email: String!, password: String!): Me
+  addUser(email: String!, password: String!): [Me] @auth(for: [ROOT])
+  deleteUser(email: String!): [Me] @auth(for: [ROOT])
+  updateUser(name: String!, addressesAlias: String): Me @auth
+  unregisterAddress(address: String!): Me @auth
+  registerAddress(address: String!, signature: String!): Me @auth
+  logout: Boolean @auth
 }

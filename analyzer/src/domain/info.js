@@ -67,7 +67,7 @@ export const computeAddrBalance = (id, transactions) => {
   };
 };
 
-export const computeAddressUpdate = (time, reward, balance) => {
+const computeAddressUpdate = (time, reward, balance) => {
   const totalFees = Math.abs(balance.totalFees);
   const totalReceived = Math.abs(balance.totalReceived);
   const totalSent = Math.abs(balance.totalSent);
@@ -98,47 +98,25 @@ export const genAddressTransactionUpdate = (id, tx) => {
     id,
     history: [
       {
-        id: `${id}-${tx.id}`,
+        id: tx.id,
+        block: tx.height,
         time: tx.time,
-        fees: update.totalFees,
-        totalFees: update.totalFees,
-        received: update.totalReceived,
-        totalReceived: update.totalReceived,
-        sent: update.totalSent,
+        // For the transaction
+        txSent: update.totalSent,
+        txFees: update.totalFees,
+        txReceived: update.totalReceived,
+        txRewarded: update.totalRewarded,
+        txBalance: update.balance,
+        // Total from beginning
         totalSent: update.totalSent,
-        rewarded: update.totalRewarded,
+        totalFees: update.totalFees,
         totalRewarded: update.totalRewarded,
+        totalReceived: update.totalReceived,
+        // Balance
         balance: update.balance,
       },
     ],
   };
   const document = Object.assign(base, update);
   return { tx, document, update };
-};
-
-export const test = (id, height, time, trx) => {
-  const reward = computeAddrRewards(id, trx);
-  const balance = computeAddrBalance(id, trx);
-  const update = computeAddressUpdate(time, reward, balance);
-  const base = {
-    __typename: 'Address',
-    id,
-    history: [
-      {
-        id: `block-${height}`,
-        time,
-        fees: update.totalFees,
-        totalFees: update.totalFees,
-        received: update.totalReceived,
-        totalReceived: update.totalReceived,
-        sent: update.totalSent,
-        totalSent: update.totalSent,
-        rewarded: update.totalRewarded,
-        totalRewarded: update.totalRewarded,
-        balance: update.balance,
-      },
-    ],
-  };
-  const document = Object.assign(base, update);
-  return { document, update };
 };

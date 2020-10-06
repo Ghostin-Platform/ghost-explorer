@@ -87,16 +87,13 @@ export const notify = async (key, data) => {
   const message = { key, data };
   return client.publish('notification', JSON.stringify(message));
 };
-export const blockStreamId = (block) => `${block.time * 1000}-${block.height}`;
-export const txStreamId = (index, tx) => `${tx.blocktime * 1000}-${index}`;
 
 export const storeBlock = async (block) => {
-  return storeEvent(STREAM_BLOCK_KEY, blockStreamId(block), 'block', block);
+  return storeEvent(STREAM_BLOCK_KEY, '*', 'block', block);
 };
 
 export const storeTransaction = async (index, tx) => {
-  const txWithOffset = Object.assign(tx, { offset: txStreamId(index, tx) });
-  return storeEvent(STREAM_TRANSACTION_KEY, txStreamId(index, tx), 'tx', txWithOffset);
+  return storeEvent(STREAM_TRANSACTION_KEY, '*', 'tx', tx);
 };
 
 const mapStreamToJS = ([id, data]) => {

@@ -21,7 +21,8 @@
                       <md-icon v-if="isColdStakingAddr(addr.id)" class="md-primary">ac_unit</md-icon>
                       <md-icon v-if="!isColdStakingAddr(addr.id)" class="md-primary">local_fire_department</md-icon>
                       <span class="md-list-item-text">
-                        {{ addr.id }}
+                        <span>{{ addr.id }}</span>
+                        <span v-if="addr.alias && addr.alias !== addr.id" style="font-size: 12px; color: #448aff">{{ addr.alias }}</span>
                       </span>
                       <span style="margin-left: 25px; font-family: 'Sen', sans-serif" class="md-list-item-text">
                         {{ format(addr.balance) }} Ghost
@@ -47,6 +48,7 @@
     const GetVeterans = gql`query GetVeterans {
         veterans {
             id
+            alias
             balance
             percent
             vets

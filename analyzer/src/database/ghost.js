@@ -1,8 +1,6 @@
 import * as R from 'ramda';
 import { Promise } from 'bluebird';
 import { rpcCall } from '../config/utils';
-import { blockStreamId } from './redis';
-// import { computeAddrBalance } from '../domain/info';
 
 // export const ONE_DAY_OF_BLOCKS = 720;
 // export const BLOCK_STAKE_MATURITY = 225;
@@ -190,7 +188,7 @@ export const getBlockTransactions = (block, offset = 0, limit = 10) => {
 };
 
 export const enrichBlock = async (block) => {
-  const { height, tx, confirmations } = block;
+  const { height, tx } = block;
   // Resolving transactions
   const transactions = await getBlockTransactions(block, 0, tx.length);
   // Process reward transaction
@@ -204,7 +202,6 @@ export const enrichBlock = async (block) => {
     __typename: 'Block',
     id: block.hash,
     height,
-    offset: blockStreamId(block),
     size: block.size,
     strippedsize: block.strippedsize,
     weight: block.weight,
@@ -221,7 +218,7 @@ export const enrichBlock = async (block) => {
     merkleroot: block.merkleroot,
     witnessmerkleroot: block.witnessmerkleroot,
     bits: block.bits,
-    isMainChain: confirmations !== -1,
+    isMainChain: true,
     inSat,
     outSat,
     feeSat,
@@ -235,18 +232,23 @@ export const enrichBlock = async (block) => {
   };
 };
 
+export const getAddressBalance = async (id) => {
+  const addressBalance = await rpcCall('getaddressbalance', [id]);
+  return addressBalance ? addressBalance.balance : 0;
+};
+
 // export const checkBalanceAddress = async () => {
-//   const balance = await rpcCall('getaddressbalance', ['GWj2s8s3X7AE77ouXzniz4teGYKuW5HNMb']);
-//   const txids = await rpcCall('getaddresstxids', ['GWj2s8s3X7AE77ouXzniz4teGYKuW5HNMb']);
+//   const balance = await rpcCall('getaddressbalance', ['GK6Kp8vh1MpbPBWsYSRXykFv1AC5BG18rr']);
+//   const txids = await rpcCall('getaddresstxids', ['GK6Kp8vh1MpbPBWsYSRXykFv1AC5BG18rr']);
 //   const txs = await Promise.map(txids, (txId) => getTransaction(txId), { concurrency: GROUP_CONCURRENCY });
 //   for (let i = 0; i < txs.length; i += 1) {
 //     const tx = txs[i];
 //     // eslint-disable-next-line no-await-in-loop
-//     const b = await computeAddrBalance('GWj2s8s3X7AE77ouXzniz4teGYKuW5HNMb', [tx]);
+//     const b = await computeAddrBalance('GK6Kp8vh1MpbPBWsYSRXykFv1AC5BG18rr', [tx]);
 //     // eslint-disable-next-line no-console
 //     console.log(b.totalReceived - b.totalSent);
 //   }
-//   const b = await computeAddrBalance('GWj2s8s3X7AE77ouXzniz4teGYKuW5HNMb', txs);
+//   const b = await computeAddrBalance('GK6Kp8vh1MpbPBWsYSRXykFv1AC5BG18rr', txs);
 //   const totalBalance = b.totalReceived - b.totalSent;
 //   const isSame = balance.balance === totalBalance;
 //   if (!isSame) throw Error('address balance computation error');

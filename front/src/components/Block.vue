@@ -16,36 +16,38 @@
             <md-divider style="margin-bottom: 20px"></md-divider>
             <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
-                    <div style="width: 100%; margin-bottom: 5px"><b>Block coins</b></div>
-                    <md-card class="md-primary" style="text-align: center; margin: auto">
-                        <md-card-header>
-                            <md-card-header-text>
-                                <div class="md-title">{{ reward }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
-                                <div v-if="reward > 5">
-                                    <div class="md-subhead"># <b>Dev and growth</b> block reward</div>
-                                </div>
-                                <div v-else>
-                                    <div class="md-subhead"># <b>Stake</b> block reward</div>
-                                </div>
-                            </md-card-header-text>
-                        </md-card-header>
-                    </md-card>
-                    <md-card class="md-primary" style="text-align: center; margin: auto">
-                        <md-card-header>
-                            <md-card-header-text>
-                                <div class="md-title"> {{ fee }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
-                                <div class="md-subhead"># Transaction fees</div>
-                            </md-card-header-text>
-                        </md-card-header>
-                    </md-card>
-                    <md-card class="md-primary" style="text-align: center; margin: auto">
-                        <md-card-header>
-                            <md-card-header-text>
-                                <div class="md-title"> {{ out }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
-                                <div class="md-subhead"># Total output</div>
-                            </md-card-header-text>
-                        </md-card-header>
-                    </md-card>
+                    <span v-if="block.isMainChain">
+                      <div style="width: 100%; margin-bottom: 5px"><b>Block coins</b></div>
+                      <md-card class="md-primary" style="text-align: center; margin: auto">
+                          <md-card-header>
+                              <md-card-header-text>
+                                  <div class="md-title">{{ reward }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
+                                  <div v-if="reward > 5">
+                                      <div class="md-subhead"># <b>Dev and growth</b> block reward</div>
+                                  </div>
+                                  <div v-else>
+                                      <div class="md-subhead"># <b>Stake</b> block reward</div>
+                                  </div>
+                              </md-card-header-text>
+                          </md-card-header>
+                      </md-card>
+                      <md-card class="md-primary" style="text-align: center; margin: auto">
+                          <md-card-header>
+                              <md-card-header-text>
+                                  <div class="md-title"> {{ fee }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
+                                  <div class="md-subhead"># Transaction fees</div>
+                              </md-card-header-text>
+                          </md-card-header>
+                      </md-card>
+                      <md-card class="md-primary" style="text-align: center; margin: auto">
+                          <md-card-header>
+                              <md-card-header-text>
+                                  <div class="md-title"> {{ out }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
+                                  <div class="md-subhead"># Total output</div>
+                              </md-card-header-text>
+                          </md-card-header>
+                      </md-card>
+                    </span>
                     <div style="width: 100%; margin-bottom: 5px"><b>Block statistics</b></div>
                     <md-card class="md-primary" style="text-align: center; margin: auto">
                         <md-card-header>
@@ -85,7 +87,7 @@
                                 </md-card-header>
                             </md-card>
                         </div>
-                        <div class="md-layout-item">
+                        <div v-if="block.isMainChain" class="md-layout-item">
                             <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
                                 <md-card-header>
                                     <md-card-header-text>
@@ -94,6 +96,16 @@
                                     </md-card-header-text>
                                 </md-card-header>
                             </md-card>
+                        </div>
+                        <div v-else class="md-layout-item">
+                          <md-card style="text-align: center; background-color: #a94442; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
+                            <md-card-header>
+                              <md-card-header-text>
+                                <div class="md-title">Orphaned</div>
+                                <div class="md-subhead">Invalid block</div>
+                              </md-card-header-text>
+                            </md-card-header>
+                          </md-card>
                         </div>
                         <div class="md-layout-item">
                             <md-card style="text-align: center; margin: auto; box-shadow:inset 0 0 0 1px #ffffff;">
@@ -171,61 +183,63 @@
                             </md-button>
                         </md-list-item>
                     </md-list>
-                    <div style="width: 100%; margin-bottom: 5px"><b>{{ block.txSize }} Transactions</b></div>
-                    <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px">
-                        <md-list-item :to="`/tx/${tx.txid}`">
-                            <div v-if="tx.type === 'reward'">
-                                <md-icon class="md-primary">card_giftcard</md-icon>
-                            </div>
-                            <div v-else-if="tx.type === 'coinbase'">
-                                <md-icon class="md-primary">memory</md-icon>
-                            </div>
-                            <div v-else-if="tx.type === 'blind'">
-                                <md-icon class="md-primary">masks</md-icon>
-                            </div>
-                            <div v-else-if="tx.type === 'anon'">
-                                <md-icon class="md-primary">security</md-icon>
-                            </div>
-                            <div v-else-if="tx.type === 'mixed_private'">
-                                <md-icon class="md-primary">camera</md-icon>
-                            </div>
-                            <div v-else-if="tx.type === 'mixed_standard'">
-                                <md-icon class="md-primary">local_police</md-icon>
-                            </div>
-                            <div v-else>
-                                <md-icon class="md-primary">multiple_stop</md-icon>
-                            </div>
-                            <span style="margin-left: 35px" class="md-list-item-text">
-                                <span v-if="tx.type === 'reward'">
-                                    Reward of {{ reward }} Ghost (from {{ tx.satIn }} stake) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                </span>
-                                <span v-else-if="tx.type === 'coinbase'">
-                                    New coin of {{ tx.out }} Ghost to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                </span>
-                                <span v-else-if="tx.type === 'blind'">
-                                    Blinded ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                </span>
-                                <span v-else-if="tx.type === 'anon'">
-                                    Anonymous ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
-                                </span>
-                                <span v-else-if="tx.type === 'mixed_private'">
-                                    Mixed blind/anon ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                </span>
-                                <span v-else-if="tx.type === 'mixed_standard'">
-                                    Mixed standard/private {{ tx.out > 0 ? `of ${tx.out} Ghost` : '' }} ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                </span>
-                                <span v-else>
-                                    Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
-                                </span>
-                            </span>
-                            <md-button v-if="confirmations < 12" disabled class="md-raised md-primary" style="background-color: #D15600; color: white">{{ confirmations }}/12 Confirmations</md-button>
-                            <md-button v-else disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ confirmations }} Confirmations</md-button>
-                        </md-list-item>
-                    </md-list>
-                    <infinite-loading v-if="initialLoadingDone" @infinite="infiniteHandler">
-                        <div slot="no-more" style="margin-top: 10px"></div>
-                        <div slot="no-results" style="margin-top: 10px"></div>
-                    </infinite-loading>
+                    <span v-if="block.isMainChain">
+                      <div style="width: 100%; margin-bottom: 5px"><b>{{ block.txSize }} Transactions</b></div>
+                      <md-list v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px">
+                          <md-list-item :to="`/tx/${tx.txid}`">
+                              <div v-if="tx.type === 'reward'">
+                                  <md-icon class="md-primary">card_giftcard</md-icon>
+                              </div>
+                              <div v-else-if="tx.type === 'coinbase'">
+                                  <md-icon class="md-primary">memory</md-icon>
+                              </div>
+                              <div v-else-if="tx.type === 'blind'">
+                                  <md-icon class="md-primary">masks</md-icon>
+                              </div>
+                              <div v-else-if="tx.type === 'anon'">
+                                  <md-icon class="md-primary">security</md-icon>
+                              </div>
+                              <div v-else-if="tx.type === 'mixed_private'">
+                                  <md-icon class="md-primary">camera</md-icon>
+                              </div>
+                              <div v-else-if="tx.type === 'mixed_standard'">
+                                  <md-icon class="md-primary">local_police</md-icon>
+                              </div>
+                              <div v-else>
+                                  <md-icon class="md-primary">multiple_stop</md-icon>
+                              </div>
+                              <span style="margin-left: 35px" class="md-list-item-text">
+                                  <span v-if="tx.type === 'reward'">
+                                      Reward of {{ reward }} Ghost (from {{ tx.satIn }} stake) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                  </span>
+                                  <span v-else-if="tx.type === 'coinbase'">
+                                      New coin of {{ tx.out }} Ghost to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                  </span>
+                                  <span v-else-if="tx.type === 'blind'">
+                                      Blinded ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                  </span>
+                                  <span v-else-if="tx.type === 'anon'">
+                                      Anonymous ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs
+                                  </span>
+                                  <span v-else-if="tx.type === 'mixed_private'">
+                                      Mixed blind/anon ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                  </span>
+                                  <span v-else-if="tx.type === 'mixed_standard'">
+                                      Mixed standard/private {{ tx.out > 0 ? `of ${tx.out} Ghost` : '' }} ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                  </span>
+                                  <span v-else>
+                                      Standard of {{ tx.out }} Ghost ({{ tx.fee }} Fee) to <b>{{ tx.voutSize }}</b> outputs, {{ tx.voutAddressesSize }} addresses
+                                  </span>
+                              </span>
+                              <md-button v-if="confirmations < 12" disabled class="md-raised md-primary" style="background-color: #D15600; color: white">{{ confirmations }}/12 Confirmations</md-button>
+                              <md-button v-else disabled class="md-raised md-primary" style="background-color: #008C00; color: white">{{ confirmations }} Confirmations</md-button>
+                          </md-list-item>
+                      </md-list>
+                      <infinite-loading v-if="initialLoadingDone" @infinite="infiniteHandler">
+                          <div slot="no-more" style="margin-top: 10px"></div>
+                          <div slot="no-results" style="margin-top: 10px"></div>
+                      </infinite-loading>
+                    </span>
                 </div>
             </div>
           </div>
@@ -266,6 +280,7 @@
           id
           hash
           time
+          isMainChain
           difficulty
           height
           feeSat
@@ -331,6 +346,7 @@
                     rewardSat: 0,
                     feeSat: 0,
                     outSat: 0,
+                    isMainChain: true,
                     transactions: []
                 }
             }

@@ -52,7 +52,7 @@ export default {
           const { data, path, stack } = callError;
           const error = { data, path, stacktrace: stack.split('\n').map((line) => line.trim()) };
           if (includes(callError.name, ['AuthRequired', 'AuthFailure', 'ForbiddenAccess'])) {
-            logger.warn('API Call', Object.assign(callMetaData, { error }));
+            // logger.warn('API Call', Object.assign(callMetaData, { error }));
           } else {
             logger.error('API Call', Object.assign(callMetaData, { error }));
           }

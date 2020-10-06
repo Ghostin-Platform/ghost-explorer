@@ -7,13 +7,14 @@ import typeDefs from '../../config/schema/ghost.graphql';
 import infoResolver from '../resolvers/info';
 import addressResolver from '../resolvers/address';
 import txResolver from '../resolvers/transaction';
+import userResolver from '../resolvers/user';
 
 const createSchema = () => {
   const globalResolvers = {
     DateTime: GraphQLDateTime,
   };
 
-  const resolvers = mergeResolvers([globalResolvers, infoResolver, addressResolver, txResolver]);
+  const resolvers = mergeResolvers([globalResolvers, userResolver, infoResolver, addressResolver, txResolver]);
 
   return makeExecutableSchema({
     typeDefs,
