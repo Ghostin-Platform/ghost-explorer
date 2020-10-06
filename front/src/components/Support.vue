@@ -44,10 +44,12 @@
             <div class="md-layout-item">
                 <md-list>
                     <md-list-item v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px" :to="`/tx/${tx.txid}`">
-                        <md-icon class="md-primary">card_giftcard</md-icon>
-                        <span class="md-list-item-text">
-                            Tip received @ {{ tx.received }} from {{ tx.vinAddresses.join(', ') }}
-                        </span>
+                        <div>
+                          <md-icon style="margin-top: -2px" class="md-primary">card_giftcard</md-icon>
+                          <span style="margin-left: 15px">
+                            Tip received @ {{ tx.received }} from  <span style="color: #116aff;">{{ tx.vinPerAddresses.map(a => a.resolveAddr.alias || a.resolveAddr.id).join(', ') }}</span>
+                          </span>
+                        </div>
                         <md-button v-if="tx.blockhash" disabled class="md-raised md-primary" style="background-color: #008C00; color: white; min-width: 150px">{{ tx.tip }} Ghost</md-button>
                     </md-list-item>
                 </md-list>
@@ -87,10 +89,11 @@ import {EVENT_UPDATE_INFO, eventBus, ReadInfo, UpdateInfo} from "@/main";
                 type
                 txid
                 voutSize
-                vinAddresses
-                vinAddressesSize
                 vinPerAddresses {
-                    address
+                    resolveAddr {
+                        id
+                        alias
+                    }
                     valueSat
                 }
                 voutAddresses
@@ -118,7 +121,8 @@ import {EVENT_UPDATE_INFO, eventBus, ReadInfo, UpdateInfo} from "@/main";
                 page: TIP_PAGINATION_COUNT,
                 info: {
                     height: 0,
-                    sync_percent: 0
+                    sync_percent: 0,
+                    sync_index_percent: 0
                 },
                 address: {
                     id: "",

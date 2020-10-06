@@ -1,6 +1,7 @@
 import { getBlockById, getTransactions } from '../domain/info';
 import { fetch } from '../database/redis';
 import { CURRENT_PROCESSING_BLOCK, getPooledTransactions, getTransaction } from '../database/ghost';
+import { getAddressBalance } from '../domain/address';
 
 const txResolver = {
   Query: {
@@ -11,6 +12,12 @@ const txResolver = {
   Transaction: {
     block: (tx) => getBlockById(tx.blockhash),
     confirmations: (tx) => fetch(CURRENT_PROCESSING_BLOCK).then((height) => 1 + (height - tx.height)),
+  },
+  VoutAddr: {
+    resolveAddr: (vout) => getAddressBalance(vout.address),
+  },
+  VinAddr: {
+    resolveAddr: (vin) => getAddressBalance(vin.address),
   },
   TxIn: {
     __resolveType: (obj) => {

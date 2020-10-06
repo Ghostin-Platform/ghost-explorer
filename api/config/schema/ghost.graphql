@@ -200,6 +200,7 @@ enum TransactionType {
 
 type VoutAddr {
   address: String!
+  resolveAddr: Address
   spentTxId: String
   type: TransactionType
   value: Float
@@ -208,6 +209,7 @@ type VoutAddr {
 
 type VinAddr {
   address: String!
+  resolveAddr: Address
   type: TransactionType
   value: Float
   valueSat: Float
