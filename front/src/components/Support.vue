@@ -46,8 +46,8 @@
                     <md-list-item v-for="tx in displayTxs" :key="tx.txid" style="background-color: #101010; margin-bottom: 4px" :to="`/tx/${tx.txid}`">
                         <div>
                           <md-icon style="margin-top: -2px" class="md-primary">card_giftcard</md-icon>
-                          <span style="margin-left: 15px">
-                            Tip received @ {{ tx.received }} from  <span style="color: #116aff;">{{ tx.vinPerAddresses.map(a => a.resolveAddr.alias || a.resolveAddr.id).join(', ') }}</span>
+                          <span style="margin-left: 15px;">
+                            Tip received @ {{ tx.received }} from  <span style="color: #116aff; text-overflow: ellipsis;">{{ tipAddresses(tx) }}</span>
                           </span>
                         </div>
                         <md-button v-if="tx.blockhash" disabled class="md-raised md-primary" style="background-color: #008C00; color: white; min-width: 150px">{{ tx.tip }} Ghost</md-button>
@@ -152,6 +152,11 @@ import {EVENT_UPDATE_INFO, eventBus, ReadInfo, UpdateInfo} from "@/main";
         methods: {
             async copy(s) {
                 await navigator.clipboard.writeText(s);
+            },
+            tipAddresses(tx) {
+              const uniqAddresses = new Set(tx.vinPerAddresses.map(a => a.resolveAddr.alias || a.resolveAddr.id));
+              const text = Array.from(uniqAddresses).join(', ');
+              return text.length > 70 ? text.substring(0, 70) + '...' : text;
             },
             infiniteHandler($state) {
                 const variables = {
