@@ -2,7 +2,7 @@
     <div>
         <div style="min-height: 5px; margin-bottom: 8px">
             <div v-if="$apollo.loading">
-                <md-progress-bar md-mode="query"></md-progress-bar>
+                <md-progress-bar class="md-accent" md-mode="query"></md-progress-bar>
             </div>
         </div>
         <div>
@@ -79,7 +79,7 @@
                       <b v-if="addressMempool.length === 0" style="color: #448aff">{{ addressMempool.length }}</b>
                       <b v-else style="color: #008C00">{{ addressMempool.length }}</b>
                       transactions for this address and potentially a reward</span>
-                    <span style="float: right"><md-progress-spinner :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
+                    <span style="float: right"><md-progress-spinner class="md-accent" :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
                   </md-card-header-text>
                 </md-card-header>
               </md-card>

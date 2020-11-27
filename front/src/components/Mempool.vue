@@ -2,7 +2,7 @@
     <div>
         <div style="min-height: 5px; margin-bottom: 8px">
             <div v-if="$apollo.loading">
-                <md-progress-bar md-mode="query"></md-progress-bar>
+                <md-progress-bar class="md-accent" md-mode="query"></md-progress-bar>
             </div>
         </div>
         <div>
@@ -20,7 +20,7 @@
                             <md-card-header-text>
                                 <md-icon>memory</md-icon>
                                 <span style="margin-left: 10px;">Next blocks may contains <b style="color: #448aff">{{ info.pooledTxCount }}</b> transactions in addition to the reward tx</span>
-                                <span style="float: right"><md-progress-spinner :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
+                                <span style="float: right"><md-progress-spinner class="md-accent" :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
                             </md-card-header-text>
                         </md-card-header>
                     </md-card>

@@ -6,8 +6,8 @@
                     <div class="md-layout-item" style="min-width: 1280px; max-width: 1280px; margin: auto">
                         <div class="md-layout">
                             <div class="md-layout-item md-size-20" style="padding-left: 0;">
-                                <img alt="Vue logo" src="./assets/logo.png" style="float: left;" width="44">
-                                <div style="font-family: 'Sen', sans-serif; float: left; margin-left: 15px; padding-top: 8px; font-size: 32px;" class="md-title">ghostin</div>
+                                <img alt="Vue logo" src="./assets/logo_home.png" style="float: left;" width="44">
+                                <div style="font-family: 'Sen', sans-serif; float: left; margin-left: 15px; padding-top: 8px; font-size: 30px;" class="md-title">ghostin</div>
                             </div>
                             <div class="md-layout-item md-size-10">
                                 <md-button v-on:click="$router.push('/')" style="font-family: 'Sen', sans-serif;">ghostscan</md-button>
@@ -35,7 +35,7 @@
             <div style="text-align: center; margin: auto; padding: 15px; background-color: #080808; height: 80px">
                 <md-divider></md-divider>
                 <br/>
-                <span style="font-size: 16px; font-family: 'Sen', sans-serif;">ghostin 1.2.2 @ 2020</span>
+                <span style="font-size: 16px; font-family: 'Sen', sans-serif;">ghostin 1.2.3 @ 2020</span>
             </div>
         </md-content>
     </div>

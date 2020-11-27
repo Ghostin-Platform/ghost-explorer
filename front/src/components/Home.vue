@@ -2,12 +2,12 @@
     <div>
         <div style="min-height: 5px; margin-bottom: 8px">
             <div v-if="$apollo.loading">
-                <md-progress-bar md-mode="query"></md-progress-bar>
+                <md-progress-bar class="md-accent" md-mode="query"></md-progress-bar>
             </div>
         </div>
         <div>
             <h3>
-                <md-icon style="margin-top: -1px">keyboard_capslock</md-icon> Ghostin /<span style="color: #116aff">in for initiative</span>/ is a platform that aim to help the Ghost blockchain community
+                <md-icon style="margin-top: -1px">keyboard_capslock</md-icon> Ghostin /<span style="color: #448aff">in for initiative</span>/ is a platform that aim to help the Ghost blockchain community
                 <b style="float: right"><router-link :to="`/support`"><b>Please support us</b></router-link></b>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
@@ -104,7 +104,7 @@
                                       <b v-if="info.pooledTxCount === 0" style="color: #448aff">{{ info.pooledTxCount }}</b>
                                       <b v-else style="color: #008C00">{{ info.pooledTxCount }}</b>
                                     transactions in addition to the reward</span>
-                                    <span style="float: right"><md-progress-spinner :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
+                                    <span style="float: right"><md-progress-spinner class="md-accent" :md-diameter="18" :md-stroke="3" md-mode="indeterminate"></md-progress-spinner></span>
                                 </md-card-header-text>
                             </md-card-header>
                         </md-card>
