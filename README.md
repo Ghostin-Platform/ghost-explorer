@@ -1,10 +1,10 @@
 <h1 align="center">
-  <a href="https://www.ghostin.io"><img src="https://www.ghostin.io/wp-content/uploads/2020/11/logo_square_small-500x500.png" alt="Ghostin"></a>
+  <a href="https://www.ghostin.io"><img src="https://www.ghostin.io/wp-content/uploads/2020/11/logo_text_small.png" alt="Ghostin"></a>
 </h1>
 <p align="center">
   <a href="https://www.ghostin.io" alt="Website"><img src="https://img.shields.io/badge/website-ghostin.io-blue.svg" /></a>
   <a href="https://www.notion.so/Ghostin-Public-Knowledge-Base-88133e2f1e4946c880a12f8628ef86ae" alt="Documentation"><img src="https://img.shields.io/badge/Documentation-RTFM-orange.svg" /></a>
-  <a href="https://slack.limeo.org" alt="Slack"><img src="https://slack.limeo.org/badge.svg" /></a>
+  <a href="https://slack.limeo.org" alt="Slack"><img src="https://img.shields.io/badge/slack-join-red" /></a>
 </p>
 
 ## Introduction
