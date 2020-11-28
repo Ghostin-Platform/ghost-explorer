@@ -42,4 +42,4 @@ If you need support or you wish to engage a discussion about the Ghostin platfor
 
 ## About
 
-Ghostin is an initiative powered by the [Luatix](https://www.luatix.org) non-profit organization.
+Ghostin is an initiative powered by the [Limeo](https://www.limeo.org) non-profit organization.
