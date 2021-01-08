@@ -4,9 +4,6 @@ import * as R from 'ramda';
 import conf, { logger } from '../config/conf';
 import { DatabaseError } from '../config/errors';
 
-// const ONE_YEAR_SEC_RETENTION = 31556952;
-export const STREAM_TRANSACTION_KEY = 'ghostin.stream.trx';
-export const STREAM_BLOCK_KEY = 'ghostin.stream.blocks';
 const redisOptions = {
   lazyConnect: true,
   port: conf.get('redis:port'),
@@ -35,15 +32,6 @@ const getClient = async () => {
   return redis;
 };
 
-export const fetchLatestProcessedBlock = async () => {
-  const client = await getClient();
-  const res = await client.call('XREVRANGE', STREAM_BLOCK_KEY, '+', '-', 'COUNT', 1);
-  if (res.length > 0) {
-    return JSON.parse(res[0][1][1]).height;
-  }
-  return undefined;
-};
-
 export const listenNotifications = async (callback) => {
   const client = await initRedisClient();
   client.on('message', async (channel, message) => callback(JSON.parse(message)));
@@ -59,19 +47,6 @@ export const redisIsAlive = async () => {
   return true;
 };
 
-export const fetch = async (key) => {
-  const client = await getClient();
-  const data = await client.get(key);
-  return data && JSON.parse(data);
-};
-
-export const blockStreamId = (block) => `${block.time * 1000}-${block.height}`;
-
-export const streamRange = async (streamKey, offset, limit) => {
-  const client = await getClient();
-  return client.call('XREVRANGE', streamKey, offset, '-', 'COUNT', limit);
-};
-
 export const storeObject = async (prefix, id, data) => {
   const client = await getClient();
   const fields = R.flatten(Object.entries(R.filter((d) => d !== null, data)));
@@ -82,8 +57,7 @@ export const storeObject = async (prefix, id, data) => {
 export const getObject = async (id) => {
   const client = await getClient();
   const data = await client.call('HGETALL', id);
-  const test = R.isEmpty(data) ? null : Object.fromEntries(R.splitEvery(2, data));
-  return test;
+  return R.isEmpty(data) ? null : Object.fromEntries(R.splitEvery(2, data));
 };
 
 export const delObject = async (prefix, ids) => {

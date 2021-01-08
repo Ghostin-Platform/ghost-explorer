@@ -7,15 +7,23 @@
         </div>
         <div>
           <h3>
-            <md-icon style="margin-top: -1px; margin-right: 4px">toys</md-icon> Ghost Veterans - <b style="color: #448aff">{{ vetSize }} Veterans</b> in <b style="color: #448aff">{{ veterans.length }} wallets</b>
+            <md-icon style="margin-top: -1px; margin-right: 4px">toys</md-icon> Potential |Ghost Veterans| of {{ month }} - <b style="color: #448aff">{{ vetSize }} Veterans</b> in <b style="color: #448aff">{{ veterans.length }} wallets</b>
             <div style="float: right; font-size: 14px">
-              <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
+              <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers |  {{ info.sync_index_percent.toFixed(0) }}% Sync | {{ info.timeoffset }} secs</b>
             </div>
           </h3>
         </div>
         <md-divider style="margin-bottom: 20px"></md-divider>
         <div class="md-layout md-gutter">
             <div class="md-layout-item">
+                <md-card class="md-primary" style="margin: auto; background-color: #101010;">
+                  <md-card-header>
+                    <md-card-header-text>
+                      <md-icon>info</md-icon>
+                      <span style="margin-left: 10px;">Only address <b style="color: #448aff">with a transaction > 20K Ghost</b>  during the current month are listed here</span>
+                    </md-card-header-text>
+                  </md-card-header>
+                </md-card>
                 <md-list v-if="veterans.length > 0">
                     <md-list-item v-for="addr in veterans" :key="addr.id" style="background-color: #101010; margin-bottom: 4px" :to="`/address/${addr.id}`">
                       <md-icon v-if="isColdStakingAddr(addr.id)" class="md-primary">ac_unit</md-icon>
@@ -44,6 +52,7 @@
     import {EVENT_UPDATE_INFO, eventBus, ReadInfo, UpdateInfo} from "@/main";
     import gql from "graphql-tag";
     import * as R from "ramda";
+    import moment from "moment";
 
     const GetVeterans = gql`query GetVeterans {
         veterans {
@@ -82,6 +91,9 @@
           vetSize() {
             return Math.round(R.sum(this.veterans.map(e => e.balance)) / 2000000000000);
           },
+          month() {
+            return moment().format("MMMM");
+          }
         },
         apollo: {
             veterans: {

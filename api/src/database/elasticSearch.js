@@ -1,10 +1,11 @@
 /* eslint-disable no-underscore-dangle */
-import {Client} from '@elastic/elasticsearch';
+import { Client } from '@elastic/elasticsearch';
 import * as R from 'ramda';
 import moment from 'moment';
 import conf from '../config/conf';
-import {ConfigurationError} from '../config/errors';
+import { ConfigurationError } from '../config/errors';
 
+const VET_SIZE = 2000000000000;
 const MAX_WINDOW_SIZE = 50000;
 export const INDEX_BLOCK = 'ghost_block';
 export const INDEX_ADDRESS = 'ghost_address';
@@ -27,6 +28,35 @@ export const elIsAlive = async () => {
         throw ConfigurationError('ElasticSearch seems down');
       }
     );
+};
+
+const elFetchAllForQuery = async (index, bodyQuery) => {
+  const paginationCount = 1000;
+  const elements = [];
+  let hasNextPage = true;
+  let searchAfter = '';
+  while (hasNextPage) {
+    let body = {
+      size: paginationCount,
+      sort: { time: 'asc' },
+      query: bodyQuery,
+    };
+    if (searchAfter) {
+      body = { ...body, search_after: [searchAfter] };
+    }
+    const query = { index, track_total_hits: true, body };
+    // eslint-disable-next-line no-await-in-loop
+    const result = await el.search(query);
+    const { hits } = result.body.hits;
+    if (hits.length === 0) {
+      hasNextPage = false;
+    } else {
+      const lastHit = R.last(hits);
+      searchAfter = R.head(lastHit.sort);
+      elements.push(...hits.map((h) => h._source));
+    }
+  }
+  return elements;
 };
 
 export const escape = (query) => {
@@ -88,6 +118,42 @@ export const lastIndexedBlock = () => {
   });
 };
 
+export const elBlocks = (offset, limit) => {
+  let body = {
+    size: limit,
+    sort: [{ height: 'desc' }],
+    query: {
+      match_all: {},
+    },
+  };
+  if (!R.isEmpty(offset)) {
+    body = { ...body, search_after: [offset] };
+  }
+  const query = { index: INDEX_BLOCK, body };
+  return el.search(query).then((d) => {
+    const { hits } = d.body.hits;
+    return hits.map((h) => h._source);
+  });
+};
+
+export const elTransactions = (offset, limit) => {
+  let body = {
+    size: limit,
+    sort: [{ blockheight: 'desc' }],
+    query: {
+      match_all: {},
+    },
+  };
+  if (!R.isEmpty(offset)) {
+    body = { ...body, search_after: [offset] };
+  }
+  const query = { index: INDEX_TRX, body };
+  return el.search(query).then((d) => {
+    const { hits } = d.body.hits;
+    return hits.map((h) => h._source);
+  });
+};
+
 export const elSearch = async (term) => {
   const addrPromise = addressSearch(term);
   const blockPromise = blockSearch(term);
@@ -95,31 +161,59 @@ export const elSearch = async (term) => {
   return { addresses: addrPromise, blocks: blockPromise, transactions: txPromise };
 };
 
-const VET_SIZE = 2000000000000;
 export const elGetVeterans = async () => {
+  const queryTest = {
+    bool: {
+      must: [{ range: { time: { gte: 'now/M' } } }, { range: { balance: { gte: VET_SIZE } } }],
+    },
+  };
+  const dataTest = await elFetchAllForQuery(INDEX_ADDRESS, queryTest);
+  const addresses = R.uniq(dataTest.map((a) => a.address));
+  const addressesMatcher = R.mergeAll(addresses.map((a) => ({ [a.toLowerCase()]: a })));
+  const should = addresses.map((a) => ({ match_phrase: { 'address.keyword': a } }));
   const query = {
     index: INDEX_ADDRESS,
-    size: 1000,
     body: {
       query: {
         bool: {
-          must: [{ range: { balance: { gte: VET_SIZE } } }],
+          should,
+          minimum_should_match: 1,
         },
       },
-      sort: [{ balance: 'desc' }],
+      aggs: {
+        by_address: {
+          terms: {
+            field: 'address.keyword',
+            size: 100000,
+          },
+          aggs: {
+            total_balance: { sum: { field: 'balance' } },
+            balance_bucket_filter: {
+              bucket_selector: {
+                buckets_path: {
+                  totalBalance: 'total_balance',
+                },
+                script: `params.totalBalance > ${VET_SIZE}L`,
+              },
+            },
+          },
+        },
+      },
     },
   };
   const data = await el.search(query);
-  if (data && data.body.hits) {
-    const { hits } = data.body.hits;
-    const sources = hits.map((h) => h._source);
-    const totalBalance = R.sum(sources.map((a) => a.balance));
+  // eslint-disable-next-line camelcase
+  if (data?.body?.aggregations?.by_address) {
+    // eslint-disable-next-line camelcase
+    const { buckets } = data?.body?.aggregations?.by_address;
+    const totalBalance = R.sum(buckets.map((a) => a.total_balance.value));
     const totalVets = Math.floor(totalBalance / VET_SIZE);
-    return sources.map((h) => {
-      const vets = Math.floor(h.balance / VET_SIZE);
+    const dataToSort = buckets.map((h) => {
+      const vets = Math.floor(h.total_balance.value / VET_SIZE);
       const percent = (100 * vets) / totalVets;
-      return { id: h.id, balance: h.balance, alias: h.alias, vets, percent };
+      return { id: addressesMatcher[h.key], balance: h.total_balance.value, alias: '', vets, percent };
     });
+    return R.sort((a, b) => b.balance - a.balance, dataToSort);
   }
   return [];
 };
@@ -181,45 +275,62 @@ export const elUpdateByIds = async (ids, data, indices = [INDEX_BLOCK, INDEX_TRX
 
 export const elGetAddressBalance = async (id) => {
   const query = {
-    index: INDEX_ADDRESS,
-    size: 1,
-    body: {
-      query: {
-        bool: {
-          must: [{ match_phrase: { id } }],
-        },
-      },
+    bool: {
+      must: [{ match: { address: id } }],
     },
   };
-  const data = await el.search(query);
-  if (data && data.body.hits) {
-    const { hits } = data.body.hits;
-    if (hits.length === 0) return undefined;
-    const address = R.head(hits)._source;
-    const addrHistory = address.history.sort((a, b) => a.time - b.time);
-    let rewardSize = 0;
-    let lastRewardDate = null;
-    const rewardPeriod = [];
-    addrHistory.forEach((o) => {
-      if (o.txRewarded > 0) {
-        rewardSize += 1;
-        if (lastRewardDate && o.time) {
-          rewardPeriod.push(o.time - lastRewardDate);
-        }
-        lastRewardDate = o.time;
+  const elements = await elFetchAllForQuery(INDEX_ADDRESS, query);
+  if (elements.length === 0) return undefined;
+  let lastRewardDate = null;
+  const rewardPeriod = [];
+  const rewards = [];
+  const history = [];
+  let totalSent = 0;
+  let totalFees = 0;
+  let totalRewarded = 0;
+  let totalReceived = 0;
+  let totalBalance = 0;
+  elements.forEach((o) => {
+    if (o.txRewarded > 0) {
+      rewards.push(o.txRewarded);
+      if (lastRewardDate && o.time) {
+        rewardPeriod.push(o.time - lastRewardDate);
       }
+      lastRewardDate = o.time;
+    }
+    totalSent += o.totalSent;
+    totalFees += o.totalFees;
+    totalRewarded += o.totalRewarded;
+    totalReceived += o.totalReceived;
+    totalBalance = totalReceived - totalSent;
+    history.push({
+      time: o.time,
+      totalSent,
+      totalFees,
+      totalRewarded,
+      totalReceived,
+      totalBalance,
     });
-    const avgTime = rewardPeriod.length > 0 ? rewardPeriod.reduce((a, b) => a + b) / rewardPeriod.length : 0;
-    const rewardAvgTime = moment.duration(avgTime * 1000).humanize();
-    const rewardAvgSize = address.totalRewarded / rewardSize;
-    // Compute histo sample
-    const maxSplit = 1;
-    const sampleHistoric = R.flatten(
-      R.splitEvery(maxSplit < 1 ? 1 : maxSplit, addrHistory.reverse()).map((g) => R.head(g))
-    );
-    return Object.assign(address, { rewardAvgSize, rewardAvgTime, rewardSize, history: sampleHistoric });
-  }
-  return undefined;
+  });
+  const avgTime = rewardPeriod.length > 0 ? rewardPeriod.reduce((a, b) => a + b) / rewardPeriod.length : 0;
+  const rewardAvgTime = moment.duration(avgTime * 1000).humanize();
+  const maxSplit = elements.length / 50;
+  const sampleHistoric = R.flatten(R.splitEvery(maxSplit < 1 ? 1 : maxSplit, history.reverse()).map((g) => R.head(g)));
+  return {
+    id,
+    alias: '',
+    nbTx: elements.length,
+    balance: totalBalance,
+    totalRewarded,
+    totalFees,
+    received: totalReceived,
+    totalReceived,
+    rewardSize: rewards.length,
+    totalSent,
+    rewardAvgSize: R.sum(rewards) / rewards.length,
+    rewardAvgTime,
+    history: sampleHistoric,
+  };
 };
 
 export const elAddressTransactions = async (addressId, from = 0, size = null, blockheight = 0) => {
@@ -328,10 +439,10 @@ export const currentDayStakeWeight = () => {
   };
   return el.search(query).then((data) => {
     const agg = data.body.aggregations;
-    const percentile = agg.stake_size.values['95.0'];
-    const min = agg.min_stake.value;
-    const max = agg.max_stake.value;
-    const size = data.body.hits.total.value;
+    const percentile = agg.stake_size.values['95.0'] || 0;
+    const min = agg.min_stake.value || 0;
+    const max = agg.max_stake.value || 0;
+    const size = data.body.hits.total.value || 0;
     return { min, max, size, percentile };
   });
 };

@@ -9,7 +9,7 @@
             <h3>
                 <router-link :to="`/`">Home</router-link><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Transactions
                 <div style="float: right; font-size: 14px">
-                  <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
+                  <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers |  {{ info.sync_index_percent.toFixed(0) }}% Sync | {{ info.timeoffset }} secs</b>
                 </div>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
@@ -98,17 +98,18 @@
             feeSat
             outSat
             transferSat
+            offset
         }
     }`
     const newTxHandler = (txs) => {
-      const oldData = apolloClient.readQuery({query: AllTxs, variables: {offset: "+", limit: TX_ALL_PAGINATION_COUNT}});
+      const oldData = apolloClient.readQuery({query: AllTxs, variables: {offset: "", limit: TX_ALL_PAGINATION_COUNT}});
       // Update the number of confirmations for all other blocks
       let transactions = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.transactions);
       // Add the new block on top
       transactions.unshift(...txs);
       transactions = transactions.slice(0, transactions.length - txs.length);
       const data = {transactions};
-      apolloClient.writeQuery({query: AllTxs, variables: {offset: "+", limit: TX_ALL_PAGINATION_COUNT}, data});
+      apolloClient.writeQuery({query: AllTxs, variables: {offset: "", limit: TX_ALL_PAGINATION_COUNT}, data});
     }
 
     export default {
@@ -135,7 +136,7 @@
         methods: {
             infiniteHandler($state) {
                 const variables = {
-                    offset: this.transactions[this.transactions.length - 1].offset,
+                    offset: String(this.transactions[this.transactions.length - 1].blockheight),
                     limit: TX_ALL_PAGINATION_COUNT,
                 };
                 this.$apollo.queries.transactions.fetchMore({
@@ -176,7 +177,7 @@
                 query: () => AllTxs,
                 variables() {
                     return {
-                        offset: '+',
+                        offset: '',
                         limit: TX_ALL_PAGINATION_COUNT
                     }
                 },

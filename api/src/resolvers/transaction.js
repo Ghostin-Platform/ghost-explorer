@@ -1,17 +1,17 @@
-import { getBlockById, getTransactions } from '../domain/info';
-import { fetch } from '../database/redis';
-import { CURRENT_PROCESSING_BLOCK, getPooledTransactions, getTransaction } from '../database/ghost';
+import { getBlockById } from '../domain/info';
+import { getPooledTransactions, getTransaction } from '../database/ghost';
 import { getAddressBalance } from '../domain/address';
+import { elTransactions, lastIndexedBlock } from '../database/elasticSearch';
 
 const txResolver = {
   Query: {
     transaction: (_, { id }) => getTransaction(id),
-    transactions: (_, { offset, limit }) => getTransactions(offset, limit),
+    transactions: (_, { offset, limit }) => elTransactions(offset, limit),
     mempool: (_, { offset, limit }) => getPooledTransactions(offset, limit),
   },
   Transaction: {
     block: (tx) => getBlockById(tx.blockhash),
-    confirmations: (tx) => fetch(CURRENT_PROCESSING_BLOCK).then((height) => 1 + (height - tx.height)),
+    confirmations: (tx) => lastIndexedBlock().then((height) => 1 + (height - tx.height)),
   },
   VoutAddr: {
     resolveAddr: (vout) => getAddressBalance(vout.address),

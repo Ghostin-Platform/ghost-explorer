@@ -14,7 +14,6 @@
                             </div>
                             <div class="md-layout-item md-size-30">
                               <md-button v-on:click="$router.push('/gvr')" style="font-family: 'Sen', sans-serif;">gvr</md-button>
-                              <md-button v-on:click="$router.push('/me')" style="font-family: 'Sen', sans-serif;">ME</md-button>
                             </div>
                             <div class="md-layout-item" style="padding-right: 0">
                               <md-button v-on:click="$router.push('/support')" style="font-family: 'Sen', sans-serif;">support us</md-button>
@@ -35,7 +34,7 @@
             <div style="text-align: center; margin: auto; padding: 15px; background-color: #080808; height: 80px">
                 <md-divider></md-divider>
                 <br/>
-                <span style="font-size: 16px; font-family: 'Sen', sans-serif;">ghostin 1.2.3 @ 2020</span>
+                <span style="font-size: 16px; font-family: 'Sen', sans-serif;">ghostin 1.3.0</span>
             </div>
         </md-content>
     </div>

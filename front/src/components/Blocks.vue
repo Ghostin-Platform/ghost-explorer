@@ -9,7 +9,7 @@
             <h3>
                 <router-link :to="`/`">Home</router-link><md-icon style="margin-top: -1px">keyboard_arrow_right</md-icon>Blocks
                 <div style="float: right; font-size: 14px">
-                  <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
+                  <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers |  {{ info.sync_index_percent.toFixed(0) }}% Sync | {{ info.timeoffset }} secs</b>
                 </div>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
@@ -73,18 +73,19 @@
             txSize
             size
             transferSat
+            offset
         }
     }`
     const newBlockHandler = (newBlocks) => {
       // Update the block list on the home
-      const oldData = apolloClient.readQuery({query: AllBlocks, variables: {offset: "+", limit: BLOCK_ALL_PAGINATION_COUNT}});
+      const oldData = apolloClient.readQuery({query: AllBlocks, variables: {offset: "", limit: BLOCK_ALL_PAGINATION_COUNT}});
       // Update the number of confirmations for all other blocks
       let blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
       // Add the new block on top
       blocks.unshift(...newBlocks);
       blocks = blocks.slice(0, blocks.length - newBlocks.length);
       const data = {blocks};
-      apolloClient.writeQuery({query: AllBlocks, variables: {offset: "+", limit: BLOCK_ALL_PAGINATION_COUNT}, data});
+      apolloClient.writeQuery({query: AllBlocks, variables: {offset: "", limit: BLOCK_ALL_PAGINATION_COUNT}, data});
     };
 
     export default {
@@ -111,7 +112,7 @@
         methods: {
             infiniteHandler($state) {
                 const variables = {
-                    offset: this.blocks[this.blocks.length - 1].offset,
+                    offset: String(this.blocks[this.blocks.length - 2].height),
                     limit: BLOCK_ALL_PAGINATION_COUNT,
                 };
                 this.$apollo.queries.blocks.fetchMore({
@@ -151,7 +152,7 @@
                 query: () => AllBlocks,
                 variables() {
                     return {
-                        offset: '+',
+                        offset: '',
                         limit: BLOCK_ALL_PAGINATION_COUNT
                     }
                 },

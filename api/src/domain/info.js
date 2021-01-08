@@ -8,8 +8,7 @@ import {
   TYPE_REWARD,
 } from '../database/ghost';
 import { getCoinMarket } from '../config/utils';
-import { STREAM_BLOCK_KEY, STREAM_TRANSACTION_KEY, streamRange } from '../database/redis';
-import { elAddressTransactions, elGetVeterans } from '../database/elasticSearch';
+import { elAddressTransactions, elBlocks, elGetVeterans, elTransactions } from '../database/elasticSearch';
 import { broadcast } from '../middleware/seeMiddleware';
 
 export const test = async () => {
@@ -37,21 +36,11 @@ export const getBlockById = (id) => {
 };
 
 export const getBlocks = async (offset, limit) => {
-  const rawData = await streamRange(STREAM_BLOCK_KEY, offset, limit);
-  return R.map((m) => {
-    const [, data] = m;
-    const [, jsonBlock] = data;
-    return JSON.parse(jsonBlock);
-  }, rawData);
+  return elBlocks(offset, limit);
 };
 
 export const getTransactions = async (offset, limit) => {
-  const rawData = await streamRange(STREAM_TRANSACTION_KEY, offset, limit);
-  return R.map((m) => {
-    const [, data] = m;
-    const [, jsonBlock] = data;
-    return JSON.parse(jsonBlock);
-  }, rawData);
+  return elTransactions(offset, limit);
 };
 
 const computeAddrRewards = (id, transactions) => {

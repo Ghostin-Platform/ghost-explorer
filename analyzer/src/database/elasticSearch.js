@@ -165,15 +165,19 @@ export const elAddressTransactions = async (addressId, from = 0, size = null, bl
   return { size: 0, transactions: [] };
 };
 
-export const elBulkUpsert = async (indexName, documents, refresh = true) => {
+export const elBulkUpsert = async (indexName, documents, refresh = false) => {
   const body = documents.flatMap((d) => [
     { update: { _id: d.id, _index: indexName, retry_on_conflict: 3 } },
     { doc: d, doc_as_upsert: true },
   ]);
-  return el.bulk({
-    body,
-    refresh,
-  });
+  return el
+    .bulk({
+      body,
+      refresh,
+    })
+    .catch((e) => {
+      console.log(e);
+    });
 };
 
 export const lastElementOfIndex = (indexName) => {
@@ -187,7 +191,7 @@ export const lastElementOfIndex = (indexName) => {
       sort: [{ time: 'desc' }],
     },
   };
-  return el.search(query).then((d) => d.body.hits.hits[0]?._source.offset || '0-0');
+  return el.search(query).then((d) => d.body.hits.hits[0]?._source.height || 0);
 };
 
 export const elBlockCleanup = async (block) => {

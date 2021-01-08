@@ -95,28 +95,24 @@ export const genAddressTransactionUpdate = (id, tx) => {
   const update = computeAddressUpdate(tx.time, reward, balance);
   const base = {
     __typename: 'Address',
-    id,
-    history: [
-      {
-        id: tx.id,
-        block: tx.height,
-        time: tx.time,
-        // For the transaction
-        txSent: update.totalSent,
-        txFees: update.totalFees,
-        txReceived: update.totalReceived,
-        txRewarded: update.totalRewarded,
-        txBalance: update.balance,
-        // Total from beginning
-        totalSent: update.totalSent,
-        totalFees: update.totalFees,
-        totalRewarded: update.totalRewarded,
-        totalReceived: update.totalReceived,
-        // Balance
-        balance: update.balance,
-      },
-    ],
+    address: id,
+    id: `${id}-${tx.id}`,
+    block: tx.height,
+    time: tx.time,
+    // For the transaction
+    txSent: update.totalSent,
+    txFees: update.totalFees,
+    txReceived: update.totalReceived,
+    txRewarded: update.totalRewarded,
+    txBalance: update.balance,
+    // Total from beginning
+    totalSent: update.totalSent,
+    totalFees: update.totalFees,
+    totalRewarded: update.totalRewarded,
+    totalReceived: update.totalReceived,
+    // Balance
+    balance: update.balance,
   };
-  const document = Object.assign(base, update);
-  return { tx, document, update };
+  // const document = Object.assign(base, update);
+  return base;
 };

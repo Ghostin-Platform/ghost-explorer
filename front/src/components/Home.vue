@@ -14,7 +14,7 @@
             <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
                     <div style="width: 100%; margin-bottom: 5px">
-                        <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers | {{ info.sync_percent.toFixed(0) }}% Sync | {{ info.sync_index_percent.toFixed(0) }}% Indexed | {{ info.timeoffset }} secs</b>
+                        <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers |  {{ info.sync_index_percent.toFixed(0) }}% Sync | {{ info.timeoffset }} secs</b>
                     </div>
                     <md-card v-bind:style="coinVarClass">
                         <md-card-header>
@@ -259,14 +259,14 @@
     const BLOCK_HOME_PAGINATION_COUNT = 6;
     const newBlockHandler = (self, newBlocks) => {
       // Update the list
-      const oldData = apolloClient.readQuery({query: ReadHomeBlocks, variables: {offset: "+", limit: BLOCK_HOME_PAGINATION_COUNT}});
+      const oldData = apolloClient.readQuery({query: ReadHomeBlocks, variables: {offset: "", limit: BLOCK_HOME_PAGINATION_COUNT}});
       // Update the number of confirmations for all other blocks
       let blocks = R.map(b => Object.assign(b, {confirmations: b.confirmations + 1}), oldData.blocks);
       // Add the new block on top
       blocks.unshift(...newBlocks);
       blocks = blocks.slice(0, BLOCK_HOME_PAGINATION_COUNT);
       const data = {blocks};
-      apolloClient.writeQuery({query: ReadHomeBlocks, variables: {offset: "+", limit: BLOCK_HOME_PAGINATION_COUNT}, data});
+      apolloClient.writeQuery({query: ReadHomeBlocks, variables: {offset: "", limit: BLOCK_HOME_PAGINATION_COUNT}, data});
       // Update the stakers list
       self.$apollo.queries.rewards.refetch();
     };
@@ -289,10 +289,10 @@
     }`
     const TX_HOME_PAGINATION_COUNT = 10;
     const newTxHandler = (txs) => {
-      const data = apolloClient.readQuery({query: ReadHomeTxs, variables: {offset: "+", limit: TX_HOME_PAGINATION_COUNT}});
+      const data = apolloClient.readQuery({query: ReadHomeTxs, variables: {offset: "", limit: TX_HOME_PAGINATION_COUNT}});
       data.transactions.unshift(...txs);
       data.transactions = data.transactions.slice(0, TX_HOME_PAGINATION_COUNT);
-      apolloClient.writeQuery({query: ReadHomeTxs, variables: {offset: "+", limit: TX_HOME_PAGINATION_COUNT}, data});
+      apolloClient.writeQuery({query: ReadHomeTxs, variables: {offset: "", limit: TX_HOME_PAGINATION_COUNT}, data});
     }
     // endregion
 
@@ -311,7 +311,8 @@
             },
             displayBlocks() {
                 return this.blocks.map(b => {
-                    const ago = moment(b.time * 1000).from(this.now);
+                    let ago = moment(b.time * 1000).from(this.now);
+                    if (ago === 'a few seconds ago') ago = 'a few secs';
                     const transfer = b.transferSat > 0 ? (b.transferSat / 1e8).toFixed(2) : 0;
                     const out = b.outSat > 0 ? (b.outSat / 1e8).toFixed(2) : 0;
                     const fee = b.feeSat > 0 ? (b.feeSat / 1e8).toFixed(6) : 0;
@@ -321,7 +322,8 @@
             },
             displayTxs() {
                 return this.transactions.map(tx => {
-                    const ago = moment(tx.time * 1000).from(this.now);
+                    let ago = moment(tx.time * 1000).from(this.now);
+                    if (ago === 'a few seconds ago') ago = 'a few secs';
                     const transfer = tx.transferSat > 0 ? (tx.transferSat / 1e8).toFixed(2) : 0;
                     const out = tx.outSat > 0 ? (tx.outSat / 1e8).toFixed(2) : 0;
                     const fee = tx.feeSat > 0 ? (tx.feeSat / 1e8).toFixed(6) : 0;
@@ -475,7 +477,7 @@
                 query: () => ReadHomeBlocks,
                 variables() {
                     return {
-                        offset: '+',
+                        offset: '',
                         limit: BLOCK_HOME_PAGINATION_COUNT
                     }
                 }
@@ -484,7 +486,7 @@
                 query: () => ReadHomeTxs,
                 variables() {
                     return {
-                        offset: '+',
+                        offset: '',
                         limit: TX_HOME_PAGINATION_COUNT
                     }
                 }

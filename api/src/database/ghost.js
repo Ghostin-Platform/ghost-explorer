@@ -1,13 +1,8 @@
 import * as R from 'ramda';
 import { Promise } from 'bluebird';
 import { rpcCall } from '../config/utils';
-import { blockStreamId, fetchLatestProcessedBlock } from './redis';
 import { lastIndexedBlock } from './elasticSearch';
 
-// export const ONE_DAY_OF_BLOCKS = 720;
-// export const BLOCK_STAKE_MATURITY = 225;
-// export const BLOCK_MATURITY = 100;
-export const CURRENT_PROCESSING_BLOCK = 'processing.current.block';
 export const GROUP_CONCURRENCY = 25; // Number of query in //
 
 const toSat = (num) => num * 100000000;
@@ -29,7 +24,7 @@ export const getNetworkInfo = async () => {
     blockchainInfoPromise,
     pooledTxCountPromise,
   ]);
-  const currentBlock = await fetchLatestProcessedBlock();
+  const currentBlock = blockchainInfo.blocks;
   const syncPercent = (currentBlock * 100) / blockchainInfo.blocks;
   const currentIndexedBlock = await lastIndexedBlock();
   const syncIndexPercent = (currentIndexedBlock * 100) / blockchainInfo.blocks;
@@ -301,7 +296,6 @@ export const enrichBlock = async (block) => {
     __typename: 'Block',
     id: block.hash,
     height,
-    offset: blockStreamId(block),
     size: block.size,
     strippedsize: block.strippedsize,
     weight: block.weight,

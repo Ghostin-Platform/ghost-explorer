@@ -4,7 +4,6 @@ import { addInSet, delInSet, delObject, getObject, listObject, readSet, storeObj
 import { elFindByIds, elUpdateByIds, INDEX_ADDRESS } from '../database/elasticSearch';
 
 export const ROLE_ROOT = 'ROOT';
-export const ROLE_VET = 'VET';
 export const ROLE_DEFAULT = 'DEFAULT';
 const USER = 'user';
 const ADDRESSES = 'addresses';
