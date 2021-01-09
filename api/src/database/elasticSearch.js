@@ -327,7 +327,7 @@ export const elGetAddressBalance = async (id) => {
     totalReceived,
     rewardSize: rewards.length,
     totalSent,
-    rewardAvgSize: R.sum(rewards) / rewards.length,
+    rewardAvgSize: rewards.length > 0 ? R.sum(rewards) / rewards.length : 0,
     rewardAvgTime,
     history: sampleHistoric,
   };
