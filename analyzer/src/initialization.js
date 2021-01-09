@@ -12,6 +12,7 @@ import listenMempool from './processor/mempoolProcessor';
 import { EVENT_MEMPOOL_ADDED, EVENT_MEMPOOL_REMOVED } from './database/events';
 
 // Check every dependencies
+const RESCAN_BLOCKS = 720;
 const checkSystemDependencies = async () => {
   await elIsAlive();
   logger.info(`[Pre check] Elastic is alive`);
@@ -42,7 +43,7 @@ const initializePlatform = async () => {
   // Get current situation
   // const currentBlock = await fetchLatestProcessedBlock();
   const currentSync = await lastElementOfIndex(INDEX_BLOCK);
-  const currentBlock = currentSync - 300 < 0 ? 0 : currentSync - 300;
+  const currentBlock = currentSync - RESCAN_BLOCKS < 0 ? 0 : currentSync - RESCAN_BLOCKS;
   const chainBlockHeight = await getChainHeight();
   // Looking if we have some missing processing blocks
   const currentSyncBlock = currentBlock || -1;
