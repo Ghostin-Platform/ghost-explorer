@@ -14,7 +14,7 @@
             <div class="md-layout md-gutter">
                 <div class="md-layout-item md-size-30">
                     <div style="width: 100%; margin-bottom: 5px">
-                        <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers |  {{ info.sync_index_percent.toFixed(0) }}% Sync | {{ info.timeoffset }} secs</b>
+                      <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers |  {{ info.sync_index_percent.toFixed(0) }}% Sync | {{ info.timeoffset }} secs <span style="font-size: 10px; float: right">{{ info.node_version }}</span></b>
                     </div>
                     <md-card v-bind:style="coinVarClass">
                         <md-card-header>
@@ -379,6 +379,7 @@
                 now: moment(),
                 info: {
                     pooledTxCount: 0,
+                    node_version: '-',
                     difficulty: 0,
                     stake_weight: 0,
                     moneysupply: 0,

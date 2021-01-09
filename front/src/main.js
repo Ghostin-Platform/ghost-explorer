@@ -47,6 +47,7 @@ export const ReadInfo = gql`query {
     info {
         id
         height
+        node_version
         difficulty
         pooledTxCount
         stake_weight
