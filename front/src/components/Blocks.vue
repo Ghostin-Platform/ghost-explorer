@@ -73,7 +73,6 @@
             txSize
             size
             transferSat
-            offset
         }
     }`
     const newBlockHandler = (newBlocks) => {

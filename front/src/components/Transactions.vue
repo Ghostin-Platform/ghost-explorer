@@ -98,7 +98,6 @@
             feeSat
             outSat
             transferSat
-            offset
         }
     }`
     const newTxHandler = (txs) => {

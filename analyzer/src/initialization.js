@@ -42,7 +42,7 @@ const initializePlatform = async () => {
   // Get current situation
   // const currentBlock = await fetchLatestProcessedBlock();
   const currentSync = await lastElementOfIndex(INDEX_BLOCK);
-  const currentBlock = currentSync - 100 < 0 ? 0 : currentSync - 100;
+  const currentBlock = currentSync - 300 < 0 ? 0 : currentSync - 300;
   const chainBlockHeight = await getChainHeight();
   // Looking if we have some missing processing blocks
   const currentSyncBlock = currentBlock || -1;
