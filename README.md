@@ -3,7 +3,7 @@
 </h1>
 <p align="center">
   <a href="https://www.ghostin.io" alt="Website"><img src="https://img.shields.io/badge/website-ghostin.io-blue.svg" /></a>
-  <a href="https://www.notion.so/Ghostin-Public-Knowledge-Base-88133e2f1e4946c880a12f8628ef86ae" alt="Documentation"><img src="https://img.shields.io/badge/Documentation-RTFM-orange.svg" /></a>
+  <a href="https://www.notion.so/Ghostin-Public-Knowledge-Base-88133e2f1e4946c880a12f8628ef86ae" alt="Documentation"><img src="https://img.shields.io/badge/Documentation-Notion-orange.svg" /></a>
   <a href="https://slack.limeo.org" alt="Slack"><img src="https://img.shields.io/badge/slack-join-red" /></a>
 </p>
 
