@@ -1,7 +1,7 @@
 import { GraphQLDateTime } from 'graphql-iso-date';
 import { mergeResolvers } from 'merge-graphql-schemas';
 import { makeExecutableSchema } from 'graphql-tools';
-import ConstraintDirective from 'graphql-constraint-directive';
+import { constraintDirective } from 'graphql-constraint-directive';
 import AuthDirectives, { AUTH_DIRECTIVE } from './authDirective';
 import typeDefs from '../../config/schema/ghost.graphql';
 import infoResolver from '../resolvers/info';
@@ -21,8 +21,8 @@ const createSchema = () => {
     resolvers,
     schemaDirectives: {
       [AUTH_DIRECTIVE]: AuthDirectives,
-      constraint: ConstraintDirective,
     },
+    schemaTransforms: [constraintDirective()],
     inheritResolversFromInterfaces: true,
   });
 };
