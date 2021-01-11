@@ -1,4 +1,4 @@
-import { coinMarket, getBlockById, getBlocks, info, test, veterans } from '../domain/info';
+import { coinMarket, getBlockById, getBlocks, info, stakers, test, veterans } from '../domain/info';
 import { getBlockTransactions } from '../database/ghost';
 import {
   currentDayStakeWeight,
@@ -19,6 +19,7 @@ const infoResolver = {
     search: (_, { term }) => elSearch(term),
     block: (_, { id }) => getBlockById(id),
     veterans: () => veterans(),
+    stakers: () => stakers(),
     blocks: (_, { offset, limit }) => getBlocks(offset, limit),
     stakeWeight: () => currentDayStakeWeight(),
     seriesStakeWeight: () => monthlyStakeWeight(),

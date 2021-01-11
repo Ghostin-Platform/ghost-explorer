@@ -284,6 +284,13 @@ type Reward {
   valueSat: Float
 }
 
+type Staker {
+  id: ID!
+  numberOfRewards: Float,
+  totalRewards: Float,
+  percent: Float
+}
+
 type Veteran {
   id: String!
   alias: String
@@ -315,6 +322,7 @@ type Query {
   address(id: String!): Address
   addressMempool(id: String!): [Transaction]
   rewards: [Reward]
+  stakers: [Staker]
   # Stats
   difficulty: StatPercentile
   seriesDifficulty: [PercentileDataPoint]

@@ -128,8 +128,8 @@ const computeVinPerAddr = (rawTransaction) => {
       __typename: 'VinAddr',
       address: key,
       type: R.head(value).type || TYPE_COINBASE,
-      value: valueSum,
-      valueSat: valueSatSum,
+      value: valueSum || 0,
+      valueSat: valueSatSum || 0,
     };
     vinPerAddresses.push(vinSummary);
   }
@@ -162,8 +162,8 @@ const computeVoutPerAddr = (rawTransaction) => {
       address: key,
       type: R.head(value).type,
       spentTxId: R.head(value).spentTxId,
-      value: valueSum,
-      valueSat: valueSatSum,
+      value: valueSum || 0,
+      valueSat: valueSatSum || 0,
     };
     voutPerAddresses.push(voutSummary);
   }

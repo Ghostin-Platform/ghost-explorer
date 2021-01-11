@@ -190,6 +190,7 @@
                     <div>
                       <div style="width: 100%; margin-bottom: 5px">
                         <b>8 Latest stakers</b>
+                        <router-link style="float: right;" :to="`/stakers`">Best stakers last 7 days</router-link>
                       </div>
                       <md-table>
                         <md-table-row style="background-color: #101010">

@@ -102,7 +102,7 @@ const platformInit = async (clearIndex = false) => {
     await elCreateIndexes();
     // await initIndexingProcessors();
     // Start the platform
-    initializePlatform().then(async () => {
+    await initializePlatform().then(async () => {
       // Listen directly new block with zeroMQ
       await listenMempool(async (added, removed) => {
         if (added.length > 0) {

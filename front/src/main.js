@@ -25,10 +25,7 @@ import Support from "./components/Support";
 import Toasted from 'vue-toasted';
 import Search from "./components/Search";
 import Gvr from "@/components/Gvr";
-import Me from "@/components/Me";
-import Profile from "@/components/account/Profile";
-import Addresses from "@/components/account/Addresses";
-import Admin from "@/components/account/Admin";
+import Stakers from "@/components/Stakers";
 
 // region configuration
 export const VETERAN_AMOUNT = 20000;
@@ -108,13 +105,9 @@ const routes = [
     {path: '/mempool', component: Mempool},
     {path: '/blocks', component: Blocks},
     {path: '/transactions', component: Transactions},
-    {path: '/me', component: Me, children: [
-        { path: 'addresses', component: Addresses },
-        { path: 'admin', component: Admin },
-        { path: '', component: Profile },
-    ]},
     {path: '/support', component: Support},
     {path: '/gvr', component: Gvr},
+    {path: '/stakers', component: Stakers},
     {path: '/block/:id', component: Block},
     {path: '/tx/:id', component: Transaction},
     {path: '/address/:id', component: Address},

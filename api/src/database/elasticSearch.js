@@ -173,6 +173,7 @@ export const elGetVeterans = async () => {
   const should = addresses.map((a) => ({ match_phrase: { 'address.keyword': a } }));
   const query = {
     index: INDEX_ADDRESS,
+    size: 100000,
     body: {
       query: {
         bool: {
@@ -214,6 +215,53 @@ export const elGetVeterans = async () => {
       return { id: addressesMatcher[h.key], balance: h.total_balance.value, alias: '', vets, percent };
     });
     return R.sort((a, b) => b.balance - a.balance, dataToSort);
+  }
+  return [];
+};
+
+export const elGetStakersOfWeek = async () => {
+  const query = {
+    index: INDEX_TRX,
+    size: 100000,
+    body: {
+      query: {
+        bool: {
+          must: [{ range: { time: { gte: 'now-7d/d' } } }, { match_phrase: { 'type.keyword': 'reward' } }],
+        },
+      },
+      aggs: {
+        by_address: {
+          terms: {
+            field: 'vinAddresses.keyword',
+            size: 100000,
+          },
+          aggs: {
+            total_rewards: { sum: { field: 'variation' } },
+            hits: {
+              top_hits: {
+                _source: ['vinAddresses'],
+                size: 1,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  const data = await el.search(query);
+  // eslint-disable-next-line camelcase
+  const { buckets } = data?.body?.aggregations?.by_address;
+  if (buckets) {
+    const dataBuckets = buckets.map((b) => {
+      const numberOfRewards = b.doc_count;
+      const totalRewards = b.total_rewards.value;
+      const id = b.hits.hits.hits[0]._source.vinAddresses[0];
+      return { id, numberOfRewards, totalRewards };
+    });
+    const totalRewards = R.sum(dataBuckets.map((r) => r.numberOfRewards));
+    return dataBuckets.map((d) => {
+      return { ...d, percent: (d.numberOfRewards * 100) / totalRewards };
+    });
   }
   return [];
 };
