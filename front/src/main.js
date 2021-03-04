@@ -26,6 +26,7 @@ import Toasted from 'vue-toasted';
 import Search from "./components/Search";
 import Gvr from "@/components/Gvr";
 import Stakers from "@/components/Stakers";
+import Origin from "@/components/Origin";
 
 // region configuration
 export const VETERAN_AMOUNT = 20000;
@@ -111,6 +112,7 @@ const routes = [
     {path: '/block/:id', component: Block},
     {path: '/tx/:id', component: Transaction},
     {path: '/address/:id', component: Address},
+    {path: '/origin/:id', component: Origin},
     {path: '/search', component: Search}
 ]
 const router = new VueRouter({

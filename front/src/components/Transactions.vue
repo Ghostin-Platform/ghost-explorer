@@ -13,6 +13,11 @@
                 </div>
             </h3>
             <md-divider style="margin-bottom: 20px"></md-divider>
+            <md-field>
+              <label>Display transactions with more than {{amount || 0}} Ghost(s)</label>
+              <md-input v-model="amount" type="number" md-inline=true></md-input>
+            </md-field>
+
             <div class="md-layout md-gutter">
                 <div class="md-layout-item">
                     <div>
@@ -85,8 +90,8 @@
     import gql from "graphql-tag";
 
     const TX_ALL_PAGINATION_COUNT = 50;
-    const AllTxs = gql`query AllTxs($offset: String!, $limit: Int!) {
-        transactions(offset: $offset, limit: $limit) {
+    const AllTxs = gql`query AllTxs($offset: String!, $limit: Int!, $size: Float!) {
+        transactions(offset: $offset, limit: $limit, size: $size) {
             id
             type
             txid
@@ -130,6 +135,7 @@
                     }
                 },
                 transactions: [],
+                amount: undefined
             }
         },
         methods: {
@@ -177,7 +183,8 @@
                 variables() {
                     return {
                         offset: '',
-                        limit: TX_ALL_PAGINATION_COUNT
+                        limit: TX_ALL_PAGINATION_COUNT,
+                        size: parseFloat(this.amount || 0)
                     }
                 },
             },

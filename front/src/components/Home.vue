@@ -17,11 +17,10 @@
                       <b><img src="../assets/logo.png" width="14"> {{ info.connections }} Peers |  {{ info.sync_index_percent.toFixed(0) }}% Sync | {{ info.timeoffset }} secs <span style="font-size: 10px; float: right">{{ info.node_version }}</span></b>
                     </div>
                     <md-card v-bind:style="coinVarClass">
-                        <md-card-header>
+                        <md-card-header style="padding: 11px">
                             <md-card-header-text>
                                 <div class="md-title">
-                                    <md-icon>{{trendingClass}}</md-icon>
-                                    {{ market.usd }} <span style="font-size: 12px;">({{ market.usd_24h_change.toFixed(2) }}%) $US</span>
+                                  {{ market.usd }}<span style="font-size: 12px;">$US</span> <span v-bind:style="coinDiffClass">({{ market.usd_24h_change.toFixed(2) }}%)</span>
                                 </div>
                                 <div class="md-subhead"> Circulating supply: {{ supply }} <span style="font-size: 12px; font-family: 'Sen', sans-serif">ghost</span></div>
                                 <div class="md-subhead"> Market cap: {{ marketCap }} $US</div>
@@ -345,9 +344,12 @@
                 return formatter.format(this.info.stake_weight / 1e8 * 100 / this.info.moneysupply)
             },
             coinVarClass() {
-                return this.market.usd_24h_change > 0
-                    ? 'text-align: center; margin: auto; background-color: rgb(0, 140, 0)'
-                    : 'text-align: center; margin: auto; background-color: #ff5252';
+                return 'text-align: center; margin: auto;border: solid 1px #424242; margin-bottom: 8px;';
+            },
+            coinDiffClass() {
+              return this.market.usd_24h_change > 0
+                  ? 'font-size: 12px; color: rgb(0, 140, 0)'
+                  : 'font-size: 12px; color: #ff5252';
             },
             trendingClass() {
                 return this.market.usd_24h_change >= 0 ? 'trending_up' : 'trending_down';

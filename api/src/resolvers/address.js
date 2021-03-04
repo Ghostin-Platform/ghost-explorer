@@ -1,8 +1,15 @@
-import { addressTransactions, getAddressBalance, getAddressPooledTx, getLastRewardAddresses } from '../domain/address';
+import {
+  addressTransactions,
+  getAddress,
+  getAddressOriginated,
+  getAddressPooledTx,
+  getLastRewardAddresses,
+} from '../domain/address';
 
 const addressResolver = {
   Query: {
-    address: (_, { id }) => getAddressBalance(id),
+    address: (_, { id }) => getAddress(id),
+    addressOriginated: (_, { id }) => getAddressOriginated(id),
     addressMempool: (_, { id }) => getAddressPooledTx(id),
     rewards: () => getLastRewardAddresses(),
   },

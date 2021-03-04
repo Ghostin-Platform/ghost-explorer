@@ -1,12 +1,12 @@
 import { getBlockById } from '../domain/info';
 import { getPooledTransactions, getTransaction } from '../database/ghost';
-import { getAddressBalance } from '../domain/address';
+import { getAddress } from '../domain/address';
 import { elTransactions, lastIndexedBlock } from '../database/elasticSearch';
 
 const txResolver = {
   Query: {
     transaction: (_, { id }) => getTransaction(id),
-    transactions: (_, { offset, limit }) => elTransactions(offset, limit),
+    transactions: (_, { offset, limit, size }) => elTransactions(offset, limit, size),
     mempool: (_, { offset, limit }) => getPooledTransactions(offset, limit),
   },
   Transaction: {
@@ -14,10 +14,10 @@ const txResolver = {
     confirmations: (tx) => lastIndexedBlock().then((height) => 1 + (height - tx.height)),
   },
   VoutAddr: {
-    resolveAddr: (vout) => getAddressBalance(vout.address),
+    resolveAddr: (vout) => getAddress(vout.address),
   },
   VinAddr: {
-    resolveAddr: (vin) => getAddressBalance(vin.address),
+    resolveAddr: (vin) => getAddress(vin.address),
   },
   TxIn: {
     __resolveType: (obj) => {

@@ -136,12 +136,16 @@ export const elBlocks = (offset, limit) => {
   });
 };
 
-export const elTransactions = (offset, limit) => {
+export const elTransactions = (offset, limit, txSize) => {
   let body = {
     size: limit,
     sort: [{ blockheight: 'desc' }],
     query: {
-      match_all: {},
+      range: {
+        transferSat: {
+          gte: txSize * 1e8 || 0,
+        },
+      },
     },
   };
   if (!R.isEmpty(offset)) {
@@ -159,6 +163,18 @@ export const elSearch = async (term) => {
   const blockPromise = blockSearch(term);
   const txPromise = txSearch(term);
   return { addresses: addrPromise, blocks: blockPromise, transactions: txPromise };
+};
+
+export const elSourceAddresses = async (id) => {
+  if (id.includes(',')) return [];
+  const relatedTxs = {
+    bool: {
+      must_not: [{ match_phrase: { 'vinAddresses.keyword': id } }, { match_phrase: { 'type.keyword': 'reward' } }],
+      must: { match_phrase: { 'voutAddresses.keyword': id } },
+    },
+  };
+  const transactions = await elFetchAllForQuery(INDEX_TRX, relatedTxs);
+  return R.uniq(R.flatten(transactions.map((t) => t.vinAddresses)));
 };
 
 export const elGetVeterans = async () => {

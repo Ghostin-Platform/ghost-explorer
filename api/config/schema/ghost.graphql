@@ -215,6 +215,15 @@ type VinAddr {
   valueSat: Float
 }
 
+type AddressNode {
+  id: ID!
+  source: String
+  target: String
+  parent: Int
+  terminal: Boolean
+  level: Int
+}
+
 type Transaction {
   id: ID!
   txid: String!
@@ -317,9 +326,10 @@ type Query {
   blocks(offset: String! = "+", limit: Int! = 6): [Block]
   veterans: [Veteran]
   transaction(id: String!): Transaction
-  transactions(offset: String! = "+", limit: Int! = 10): [Transaction]
+  transactions(offset: String! = "+", limit: Int! = 10, size: Float! = 0): [Transaction]
   mempool(offset: Int! = 0, limit: Int! = 15): [Transaction]
   address(id: String!): Address
+  addressOriginated(id: String!): [AddressNode]
   addressMempool(id: String!): [Transaction]
   rewards: [Reward]
   stakers: [Staker]
